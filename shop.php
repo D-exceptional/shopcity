@@ -1,0 +1,455 @@
+<?php
+    // Import Initializer File
+    require_once __DIR__ . '/includes/init.php'; 
+
+    // Import Default Images File (For Development Phase ONLY)
+    require_once __DIR__ . '/includes/helper.php';
+
+    // Initialize Necessary Models
+    $productModel = $container->get(\App\Models\Product::class);
+    $storeModel   = $container->get(\App\Models\Store::class);
+
+    // Get Products Data
+    $featuredProducts = $productModel->findFeatured(STORE_ID); // From init.php
+
+    // Get Store ID
+    $page            = isset($_GET['page']) && is_numeric($_GET['page']) ? (int)$_GET['page'] : 1;
+    $storeId         = isset($_GET['id']) && is_numeric($_GET['id']) ? $_GET['id'] : null;
+    $storeDetails    = $storeModel->findOne($storeId);
+    $storeCategories = $categoryModel->group($storeId);
+    $storeColors     = $productModel->groupByColor($storeId);
+
+    // Get Store Products
+    $storeProducts = $productModel->findByStore($storeId, $page); 
+
+    // Pagination parameters
+    $totalPages  = $storeProducts['total_pages'];
+    $currentPage = $storeProducts['page'];
+    $baseUrl     = "shop?id={$storeId}";
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title><?= SITE_NAME ?> | Shop</title>
+    <!-- Include the head section code file -->
+    <?php include_once 'includes/head.php'; ?>
+</head>
+
+<body>
+
+    <!-- Include the header section code file -->
+    <?php include_once 'includes/header.php'; ?>
+
+    <!-- Single Page Header start -->
+    <div class="container-fluid page-header py-5">
+        <h1 class="text-center text-white display-6 wow fadeInUp" data-wow-delay="0.1s"><?= $storeDetails['store_name'] ?></h1>
+        <div class="text-white mb-3 text-center p-shop-10"><?= $storeDetails['store_description'] ?></div>
+        <ol class="breadcrumb justify-content-center mb-0 wow fadeInUp" data-wow-delay="0.3s">
+            <li class="breadcrumb-item">
+                <a href="<?= ($storeDetails['facebook'] !== 'None') ? htmlspecialchars($storeDetails['facebook']) : '#' ?>">
+                    <i class="fab fa-facebook text-white social-icon-font" aria-hidden="true"></i>
+                </a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="<?= ($storeDetails['instagram'] !== 'None') ? htmlspecialchars($storeDetails['instagram']) : '#' ?>">
+                    <i class="fab fa-instagram text-white social-icon-font" aria-hidden="true"></i>
+                </a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="<?= ($storeDetails['tiktok'] !== 'None') ? htmlspecialchars($storeDetails['tiktok']) : '#' ?>">
+                    <i class="fab fa-tiktok text-white social-icon-font" aria-hidden="true"></i>
+                </a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="<?= ($storeDetails['twitter'] !== 'None') ? htmlspecialchars($storeDetails['twitter']) : '#' ?>">
+                    <i class="fab fa-twitter text-white social-icon-font" aria-hidden="true"></i>
+                </a>
+            </li>
+        </ol>
+        <br>
+        <ol class="breadcrumb justify-content-center mb-0 wow fadeInUp" data-wow-delay="0.3s">
+            <li class="breadcrumb-item"><a href="#">Home</a></li>
+            <li class="breadcrumb-item"><a href="#">Pages</a></li>
+            <li class="breadcrumb-item active text-white">Shop</li>
+        </ol>
+    </div>
+    <!-- Single Page Header End -->
+
+    <!-- Products Offer Start -->
+    <div class="container-fluid bg-light py-5">
+        <div class="container">
+            <div class="row g-4">
+                <div class="col-lg-6 wow fadeInLeft" data-wow-delay="0.2s">
+                    <a href="#" class="d-flex align-items-center justify-content-between border bg-white rounded p-4">
+                        <div>
+                            <p class="text-muted mb-3">Find The Best Camera for You!</p>
+                            <h3 class="text-primary">Smart Camera</h3>
+                            <h1 class="display-3 text-secondary mb-0">40% <span class="text-primary fw-normal">Off</span></h1>
+                        </div>
+                        <img src="assets/img/product-1.png" class="img-fluid" alt="">
+                    </a>
+                </div>
+                <div class="col-lg-6 wow fadeInRight" data-wow-delay="0.3s">
+                    <a href="#" class="d-flex align-items-center justify-content-between border bg-white rounded p-4">
+                        <div>
+                            <p class="text-muted mb-3">Find The Best Whatches for You!</p>
+                            <h3 class="text-primary">Smart Whatch</h3>
+                            <h1 class="display-3 text-secondary mb-0">20% <span class="text-primary fw-normal">Off</span></h1>
+                        </div>
+                        <img src="assets/img/product-2.png" class="img-fluid" alt="">
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Products Offer End -->
+
+
+    <!-- Shop Page Start -->
+    <div class="container-fluid shop py-5">
+        <div class="container py-5">
+            <div class="row g-4">
+                <div class="col-lg-3 wow fadeInUp" data-wow-delay="0.1s">
+                    <div class="product-categories mb-4">
+                        <h4>Filter By  Category</h4>
+                        <ul class="list-unstyled">
+                            <!-- Display Grouped Categories -->
+                            <?php foreach ($storeCategories as $category): ?>
+                                <li>
+                                    <div class="categories-item">
+                                        <a href="product-store?id=<?= $storeId ?>&view=category&data=<?= $category['category_name'] ?>">
+                                            <i class="fas fa-tag text-primary me-2"></i>
+                                            <?= $category['category_name'] ?>
+                                        </a>
+                                        <span>(<?= $category['product_count'] ?>)</span>
+                                    </div>
+                                </li>
+                            <?php endforeach; ?>
+
+                        </ul>
+                    </div>
+                    <div class="price mb-4">
+                        <h4 class="mb-2">Filter By Price</h4>
+                        <input type="range" class="form-range w-100" id="rangeInput" name="rangeInput" min="1000" max="10000000" value="1000" step="1000" oninput="amount.value=rangeInput.value">
+                        <output id="amount" name="amount" min-value="1000" max-value="10000000" step="1000" for="rangeInput">1000</output>
+                        <div class=""></div>
+                    </div>
+                    <div class="product-color mb-3">
+                        <h4>Filter By Color</h4>
+                        <ul class="list-unstyled">
+                            <!-- Display Color Categories -->
+                            <?php foreach ($storeColors as $color): ?>
+                                <li>
+                                    <div class="product-color-item">
+                                        <a href="product-store?id=<?= $storeId ?>&view=color&data=<?= $color['color'] ?>">
+                                            <i class="fas fa-palette text-primary me-2"></i>
+                                            <?= $color['color'] ?>
+                                        </a>
+                                        <span>(<?= $color['product_count'] ?>)</span>
+                                    </div>
+                                </li>
+                            <?php endforeach; ?>
+
+                        </ul>
+                    </div>
+                    <div class="featured-product mb-4">
+                        <h4 class="mb-3">Featured products</h4>
+
+                        <!-- Display Featured Products -->
+                        <?php foreach ($featuredProducts['products'] as $product): ?>
+
+                            <?php
+                                // Pick the product's first media if it exists
+                                $imageUrl = $product['media'][0]['media_url'] ?? null; 
+                            ?>
+
+                            <div class="featured-product-item" data-id="<?= $product['product_id'] ?>">
+                                <div class="rounded me-4" style="width: 100px; height: 100px;">
+                                    <img src="<?= htmlspecialchars($imageUrl) ?>" class="img-fluid rounded product-image" alt="Product Image">
+                                </div>
+                                <div>
+                                    <h6 class="mb-2"><a href="product-details?id=<?= $product['product_id'] ?>" class="text-dark product-name"><?= htmlspecialchars($product['product_name']) ?></a></h6>
+                                    <?= $ratingManager->render($product['rating']['average']); ?>
+                                    <div class="d-flex mb-2 mt-2">
+                                        <h5 class="fw-bold me-2 price-tag"><?= $currencyManager->format((float)$product['product_price'] ?? 0); ?></h5>
+                                        <h5 class="text-danger text-decoration-line-through price-slash"><?= $currencyManager->format((float)$product['slash_price'] ?? 0); ?></h5>
+                                    </div>
+                                </div>
+                            </div>
+
+                        <?php endforeach; ?>
+
+                        <div class="d-flex justify-content-center my-4">
+                            <a href="#" class="btn btn-primary px-4 py-3 rounded-pill w-100">Vew More</a>
+                        </div>
+                    </div>
+                    <a href="#">
+                        <div class="position-relative">
+                            <img src="assets/img/product-banner-2.jpg" class="img-fluid w-100 rounded" alt="Image">
+                            <div class="text-center position-absolute d-flex flex-column align-items-center justify-content-center rounded p-4"
+                                style="width: 100%; height: 100%; top: 0; right: 0; background: rgba(242, 139, 0, 0.3);">
+                                <h5 class="display-6 text-primary">SALE</h5>
+                                <h4 class="text-secondary">Get UP To 50% Off</h4>
+                                <a href="#" class="btn btn-primary rounded-pill px-4">Shop Now</a>
+                            </div>
+                        </div>
+                    </a>
+                    <div class="product-tags py-4">
+                        <h4 class="mb-3">PRODUCT TAGS</h4>
+                        <div class="product-tags-items bg-light rounded p-3">
+                            <a href="#" class="border rounded py-1 px-2 mb-2">New</a>
+                            <a href="#" class="border rounded py-1 px-2 mb-2">brand</a>
+                            <a href="#" class="border rounded py-1 px-2 mb-2">black</a>
+                            <a href="#" class="border rounded py-1 px-2 mb-2">white</a>
+                            <a href="#" class="border rounded py-1 px-2 mb-2">tablets</a>
+                            <a href="#" class="border rounded py-1 px-2 mb-2">phone</a>
+                            <a href="#" class="border rounded py-1 px-2 mb-2">camera</a>
+                            <a href="#" class="border rounded py-1 px-2 mb-2">drone</a>
+                            <a href="#" class="border rounded py-1 px-2 mb-2">television</a>
+                            <a href="#" class="border rounded py-1 px-2 mb-2">sales</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-9 wow fadeInUp" data-wow-delay="0.1s">
+                    <div class="rounded mb-4 position-relative">
+                        <img src="<?= $storeDetails['store_avatar'] ?? 'assets/img/product-banner-3.jpg' ?>" class="img-fluid rounded w-100" style="height: 250px;"
+                            alt="Image">
+                        <div class="position-absolute rounded d-flex flex-column align-items-center justify-content-center text-center"
+                            style="width: 100%; height: 250px; top: 0; left: 0; background: rgba(242, 139, 0, 0.3);">
+                            <!--<h4 class="display-5 text-primary">SALE</h4>
+                            <h3 class="display-4 text-white mb-4">Get UP To 50% Off</h3>
+                            <a href="#" class="btn btn-primary rounded-pill">Shop Now</a>
+                            -->
+                        </div>
+                    </div>
+                    <div class="row g-4">
+                        <div class="col-xl-7">
+                            <div class="input-group w-100 mx-auto d-flex">
+                                <input type="search" class="form-control p-3 sub-search" placeholder="Search products..." aria-describedby="search-icon-1">
+                                <span id="search-icon-1" class="input-group-text p-3 search-click"><i class="fa fa-search"></i></span>
+                            </div>
+                        </div>
+                        <div class="col-xl-3 text-end">
+                            <div class="bg-light ps-3 py-3 rounded d-flex justify-content-between">
+                                <label for="electronics">Sort By:</label>
+                                <?php include_once 'includes/filter.php'; ?>
+                            </div>
+                        </div>
+                        <div class="col-lg-4 col-xl-2">
+                            <ul class="nav nav-pills d-inline-flex text-center py-2 px-2 rounded bg-light mb-4">
+                                <li class="nav-item me-4">
+                                    <a class="bg-light" data-bs-toggle="pill" href="#tab-5">
+                                        <i class="fas fa-th fa-3x text-primary"></i>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="bg-light" data-bs-toggle="pill" href="#tab-6">
+                                        <i class="fas fa-bars fa-3x text-primary"></i>
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="tab-content">
+                        <div id="tab-5" class="tab-pane fade show p-0 active">
+                            <div class="row g-4 product product-main">
+                                <?php if (!empty($storeProducts['products'])): ?>
+                                    <!-- Display All Products -->
+                                    <?php foreach ($storeProducts['products'] as $product): ?>
+
+                                        <?php
+                                            // Pick the product's first media if it exists
+                                            $imageUrl = $product['media'][0]['media_url'] ?? null; 
+                                        ?>
+
+                                        <div class="col-lg-4 product-card card-main" data-id="<?= $product['product_id'] ?>">
+                                            <div class="product-item rounded wow fadeInUp" data-wow-delay="0.1s">
+                                                <div class="product-item-inner border rounded">
+                                                    <div class="product-item-inner-item">
+                                                        <img src="<?= htmlspecialchars($imageUrl) ?>" class="img-fluid w-100 rounded-top product-image" alt="Product Image">
+                                                        <!--<div class="product-new">New</div>-->
+                                                        <div class="product-details">
+                                                            <a href="product-details?id=<?= $product['product_id'] ?>"><i class="fa fa-eye fa-1x"></i></a>
+                                                        </div>
+                                                    </div>
+                                                    <div class="text-center rounded-bottom p-4">
+                                                        <a href="product-list?view=category&data=<?= htmlspecialchars($product['category']) ?>" class="d-block mb-2 product-category"><?= htmlspecialchars($product['category']) ?></a>
+                                                        <a href="product-details?id=<?= $product['product_id'] ?>" class="d-block h4 product-name"><?= htmlspecialchars($product['product_name']) ?></a>
+                                                        <del class="me-2 fs-5 price-slash"><?= $currencyManager->format((float)$product['slash_price'] ?? 0); ?></del>
+                                                        <span class="text-primary fs-5 price-tag"><?= $currencyManager->format((float)$product['product_price'] ?? 0); ?></span>
+                                                    </div>
+                                                </div>
+                                                <div class="product-item-add border border-top-0 rounded-bottom text-center p-4 pt-0">
+                                                    <a href="#" class="btn btn-primary border-primary rounded-pill py-2 px-4 mb-4 cart-add <?= $isLoggedIn ? 'cart-user' : 'cart-guest' ?>">
+                                                        <i class="fas fa-shopping-cart me-2"></i> Add To Cart
+                                                    </a>
+
+                                                    <div class="d-flex justify-content-between align-items-center">
+                                                        <?= $ratingManager->render($product['rating']['average']); ?>
+                                                        <div class="d-flex">
+                                                            <a href="#" class="text-primary d-flex align-items-center justify-content-center me-3 product-share">
+                                                                <span class="rounded-circle btn-sm-square border">
+                                                                    <i class="fas fa-random"></i>
+                                                                </span>
+                                                            </a>
+                                                            <a href="#" class="text-primary d-flex align-items-center justify-content-center me-0 wishlist-add <?= $isLoggedIn ? 'wishlist-user' : 'wishlist-guest' ?>">
+                                                                <span class="rounded-circle btn-sm-square border">
+                                                                    <i class="fas fa-heart"></i>
+                                                                </span>
+                                                            </a>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                    <?php endforeach; ?>
+
+                                    <div class="col-12 wow fadeInUp pagination-row" data-wow-delay="0.1s">
+                                        <div class="pagination d-flex justify-content-center mt-5">
+                                            <!-- Previous button -->
+                                            <a href="<?= ($currentPage > 1) ? pageUrl($currentPage - 1, $baseUrl) : '#' ?>" class="rounded <?= ($currentPage <= 1) ? 'disabled' : '' ?>">&laquo;</a>
+
+                                            <!-- Page number links -->
+                                            <?php for ($page = 1; $page <= $totalPages; $page++): ?>
+                                                <a href="<?= pageUrl($page, $baseUrl) ?>" class="<?= ($page == $currentPage) ? 'active' : '' ?> rounded"><?= $page ?></a>
+                                            <?php endfor; ?>
+
+                                            <!-- Next button -->
+                                            <a href="<?= ($currentPage < $totalPages) ? pageUrl($currentPage + 1, $baseUrl) : '#' ?>" class="rounded <?= ($currentPage >= $totalPages) ? 'disabled' : '' ?>">&raquo;</a>
+                                        </div>
+                                    </div>
+
+                                    <?php else: ?>
+                                        <!-- No Product Available -->
+                                        <div class="d-flex justify-content-center align-items-center">
+                                            <p>No products available</p>
+                                        </div>
+
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                        <div id="tab-6" class="products tab-pane fade show p-0">
+                            <div class="row g-4 products-mini product-mini-main">
+                                <?php if (!empty($storeProducts['products'])): ?>
+                                    <!-- Display All Products -->
+                                    <?php foreach ($storeProducts['products'] as $product): ?>
+
+                                        <?php
+                                            // Pick the product's first media if it exists
+                                            $imageUrl = $product['media'][0]['media_url'] ?? null; 
+                                        ?>
+
+                                        <div class="col-lg-6 product-card card-main" data-id="<?= $product['product_id'] ?>">
+                                            <div class="products-mini-item border">
+                                                <div class="row g-0">
+                                                    <div class="col-5">
+                                                        <div class="products-mini-img border-end h-100">
+                                                            <img src="<?= htmlspecialchars($imageUrl) ?>" class="img-fluid w-100 h-100 product-image" alt="Product Image">
+                                                            <div class="products-mini-icon rounded-circle bg-primary">
+                                                                <a href="product-details?id=<?= $product['product_id'] ?>"><i class="fa fa-eye fa-1x text-white"></i></a>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-7">
+                                                        <div class="products-mini-content p-3">
+                                                            <a href="product-list?view=category&data=<?= htmlspecialchars($product['category']) ?>" class="d-block mb-2 product-category"><?= htmlspecialchars($product['category']) ?></a>
+                                                            <a href="product-details?id=<?= $product['product_id'] ?>" class="d-block h4 product-name"><?= htmlspecialchars($product['product_name']) ?></a>
+                                                            <del class="me-2 fs-5 price-slash"><?= $currencyManager->format((float)$product['slash_price'] ?? 0); ?></del>
+                                                            <span class="text-primary fs-5 price-tag"><?= $currencyManager->format((float)$product['product_price'] ?? 0); ?></span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="products-mini-add border p-3">
+                                                    <a href="#" class="btn btn-primary border-primary rounded-pill py-2 px-4 cart-add <?= $isLoggedIn ? 'cart-user' : 'cart-guest' ?>"><i class="fas fa-shopping-cart me-2"></i> Add To Cart</a>
+                                                    <div class="d-flex">
+                                                        <a href="#" class="text-primary d-flex align-items-center justify-content-center me-3 product-share">
+                                                            <span class="rounded-circle btn-sm-square border">
+                                                                <i class="fas fa-random"></i>
+                                                            </span>
+                                                        </a>
+                                                        <a href="#" class="text-primary d-flex align-items-center justify-content-center me-0 wishlist-add <?= $isLoggedIn ? 'wishlist-user' : 'wishlist-guest' ?>">
+                                                            <span class="rounded-circle btn-sm-square border">
+                                                                <i class="fas fa-heart"></i>
+                                                            </span>
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                    <?php endforeach; ?>
+                                
+                                    <div class="col-12 wow fadeInUp pagination-row" data-wow-delay="0.1s">
+                                        <div class="pagination d-flex justify-content-center mt-5">
+                                            <!-- Previous button -->
+                                            <a href="<?= ($currentPage > 1) ? pageUrl($currentPage - 1, $baseUrl) : '#' ?>" class="rounded <?= ($currentPage <= 1) ? 'disabled' : '' ?>">&laquo;</a>
+
+                                            <!-- Page number links -->
+                                            <?php for ($page = 1; $page <= $totalPages; $page++): ?>
+                                                <a href="<?= pageUrl($page, $baseUrl) ?>" class="<?= ($page == $currentPage) ? 'active' : '' ?> rounded"><?= $page ?></a>
+                                            <?php endfor; ?>
+
+                                            <!-- Next button -->
+                                            <a href="<?= ($currentPage < $totalPages) ? pageUrl($currentPage + 1, $baseUrl) : '#' ?>" class="rounded <?= ($currentPage >= $totalPages) ? 'disabled' : '' ?>">&raquo;</a>
+                                        </div>
+                                    </div>
+
+                                    <?php else: ?>
+                                        <!-- No Product Available -->
+                                        <div class="d-flex justify-content-center align-items-center">
+                                            <p>No products available</p>
+                                        </div>
+
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Shop Page End -->
+
+    <!-- Product Banner Start -->
+    <div class="container-fluid py-5">
+        <div class="container pb-5">
+            <div class="row g-4">
+                <div class="col-lg-6 wow fadeInLeft" data-wow-delay="0.1s">
+                    <a href="#">
+                        <div class="bg-primary rounded position-relative">
+                            <img src="assets/img/product-banner.jpg" class="img-fluid w-100 rounded" alt="">
+                            <div class="position-absolute top-0 start-0 w-100 h-100 d-flex flex-column justify-content-center rounded p-4" style="background: rgba(255, 255, 255, 0.5);">
+                                <h3 class="display-5 text-primary">EOS Rebel <br> <span>T7i Kit</span></h3>
+                                <p class="fs-4 text-muted"></p>
+                                <a href="#" class="btn btn-primary rounded-pill align-self-start py-2 px-4">Shop Now</a>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-lg-6 wow fadeInRight" data-wow-delay="0.2s">
+                    <a href="#">
+                        <div class="text-center bg-primary rounded position-relative">
+                            <img src="assets/img/product-banner-2.jpg" class="img-fluid w-100" alt="">
+                            <div class="position-absolute top-0 start-0 w-100 h-100 d-flex flex-column justify-content-center rounded p-4" style="background: rgba(242, 139, 0, 0.5);">
+                                <h2 class="display-2 text-secondary">SALE</h2>
+                                <h4 class="display-5 text-white mb-4">Get UP To 50% Off</h4>
+                                <a href="#" class="btn btn-primary rounded-pill align-self-center py-2 px-4">Shop Now</a>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Product Banner End -->
+
+    <!-- Include the footer section code file -->
+    <?php include_once 'includes/footer.php'; ?>
+
+    <!-- Add user defined scripts here -->
+</body>
+
+</html>

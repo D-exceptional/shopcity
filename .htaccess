@@ -1,0 +1,112 @@
+##############################################
+# MASTER .HTACCESS CONFIGURATION (v10)
+# Author: Okeke Chukwuebuka
+# Purpose: Secure, SEO-friendly & optimized app
+##############################################
+
+# -------------------------------------------------
+# Enable URL Rewriting
+# -------------------------------------------------
+RewriteEngine On
+
+# -------------------------------------------------
+# Rewrite Base
+# -------------------------------------------------
+RewriteBase /projects/showcase/shopcity/
+# Use "/" instead if deployed at root:
+
+# -----------------------------------------------------------------------
+# Force HTTPS and canonicalize host (optional -> Enable when launched)
+# -----------------------------------------------------------------------
+#RewriteCond %{HTTPS} !=on
+#RewriteCond %{HTTP_HOST} !localhost
+#RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# -----------------------------------------------------------------
+# Prevent Hotlinking (protect your images -> Enable when launched)
+# -----------------------------------------------------------------
+RewriteCond %{HTTP_REFERER} !^$
+RewriteCond %{HTTP_REFERER} !^https?://(www\.)?localhost/ [NC]
+RewriteCond %{HTTP_REFERER} !^https?://(www\.)?builds\.iceiy\.com/ [NC]  
+RewriteRule \.(jpg|jpeg|png|gif|svg|webp)$ - [F,NC,L]
+
+# -------------------------------------------------
+# Allow access to pages without .php or .html extensions
+# Works recursively (in all subfolders)
+# -------------------------------------------------
+# -- For PHP Files
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME}\.php -f
+RewriteRule ^([a-zA-Z0-9-/]+)$ $1.php [L]
+# -- For HTML Files
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME}\.html -f
+RewriteRule ^([a-zA-Z0-9-/]+)$ $1.html [L]
+
+# ------------------------------------------------------------------
+# Redirect all /api requests to public/index.php (locally & online)
+# ----------------------------------------------------------------
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^api/(.*)$ public/index.php [QSA,L]
+#RewriteRule ^api(/.*)?$ public/index.php [QSA,L]
+
+# ------------------------------------------------------------------
+# Redirect all /api requests to public/index.php (locally & online)
+# ----------------------------------------------------------------
+RewriteRule ^api(/.*)?$ public/index.php [QSA,L]
+
+# -------------------------------------------------------------------------------------------
+# Redirect non-existing .html/.php to public/index.php (Optional SPA Fallback)
+# Change to 404.php if you wish (Uncomment: 404 line, comment: public/index.php line)
+# --------------------------------------------------------------------------------------
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} \.(html|php)$ [NC]
+RewriteRule ^(.*)$ public/index.php [QSA,L]
+#RewriteRule ^.*$ /404.php [L]
+
+# -------------------------------------------------
+# Disable directory listing
+# -------------------------------------------------
+Options -Indexes
+
+# -------------------------------------------------
+# Block access to sensitive files
+# -------------------------------------------------
+RewriteCond %{REQUEST_URI} \.(env|inc|bak|sql|zip|tar|gz|log|config|ini|sh|bat|ps1)$ [NC]
+RewriteRule .* - [F,L]
+
+# -------------------------------------------------
+# Security Headers (Modern)
+# -------------------------------------------------
+<IfModule mod_headers.c>
+    Header set X-XSS-Protection "1; mode=block"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+    Header set X-Content-Type-Options "nosniff"
+    Header set Referrer-Policy "no-referrer-when-downgrade"
+    Header set Permissions-Policy "geolocation=(), microphone=(), camera=()"
+</IfModule>
+
+# -------------------------------------------------
+# Optional: Browser Caching for Static Assets
+# -------------------------------------------------
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType image/jpg "access plus 1 month"
+    ExpiresByType image/jpeg "access plus 1 month"
+    ExpiresByType image/png "access plus 1 month"
+    ExpiresByType image/gif "access plus 1 month"
+    ExpiresByType image/webp "access plus 1 month"
+    ExpiresByType text/css "access plus plus 30 minutes"
+    ExpiresByType text/javascript "access plus 5 minutes"
+    ExpiresByType application/javascript "access plus 5 minutes"
+    ExpiresByType font/woff2 "access plus 1 year"
+    ExpiresDefault "access plus 1 month"
+</IfModule>
+
+# -------------------------------------------------
+# Custom 404 Page
+# -------------------------------------------------
+ErrorDocument 404 /404.php
+
