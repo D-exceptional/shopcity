@@ -1,0 +1,45 @@
+{
+  "short_name": "ShopCity",
+  "name": "ShopCity",
+  "icons": [
+    {
+      "src": "/assets/img/icons-vector-1.svg",
+      "type": "image/svg+xml",
+      "sizes": "512x512"
+    },
+    {
+      "src": "/assets/img/icons-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/assets/img/icons-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "id": "?source=ShopCitypwa",
+  "scope": "/",
+  "start_url": "/?source=ShopCitypwa", 
+  "background_color": "#011F5B",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone", "minimal-ui", "browser"],
+  "theme_color": "#011F5B",
+  "shortcuts": [
+    {
+      "name": "ShopCity",
+      "short_name": "ShopCity",
+      "description": "Professional e-commerce platform",
+      "url": "/?source=ShopCitypwa",
+      "icons": [{ "src": "/assets/img/icons-512.png", "sizes": "512x512" }]
+    },
+    {
+      "name": "ShopCity",
+      "short_name": "ShopCity",
+      "description": "Professional e-commerce platform",
+      "url": "/?source=ShopCitypwa",
+      "icons": [{ "src": "/assets/img/icons-192.png", "sizes": "192x192" }]
+    }
+  ],
+  "description": "Professional e-commerce platform"
+}

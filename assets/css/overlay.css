@@ -1,0 +1,201 @@
+/*************************
+/ ** General Overlay Starts
+/*************************/
+.overlay {
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.92);
+    z-index: 500000;
+    position: fixed;
+    transform: translate(-50%, -50%);
+    top: 50%;
+    left: 50%;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.close-overlay {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    background: white;
+    color: red;
+    position: fixed;
+    top: 2%;
+    right: 2%;
+    font-size: 1.2em;
+    cursor: pointer;
+    z-index: 15000;
+}
+
+.overlay form label,
+.overlay form h3 
+{
+    color: #ffffff;
+}
+
+.overlay h3 {
+    padding: 0% 2%;
+}
+
+.overlay span {
+    color: white;
+    font-size: 1rem;
+}
+
+.overlay .form-group {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+}
+
+.overlay .form-text {
+    width: 25% !important;
+}
+
+.overlay .col-sm-10 {
+    width: 75% !important;
+}
+
+.overlay img {
+    width: 80%;
+    height: 90%;
+}
+/*************************
+/** General Overlay Ends
+/*************************/
+
+/*************************
+/ ** Commission Overlay Starts
+/*************************/
+.modal {
+    width: 100%;
+    height: auto;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 50000;
+    position: fixed;
+    transform: translate(-50%, -50%);
+    top: 50%;
+    left: 50%;
+    overflow: hidden;
+    transition: 0.5s;
+    padding: 8% 2%;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    border-radius: 20px;
+}
+
+.totals {
+    width: 90%;
+    height: 50px;
+    border-radius: 10px;
+    display: none;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    background: white;
+    font-size: 1.2em;
+    box-sizing: border-box;
+    padding: 0px 10px;
+}
+
+.sales-section {
+    margin-bottom: 10px;
+}
+
+.range-section {
+    width: 90%;
+    height: 85%;
+    border-radius: 10px;
+    background: white;
+    font-size: 1.2em;
+    padding: 3%;
+}
+
+.range-section input {
+    width: 100%;
+    height: 35px;
+    border-radius: 5px;
+    padding: 0% 1%;
+    position: relative;
+    margin-top: -3% !important;
+}
+
+.range-section p {
+    padding: 0.5%;
+}
+
+.range-section button {
+    width: 40%;
+    height: 40px;
+    border-radius: 5px;
+    outline: none;
+    border: none;
+    background: #181d38;
+    color: white;
+}
+
+.modal .info {
+    color: white;
+}
+
+.modal span {
+    font-weight: bolder;
+    position: relative;
+    right: 0;
+}
+
+/*************************
+/ ** Commission Overlay Ends
+/*************************/
+
+/* Extra small devices (phones, 600px and down) */
+@media screen and (max-width: 600px) {
+    /*.overlay img {
+        width: 80% !important;
+    }*/
+    .modal {
+        max-width: 100% !important;
+    }
+}
+
+/* Small devices (portrait tablets and large phones, 600px and up) */
+@media screen and (min-width: 600px) and (max-width: 992px) {
+    /*.overlay img {
+        width: 50% !important;
+    }*/
+    .modal {
+        max-width: 70% !important;
+    }
+}
+
+/* Medium devices (landscape tablets, 768px and up) */
+@media screen and (min-width: 768px) {
+    /*.overlay img {
+        width: 50% !important;
+    }*/
+    .modal {
+        max-width: 50% !important;
+    }
+}
+
+/* Large devices (laptops/desktops, 992px and up) */
+@media screen and (min-width: 992px) {
+    /*.overlay img {
+        width: 25% !important;
+    }*/
+    .modal {
+        max-width: 25% !important;
+    }
+}

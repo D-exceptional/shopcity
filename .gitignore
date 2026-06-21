@@ -1,0 +1,12 @@
+# ====================
+# Other Folder Rules
+# ====================
+attachments/
+uploads/
+vendor/
+node_modules/
+
+# ================================
+# Prevent env from uploading
+# ================================
+.env
