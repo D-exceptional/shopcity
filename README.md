@@ -46,7 +46,7 @@ https://builds.iceiy.com/shopcity
 - Ensured full responsiveness on mobile devices
 
 ## Local Setup Instructions
-1. Clone the repo: git clone https://github.com/d-exceptional/job-platform-demo.git
+1. Clone the repo: git clone https://github.com/d-exceptional/shopcity.git
 2. Create /.env and copy /.env.example to /.env
 3. Create the databse on PHPMyAdmin or its equivalent and import the SQL file in /database/(schema.sql) to setup the database locally and configure DB in /.env
 4. Sign up on Cloudinary and obtain your cloudinary account name and update in /assets/js/core/config.js on line 153
