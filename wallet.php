@@ -117,6 +117,6 @@
 
     <!-- Add user defined scripts here -->
     <script src="<?php echo $cacheManager->parse('assets/js/wallet.js'); ?>" type="module"></script>
+    
 </body>
-
 </html>

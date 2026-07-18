@@ -98,5 +98,6 @@
 
    <!-- Custom Scripts -->
    <script src="<?php echo $cacheManager->parse('scripts/coupon-create.js'); ?>" type="module"></script>
+   
 </body>
 </html>

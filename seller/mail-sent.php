@@ -9,7 +9,7 @@
   $mailModel = $container->get(\App\Models\Mail::class); 
 
   // Get counts
-  $totalInbox = $mailModel->countInbox($email);
+  $totalInbox  = $mailModel->countInbox($email);
   $totalOutbox = $mailModel->countOutbox($fullName);
 
   // Get requested page from the URL, default to 1
@@ -19,7 +19,7 @@
   $outboxMails = $mailModel->getOutbox($fullName, $page);
 
   // Get pagination values
-  $totalPages = $outboxMails['total_pages'];
+  $totalPages  = $outboxMails['total_pages'];
   $currentPage = $outboxMails['page'];
 
   // Base URL for pagination links — change this to your actual route or script
@@ -164,7 +164,7 @@
                         <!------ Dispplay Withdrawals ------>
                         <?php foreach ($outboxMails['mails'] as $mail): ?>
                           <?php
-                            $long = $mail['mail_message'] ?? '';
+                            $long  = $mail['mail_message'] ?? '';
                             $short = strlen($long) > 50 ? substr($long, 0, 50) . '...' : $long;
                             $media = isset($mail['mail_filename']) && $mail['mail_filename'] !== 'None' ? '<i class="fas fa-paperclip"></i>' : '';
                           ?>
@@ -190,10 +190,10 @@
                         <?php endforeach; ?>
 
                         <?php else: ?>
-                        <!-- No Withdrawal Available -->
-                        <tr>
-                          <td colspan="6" class='text-center'>No mails available</td>
-                        </tr>
+                          <!-- No Withdrawal Available -->
+                          <tr>
+                            <td colspan="6" class='text-center'>No mails available</td>
+                          </tr>
 
                       <?php endif; ?>
                     </tbody>  
@@ -213,11 +213,13 @@
       <!-- /.content -->
     </div>
     <!-- /.content-wrapper -->
+  </div>
 
-    <!-- Footer section -->
-    <?php include_once 'includes/footer.php'; ?>
+  <!-- Footer section -->
+  <?php include_once 'includes/footer.php'; ?>
 
   <!-- Custom Scripts -->
   <script src="<?php echo $cacheManager->parse('./scripts/mail.js'); ?>" type="module"></script>
+
 </body>
 </html>

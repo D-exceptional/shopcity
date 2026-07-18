@@ -134,5 +134,6 @@
   <?php include_once 'includes/footer.php'; ?>
 
   <script src="<?php echo $cacheManager->parse('./scripts/notifications.js'); ?>" type="module"></script>
+  
 </body>
 </html>

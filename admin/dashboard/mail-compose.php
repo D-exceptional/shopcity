@@ -139,148 +139,149 @@
       <!-- /.content -->
     </div>
     <!-- /.content-wrapper -->
+  </div>
 
-    <!-- Footer section -->
-    <?php include_once 'includes/footer.php'; ?>
+  <!-- Footer section -->
+  <?php include_once 'includes/footer.php'; ?>
 
-    <div class='mail-overlay'>
-      <div class='main-content'>
-        <div class='main-content-select'>
-            <div id='view-admins'>Admins</div>
-            <div id='view-customers'>Customers</div>
-            <div id='view-vendors'>Vendors</div>
-            <div class='main-content-close' id='close-modal'><i class='fa fa-times'></i></div>
+  <div class='mail-overlay'>
+    <div class='main-content'>
+      <div class='main-content-select'>
+          <div id='view-admins'>Admins</div>
+          <div id='view-customers'>Customers</div>
+          <div id='view-vendors'>Vendors</div>
+          <div class='main-content-close' id='close-modal'><i class='fa fa-times'></i></div>
+      </div>
+      <div class='main-content-header'>
+        <div class='main-content-header-text'>
+          Send to everyone
         </div>
-        <div class='main-content-header'>
-          <div class='main-content-header-text'>
-            Send to everyone
-          </div>
-          <div class='main-content-header-icon'>
-            <input type='checkbox' id='send-to-all'>
-          </div>
+        <div class='main-content-header-icon'>
+          <input type='checkbox' id='send-to-all'>
         </div>
-          <div class='main-content-view'>
-            <div class='main-content-inner'>
-              <div class='user-view' id='admin-section-view'>
-                  <div class='user-view-header'>
-                    <div class='user-view-header-text'>Admins Only</div>
-                    <div class='user-view-header-icon'>
-                      <input type='text' class="user-search" placeholder="Search admins...">
-                      <input type='checkbox' id='send-all-admin'>
+      </div>
+      <div class='main-content-view'>
+        <div class='main-content-inner'>
+          <div class='user-view' id='admin-section-view'>
+              <div class='user-view-header'>
+                <div class='user-view-header-text'>Admins Only</div>
+                <div class='user-view-header-icon'>
+                  <input type='text' class="user-search" placeholder="Search admins...">
+                  <input type='checkbox' id='send-all-admin'>
+                </div>
+              </div>
+            <div class='user-scroll' id='admin-section'>
+              <?php if (!empty($allAdmins)): ?>
+                <!------ Dispplay recipients ------>
+                <?php foreach ($allAdmins as $recipient): ?>
+                  <?php
+                    $recipientFullname = $recipient['firstname'] . ' ' . $recipient['lastname'];
+                    $displayAvatar = "../../assets/img/avatar.jpg";
+                  ?>
+
+                  <div class='user-card'>
+                    <div class='user-card-image' title='<?= $recipient['email'] ?>'>
+                      <img src='<?= $displayAvatar ?>' alt='admin-image'>
+                    </div>
+                    <div class='user-card-name'><?= $recipientFullname ?></div>
+                    <div class='user-card-select'>
+                      <input type='checkbox' class='add-user' id='<?= $recipient['user_id'] ?>' data-member='Admin'>
+                      <p class='email-address'><?= $recipient['email'] ?></p>
                     </div>
                   </div>
-                <div class='user-scroll' id='admin-section'>
-                  <?php if (!empty($allAdmins)): ?>
-                    <!------ Dispplay recipients ------>
-                    <?php foreach ($allAdmins as $recipient): ?>
-                      <?php
-                        $recipientFullname = $recipient['firstname'] . ' ' . $recipient['lastname'];
-                        $displayAvatar = "../../assets/img/avatar.jpg";
-                      ?>
 
-                      <div class='user-card'>
-                        <div class='user-card-image' title='<?= $recipient['email'] ?>'>
-                          <img src='<?= $displayAvatar ?>' alt='admin-image'>
-                        </div>
-                        <div class='user-card-name'><?= $recipientFullname ?></div>
-                        <div class='user-card-select'>
-                          <input type='checkbox' class='add-user' id='<?= $recipient['user_id'] ?>' data-member='Admin'>
-                          <p class='email-address'><?= $recipient['email'] ?></p>
-                        </div>
-                      </div>
+                <?php endforeach; ?>
 
-                    <?php endforeach; ?>
+                <?php else: ?>
+                <!-- No admin Available -->
+                <span class='text-center'>No admin available</span>
 
-                    <?php else: ?>
-                    <!-- No admin Available -->
-                    <span class='text-center'>No admin available</span>
-
-                  <?php endif; ?>
-                </div>
-              </div>
-
-              <div class='user-view' id='affiliate-section-view'>
-                <div class='user-view-header'>
-                    <div class='user-view-header-text'>Customers Only</div>
-                    <div class='user-view-header-icon'>
-                        <input type='text' class="user-search" placeholder="Search customers...">
-                        <input type='checkbox' id='send-all-affiliate'>
-                    </div>
-                  </div>
-                <div class='user-scroll' id='customer-section'>
-                  <?php if (!empty($allCustomers)): ?>
-                    <!------ Dispplay recipients ------>
-                    <?php foreach ($allCustomers as $recipient): ?>
-                      <?php
-                        $recipientFullname = $recipient['firstname'] . ' ' . $recipient['lastname'];
-                        $displayAvatar = "../../assets/img/avatar.jpg";
-                      ?>
-
-                      <div class='user-card'>
-                        <div class='user-card-image' title='<?= $recipient['email'] ?>'>
-                          <img src='<?= $displayAvatar ?>' alt='customer-image'>
-                        </div>
-                        <div class='user-card-name'><?= $recipientFullname ?></div>
-                        <div class='user-card-select'>
-                          <input type='checkbox' class='add-user' id='<?= $recipient['user_id'] ?>' data-member='Customer'>
-                          <p class='email-address'><?= $recipient['email'] ?></p>
-                        </div>
-                      </div>
-
-                    <?php endforeach; ?>
-
-                    <?php else: ?>
-                    <!-- No customer Available -->
-                    <span class='text-center'>No customer available</span>
-
-                  <?php endif; ?>
-                </div>
-              </div>
-
-              <div class='user-view' id='vendor-section-view'>
-                <div class='user-view-header'>
-                  <div class='user-view-header-text'>Vendors Only</div>
-                  <div class='user-view-header-icon'>
-                      <input type='text' class="user-search" placeholder="Search vendors...">
-                      <input type='checkbox' id='send-all-vendor'>
-                  </div>
-                </div>
-                <div class='user-scroll' id='vendor-section'>
-                  <?php if (!empty($allVendors)): ?>
-                    <!------ Dispplay recipients ------>
-                    <?php foreach ($allVendors as $recipient): ?>
-                      <?php
-                        $recipientFullname = $recipient['firstname'] . ' ' . $recipient['lastname'];
-                        $displayAvatar = "../../assets/img/avatar.jpg";
-                      ?>
-
-                      <div class='user-card'>
-                        <div class='user-card-image' title='<?= $recipient['email'] ?>'>
-                          <img src='<?= $displayAvatar ?>' alt='vendor-image'>
-                        </div>
-                        <div class='user-card-name'><?= $recipientFullname ?></div>
-                        <div class='user-card-select'>
-                          <input type='checkbox' class='add-user' id='<?= $recipient['user_id'] ?>' data-member='Vendor'>
-                          <p class='email-address'><?= $recipient['email'] ?></p>
-                        </div>
-                      </div>
-
-                    <?php endforeach; ?>
-
-                    <?php else: ?>
-                    <!-- No vendor Available -->
-                    <span class='text-center'>No vendor available</span>
-
-                  <?php endif; ?>
-                </div>
-              </div>
+              <?php endif; ?>
             </div>
           </div>
+
+          <div class='user-view' id='affiliate-section-view'>
+            <div class='user-view-header'>
+                <div class='user-view-header-text'>Customers Only</div>
+                <div class='user-view-header-icon'>
+                    <input type='text' class="user-search" placeholder="Search customers...">
+                    <input type='checkbox' id='send-all-affiliate'>
+                </div>
+              </div>
+            <div class='user-scroll' id='customer-section'>
+              <?php if (!empty($allCustomers)): ?>
+                <!------ Dispplay recipients ------>
+                <?php foreach ($allCustomers as $recipient): ?>
+                  <?php
+                    $recipientFullname = $recipient['firstname'] . ' ' . $recipient['lastname'];
+                    $displayAvatar = "../../assets/img/avatar.jpg";
+                  ?>
+
+                  <div class='user-card'>
+                    <div class='user-card-image' title='<?= $recipient['email'] ?>'>
+                      <img src='<?= $displayAvatar ?>' alt='customer-image'>
+                    </div>
+                    <div class='user-card-name'><?= $recipientFullname ?></div>
+                    <div class='user-card-select'>
+                      <input type='checkbox' class='add-user' id='<?= $recipient['user_id'] ?>' data-member='Customer'>
+                      <p class='email-address'><?= $recipient['email'] ?></p>
+                    </div>
+                  </div>
+
+                <?php endforeach; ?>
+
+                <?php else: ?>
+                <!-- No customer Available -->
+                <span class='text-center'>No customer available</span>
+
+              <?php endif; ?>
+            </div>
+          </div>
+
+          <div class='user-view' id='vendor-section-view'>
+            <div class='user-view-header'>
+              <div class='user-view-header-text'>Vendors Only</div>
+              <div class='user-view-header-icon'>
+                  <input type='text' class="user-search" placeholder="Search vendors...">
+                  <input type='checkbox' id='send-all-vendor'>
+              </div>
+            </div>
+            <div class='user-scroll' id='vendor-section'>
+              <?php if (!empty($allVendors)): ?>
+                <!------ Dispplay recipients ------>
+                <?php foreach ($allVendors as $recipient): ?>
+                  <?php
+                    $recipientFullname = $recipient['firstname'] . ' ' . $recipient['lastname'];
+                    $displayAvatar = "../../assets/img/avatar.jpg";
+                  ?>
+
+                  <div class='user-card'>
+                    <div class='user-card-image' title='<?= $recipient['email'] ?>'>
+                      <img src='<?= $displayAvatar ?>' alt='vendor-image'>
+                    </div>
+                    <div class='user-card-name'><?= $recipientFullname ?></div>
+                    <div class='user-card-select'>
+                      <input type='checkbox' class='add-user' id='<?= $recipient['user_id'] ?>' data-member='Vendor'>
+                      <p class='email-address'><?= $recipient['email'] ?></p>
+                    </div>
+                  </div>
+
+                <?php endforeach; ?>
+
+                <?php else: ?>
+                <!-- No vendor Available -->
+                <span class='text-center'>No vendor available</span>
+
+              <?php endif; ?>
+            </div>
+          </div>
+        </div>
       </div>
+    </div>
   </div>
-    
-    <!-- Summernote -->
-    <script src="../../assets/plugins/summernote/summernote-bs4.min.js"></script>
+  
+  <!-- Summernote -->
+  <script src="../../assets/plugins/summernote/summernote-bs4.min.js"></script>
 
   <!-- Page specific script -->
   <script>
@@ -292,5 +293,6 @@
 
   <!-- Custom Scripts -->
   <script src="<?php echo $cacheManager->parse('./scripts/mail-compose.js'); ?>" type='module'></script>
+
 </body>
 </html>

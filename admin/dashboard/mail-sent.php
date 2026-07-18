@@ -213,11 +213,13 @@
       <!-- /.content -->
     </div>
     <!-- /.content-wrapper -->
+  </div>
 
-    <!-- Footer section -->
-    <?php include_once 'includes/footer.php'; ?>
+  <!-- Footer section -->
+  <?php include_once 'includes/footer.php'; ?>
 
   <!-- Custom Scripts -->
   <script src="<?php echo $cacheManager->parse('./scripts/mail.js'); ?>" type="module"></script>
+  
 </body>
 </html>

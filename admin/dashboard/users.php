@@ -27,13 +27,13 @@
 <body class="hold-transition sidebar-mini">
 <!-- Site wrapper -->
 <div class="wrapper">
-    <!-- Navbar -->
-    <?php include_once 'includes/header.php'; ?>
-    <!-- /.navbar -->
+  <!-- Navbar -->
+  <?php include_once 'includes/header.php'; ?>
+  <!-- /.navbar -->
 
-    <!-- Main Sidebar Container -->
-    <?php include_once 'includes/sidebar.php'; ?>
-    <!-- / Main Sidebar Container -->
+  <!-- Main Sidebar Container -->
+  <?php include_once 'includes/sidebar.php'; ?>
+  <!-- / Main Sidebar Container -->
 
   <!-- Content Wrapper. Contains page content -->
   <div class="content-wrapper">

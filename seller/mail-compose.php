@@ -9,7 +9,7 @@
   $mailModel = $container->get(\App\Models\Mail::class); 
 
   // Get counts
-  $totalInbox = $mailModel->countInbox($email);
+  $totalInbox  = $mailModel->countInbox($email);
   $totalOutbox = $mailModel->countOutbox($fullName);
 ?>  
 
@@ -136,12 +136,13 @@
       <!-- /.content -->
     </div>
     <!-- /.content-wrapper -->
+  </div>
 
-    <!-- Footer section -->
-    <?php include_once 'includes/footer.php'; ?>
-    
-    <!-- Summernote -->
-    <script src="../assets/plugins/summernote/summernote-bs4.min.js"></script>
+  <!-- Footer section -->
+  <?php include_once 'includes/footer.php'; ?>
+  
+  <!-- Summernote -->
+  <script src="../assets/plugins/summernote/summernote-bs4.min.js"></script>
 
   <!-- Page specific script -->
   <script>
@@ -153,5 +154,6 @@
 
   <!-- Custom Scripts -->
   <script src="<?php echo $cacheManager->parse('./scripts/mail-compose.js'); ?>" type='module'></script>
+  
 </body>
 </html>

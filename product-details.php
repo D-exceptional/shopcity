@@ -153,7 +153,7 @@
                                     if ($isDevelopment) {
                                         // Random demo slides
                                         $randomImages = [];
-                                        $imageCount = rand(2, 5);
+                                        $imageCount   = rand(2, 5);
                                         for ($i = 0; $i < $imageCount; $i++) {
                                             $randomImages[] = $fallbackImages[array_rand($fallbackImages)];
                                         }
@@ -426,5 +426,4 @@
 
     <!-- Add user defined scripts here -->
 </body>
-
 </html>

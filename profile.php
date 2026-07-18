@@ -128,6 +128,6 @@
 
     <!-- Add user defined scripts here -->
     <script src="<?php echo $cacheManager->parse('assets/js/profile.js'); ?>" type="module"></script>
-</body>
 
+</body>
 </html>

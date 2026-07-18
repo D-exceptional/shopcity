@@ -119,5 +119,6 @@
 
    <!-- Custom Scripts -->
    <script src="<?php echo $cacheManager->parse('./scripts/store-create.js'); ?>" type="module"></script>
+   
 </body>
 </html>

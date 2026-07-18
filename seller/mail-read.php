@@ -125,88 +125,91 @@
                       $filename  = $mailDetails['mail_filename'] ?? 'None';
                       $extension = strtolower($mailDetails['mail_extension'] ?? 'None');
                       $filePath  = $filename ? "../../attachments/" . $filename : '';
-                      ?>
+                    ?>
                       
-                      <div class="card-footer bg-white">
-                        <ul class="mailbox-attachments d-flex align-items-stretch clearfix">
-                          <?php if ($filename !== 'None'): 
-                              // choose rendering based on extension
-                              if ($extension === 'pdf'): ?>
-                                <li>
-                                  <span class="mailbox-attachment-icon"><i class="far fa-file-pdf"></i></span>
-                                  <div class="mailbox-attachment-info">
-                                    <a href="<?= $filePath ?>" class="mailbox-attachment-name">
-                                      <i class="fas fa-paperclip"></i> <?= $filename ?>
+                    <div class="card-footer bg-white">
+                      <ul class="mailbox-attachments d-flex align-items-stretch clearfix">
+                        <?php if ($filename !== 'None'): 
+                            // choose rendering based on extension
+                            if ($extension === 'pdf'): ?>
+                              <li>
+                                <span class="mailbox-attachment-icon"><i class="far fa-file-pdf"></i></span>
+                                <div class="mailbox-attachment-info">
+                                  <a href="<?= $filePath ?>" class="mailbox-attachment-name">
+                                    <i class="fas fa-paperclip"></i> <?= $filename ?>
+                                  </a>
+                                  <span class="mailbox-attachment-size clearfix mt-1">
+                                    <a href="<?= $filePath ?>" class="btn btn-default btn-sm float-right" download>
+                                      <i class="fas fa-cloud-download-alt"></i>
                                     </a>
-                                    <span class="mailbox-attachment-size clearfix mt-1">
-                                      <a href="<?= $filePath ?>" class="btn btn-default btn-sm float-right" download>
-                                        <i class="fas fa-cloud-download-alt"></i>
-                                      </a>
-                                    </span>
-                                  </div>
-                                </li>
+                                  </span>
+                                </div>
+                              </li>
 
-                              <?php elseif ($extension === 'docx'): ?>
-                                <li>
-                                  <span class="mailbox-attachment-icon"><i class="far fa-file-word"></i></span>
-                                  <div class="mailbox-attachment-info">
-                                    <a href="<?= $filePath ?>" class="mailbox-attachment-name">
-                                      <i class="fas fa-paperclip"></i> <?= $filename ?>
+                            <?php elseif ($extension === 'docx'): ?>
+                              <li>
+                                <span class="mailbox-attachment-icon"><i class="far fa-file-word"></i></span>
+                                <div class="mailbox-attachment-info">
+                                  <a href="<?= $filePath ?>" class="mailbox-attachment-name">
+                                    <i class="fas fa-paperclip"></i> <?= $filename ?>
+                                  </a>
+                                  <span class="mailbox-attachment-size clearfix mt-1">
+                                    <a href="<?= $filePath ?>" class="btn btn-default btn-sm float-right" download>
+                                      <i class="fas fa-cloud-download-alt"></i>
                                     </a>
-                                    <span class="mailbox-attachment-size clearfix mt-1">
-                                      <a href="<?= $filePath ?>" class="btn btn-default btn-sm float-right" download>
-                                        <i class="fas fa-cloud-download-alt"></i>
-                                      </a>
-                                    </span>
-                                  </div>
-                                </li>
-
-                              <?php elseif (in_array($extension, ['jpg', 'jpeg', 'png'])): ?>
-                                <li>
-                                  <span class="mailbox-attachment-icon has-img">
-                                    <img src="<?= $filePath ?>" alt="Image">
                                   </span>
-                                  <div class="mailbox-attachment-info">
-                                    <a href="#" class="mailbox-attachment-name"><i class="fas fa-camera"></i> <?= $filename ?></a>
-                                    <span class="mailbox-attachment-size clearfix mt-1">
-                                      <a href="<?= $filePath ?>" class="btn btn-default btn-sm float-right" download>
-                                        <i class="fas fa-cloud-download-alt"></i>
-                                      </a>
-                                    </span>
-                                  </div>
-                                </li>
+                                </div>
+                              </li>
 
-                              <?php elseif ($extension === 'mp4'): ?>
-                                <li>
-                                  <span class="mailbox-attachment-icon has-img">
-                                    <video src="<?= $filePath ?>" controls style="max-height: 133px;"></video>
+                            <?php elseif (in_array($extension, ['jpg', 'jpeg', 'png'])): ?>
+                              <li>
+                                <span class="mailbox-attachment-icon has-img">
+                                  <img src="<?= $filePath ?>" alt="Image">
+                                </span>
+                                <div class="mailbox-attachment-info">
+                                  <a href="#" class="mailbox-attachment-name"><i class="fas fa-camera"></i> <?= $filename ?></a>
+                                  <span class="mailbox-attachment-size clearfix mt-1">
+                                    <a href="<?= $filePath ?>" class="btn btn-default btn-sm float-right" download>
+                                      <i class="fas fa-cloud-download-alt"></i>
+                                    </a>
                                   </span>
-                                  <div class="mailbox-attachment-info">
-                                    <a href="#" class="mailbox-attachment-name"><i class="fas fa-video"></i> <?= $filename ?></a>
-                                    <span class="mailbox-attachment-size clearfix mt-1">
-                                      <a href="<?= $filePath ?>" class="btn btn-default btn-sm float-right" download>
-                                        <i class="fas fa-cloud-download-alt"></i>
-                                      </a>
-                                    </span>
-                                  </div>
-                                </li>
+                                </div>
+                              </li>
 
-                              <?php else: // unknown extension ?>
-                                <li>
-                                  <span class="mailbox-attachment-icon"><i class="far fa-file"></i></span>
-                                  <div class="mailbox-attachment-info">
-                                    <a href="<?= $filePath ?>" class="mailbox-attachment-name"><?= $filename ?></a>
-                                    <span class="mailbox-attachment-size clearfix mt-1">
-                                      <a href="<?= $filePath ?>" class="btn btn-default btn-sm float-right" download>
-                                        <i class="fas fa-cloud-download-alt"></i>
-                                      </a>
-                                    </span>
-                                  </div>
-                                </li>
-                              <?php endif; ?>
-                          <?php else: ?>
-                            <li><h6>No attachment available for this email</h6></li>
-                          <?php endif; ?>
+                            <?php elseif ($extension === 'mp4'): ?>
+                              <li>
+                                <span class="mailbox-attachment-icon has-img">
+                                  <video src="<?= $filePath ?>" controls style="max-height: 133px;"></video>
+                                </span>
+                                <div class="mailbox-attachment-info">
+                                  <a href="#" class="mailbox-attachment-name"><i class="fas fa-video"></i> <?= $filename ?></a>
+                                  <span class="mailbox-attachment-size clearfix mt-1">
+                                    <a href="<?= $filePath ?>" class="btn btn-default btn-sm float-right" download>
+                                      <i class="fas fa-cloud-download-alt"></i>
+                                    </a>
+                                  </span>
+                                </div>
+                              </li>
+
+                            <?php else: // unknown extension ?>
+                              <li>
+                                <span class="mailbox-attachment-icon"><i class="far fa-file"></i></span>
+                                <div class="mailbox-attachment-info">
+                                  <a href="<?= $filePath ?>" class="mailbox-attachment-name"><?= $filename ?></a>
+                                  <span class="mailbox-attachment-size clearfix mt-1">
+                                    <a href="<?= $filePath ?>" class="btn btn-default btn-sm float-right" download>
+                                      <i class="fas fa-cloud-download-alt"></i>
+                                    </a>
+                                  </span>
+                                </div>
+                              </li>
+                            <?php endif; ?>
+                        <?php else: ?>
+                          <li><h6>No attachment available for this email</h6></li>
+                        <?php endif; ?>
+                      </ul>
+                    </div>
+
                   </ul>
                 </div>
 
