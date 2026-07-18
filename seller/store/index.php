@@ -14,11 +14,11 @@
   $storeId = isset($_GET['id']) && is_numeric($_GET['id']) ? (int)$_GET['id'] : null;
 
   // Get combined sales stats
-  $storeOrderStats = $orderModel->getVendorStoreStats($userId, $storeId);
-  $activeProducts = $productModel->countProductsByType(null, $storeId, 'Visible', 'vendor');
-  $pendingProducts = $productModel->countProductsByType(null, $storeId, 'Hidden', 'vendor');
+  $storeOrderStats   = $orderModel->getVendorStoreStats($userId, $storeId);
+  $activeProducts    = $productModel->countProductsByType(null, $storeId, 'Visible', 'vendor');
+  $pendingProducts   = $productModel->countProductsByType(null, $storeId, 'Hidden', 'vendor');
   $storeReviewsStats = $productModel->countReviewsByVendor($userId, $storeId);
-  $storeCouponStats = $storeModel->getStoreCouponStats($storeId);
+  $storeCouponStats  = $storeModel->getStoreCouponStats($storeId);
 
   // Get store details
   require_once 'includes/setup.php';

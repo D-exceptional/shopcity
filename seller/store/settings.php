@@ -12,7 +12,7 @@
   $storeId = isset($_GET['id']) && is_numeric($_GET['id']) ? (int)$_GET['id'] : null;
 
   // Get combined sales stats
-  $storeDetails   = $storeModel->findOne($storeId);
+  $storeDetails = $storeModel->findOne($storeId);
 
   // Get store details
   require_once 'includes/setup.php';
@@ -195,5 +195,6 @@
   <script src="<?php echo $cacheManager->parse('scripts/details.js'); ?>" type='module'></script>
   <script src="<?php echo $cacheManager->parse('scripts/profile.js'); ?>" type='module'></script>
   <script src="<?php echo $cacheManager->parse('scripts/socials.js'); ?>" type='module'></script>
+  
 </body>
 </html>

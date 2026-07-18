@@ -85,42 +85,42 @@
                 </tr>
               </thead>
               <tbody>
-                 <?php if (!empty($storeList)): ?>
-                    <!------ Dispplay Stores ------>
-                    <?php foreach ($storeList as $store): ?>
+                <?php if (!empty($storeList)): ?>
+                  <!------ Dispplay Stores ------>
+                  <?php foreach ($storeList as $store): ?>
 
-                      <tr class='content-row' data-id='<?=$store['store_id'] ?>'>
-                        <td>#</td>
-                        <td><?= $store['store_name'] ?></td>
-                        <td>
-                          <img src='<?= $store['store_avatar'] ?? '../assets/img/avatar.jpg' ?>' class='profile-user-img img-fluid hmg-100 border-radius-10' alt='Store Image'>
-                        </td>
-                        <td class='status'>
-                          <button class='btn <?= ($store['store_status'] === 'Active') ? 'btn-success' : 'btn-danger' ?> btn-sm'>
-                            <?= $store['store_status'] ?>
-                          </button> 
-                        </td>
-                        <td><?= $store['created_at'] ?></td>
-                        <td><?= mb_substr($store['facebook'] ?? 'Not set', 0, 17) . '...' ?></td>
-                        <td><?= mb_substr($store['instagram'] ?? 'Not set', 0, 17) . '...' ?></td>
-                        <td><?= mb_substr($store['tiktok'] ?? 'Not set', 0, 17) . '...' ?></td>
-                        <td><?= mb_substr($store['twitter'] ?? 'Not set', 0, 17) . '...' ?></td>
-                        <td class='action' style="display: flex; gap: 10px;">
-                          <?= ($store['store_status'] === 'Active') 
-                          ? "<button class='btn bg-primary color-white btn-sm btn-action w-150'>Deactivate</button>" 
-                          : "<button class='btn bg-primary color-white btn-sm btn-action w-150'>Activate</button>"
-                          ?>
-                        </td>
-                      </tr>
-
-                    <?php endforeach; ?>
-
-                    <?php else: ?>
-                    <tr>
-                      <td colspan="11" class='text-center'>No store available</td>
+                    <tr class='content-row' data-id='<?=$store['store_id'] ?>'>
+                      <td>#</td>
+                      <td><?= $store['store_name'] ?></td>
+                      <td>
+                        <img src='<?= $store['store_avatar'] ?? '../assets/img/avatar.jpg' ?>' class='profile-user-img img-fluid hmg-100 border-radius-10' alt='Store Image'>
+                      </td>
+                      <td class='status'>
+                        <button class='btn <?= ($store['store_status'] === 'Active') ? 'btn-success' : 'btn-danger' ?> btn-sm'>
+                          <?= $store['store_status'] ?>
+                        </button> 
+                      </td>
+                      <td><?= $store['created_at'] ?></td>
+                      <td><?= mb_substr($store['facebook'] ?? 'Not set', 0, 17) . '...' ?></td>
+                      <td><?= mb_substr($store['instagram'] ?? 'Not set', 0, 17) . '...' ?></td>
+                      <td><?= mb_substr($store['tiktok'] ?? 'Not set', 0, 17) . '...' ?></td>
+                      <td><?= mb_substr($store['twitter'] ?? 'Not set', 0, 17) . '...' ?></td>
+                      <td class='action' style="display: flex; gap: 10px;">
+                        <?= ($store['store_status'] === 'Active') 
+                        ? "<button class='btn bg-primary color-white btn-sm btn-action w-150'>Deactivate</button>" 
+                        : "<button class='btn bg-primary color-white btn-sm btn-action w-150'>Activate</button>"
+                        ?>
+                      </td>
                     </tr>
 
-                  <?php endif; ?>
+                  <?php endforeach; ?>
+
+                  <?php else: ?>
+                  <tr>
+                    <td colspan="11" class='text-center'>No store available</td>
+                  </tr>
+
+                <?php endif; ?>
               </tbody>
             </table>
           </div>

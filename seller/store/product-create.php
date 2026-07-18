@@ -163,5 +163,6 @@
    <!-- Custom Scripts -->
    <script src="https://widget.cloudinary.com/v2.0/global/all.js"></script>
    <script src="<?php echo $cacheManager->parse('scripts/product-create.js'); ?>" type="module"></script>
+   
 </body>
 </html>

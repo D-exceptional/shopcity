@@ -100,5 +100,4 @@
     <script src="<?php echo $cacheManager->parse('assets/js/login.js'); ?>" type="module"></script>
 
 </body>
-
 </html>

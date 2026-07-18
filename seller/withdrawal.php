@@ -9,9 +9,9 @@
   $walletModel = $container->get(\App\Models\Wallet::class); 
 
   // Get combined sales stats
-  $withdrawals = $walletModel->getPaymentsByUser(WITHDRAWAL_TABLE, $userId);
+  $withdrawals   = $walletModel->getPaymentsByUser(WITHDRAWAL_TABLE, $userId);
   $walletBalance = $walletModel->getBalance(PAYOUT_WALLET, $userId);
-  $bankDetails = $walletModel->getBankDetails($userId);
+  $bankDetails   = $walletModel->getBankDetails($userId);
 ?>
 
 <!DOCTYPE html>
@@ -68,17 +68,17 @@
           <div class="card-body p-0 overlow-x-auto white-space-normal">
             <table class="table table-striped projects">
                 <thead>
-                    <tr>
-                        <th>SN</th>
-                        <th>Amount</th>
-                        <th>Bank</th>
-                        <th>Account</th>
-                        <th>Reference</th>
-                        <th>Description</th>
-                        <th>Status</th>
-                        <th>Date</th>
-                        <th>Actions</th>
-                    </tr>
+                  <tr>
+                    <th>SN</th>
+                    <th>Amount</th>
+                    <th>Bank</th>
+                    <th>Account</th>
+                    <th>Reference</th>
+                    <th>Description</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                    <th>Actions</th>
+                  </tr>
                 </thead>
                 <tbody>
                   <?php if (!empty($withdrawals)): ?>

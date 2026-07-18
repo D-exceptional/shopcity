@@ -152,6 +152,6 @@
 
     <!-- Add user defined scripts here -->
     <script src="<?php echo $cacheManager->parse('assets/js/contact.js'); ?>" type="module"></script>
-</body>
 
+</body>
 </html>

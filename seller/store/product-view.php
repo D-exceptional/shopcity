@@ -175,7 +175,7 @@
         <div class='close-overlay'>
             <i class='fa fa-times' aria-hidden='true'></i>
         </div>
-  </div>
+    </div>
 
     <!-- Page specific script -->
     <script>
@@ -187,5 +187,6 @@
 
    <!-- Custom Scripts -->
    <script src="<?php echo $cacheManager->parse('scripts/product-details.js'); ?>" type="module"></script>
+   
 </body>
 </html>

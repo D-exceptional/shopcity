@@ -114,7 +114,7 @@
                                 <a href="shop?id=<?= $store['store_id'] ?>" class="d-block h4"><?= htmlspecialchars($store['store_name']) ?></a>
                                 <span class="text-muted font-normal">
                                     <?php
-                                        $desc = strip_tags($store['store_description'] ?? ''); // Remove HTML tags just in case
+                                        $desc      = strip_tags($store['store_description'] ?? ''); // Remove HTML tags just in case
                                         $shortDesc = mb_substr($desc, 0, 100); // Get first 100 characters safely (supports UTF-8)
                                         if (mb_strlen($desc) > 100) {
                                             $shortDesc .= '...';
@@ -211,5 +211,4 @@
 
     <!-- Add user defined scripts here -->
 </body>
-
 </html>

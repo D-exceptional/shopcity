@@ -70,43 +70,43 @@
           </div>
           <div class="card-body p-0 overlow-x-auto white-space-normal">
             <table class="table table-striped projects">
-                <thead>
-                    <tr>
-                        <th>SN</th>
-                        <th>Current Balance</th>
-                        <th>Total Balance</th>
-                        <th>Savings Balance</th>
-                        <th>Pending Payout</th>
-                        <th>Total Payout</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                  <?php if ($isLoggedIn): ?>
-                    <!------ Dispplay earnings ------>
-                      <tr>
-                          <td>#</td>
-                          <td><?= $ratingManager->format((float)$walletStats['current_balance'] / BASE_CONVERSION_RATE ?? 0); ?> Coins</td>
-                          <td><?= $ratingManager->format((float)$walletStats['total_balance'] / BASE_CONVERSION_RATE ?? 0); ?> Coins</td>
-                          <td><?= $ratingManager->format((float)$walletStats['savings_balance'] / BASE_CONVERSION_RATE ?? 0); ?> Coins</td>
-                          <td><?= $ratingManager->format((float)$walletStats['pending_payout'] / BASE_CONVERSION_RATE ?? 0); ?> Coins</td>
-                          <td><?= $ratingManager->format((float)$walletStats['total_payout'] / BASE_CONVERSION_RATE ?? 0); ?> Coins</td>
-                          <td>
-                              <button class='btn btn-info btn-sm'>
-                              View
-                              </button> 
-                          </td>
-                      </tr>
+              <thead>
+              <tr>
+                <th>SN</th>
+                <th>Current Balance</th>
+                <th>Total Balance</th>
+                <th>Savings Balance</th>
+                <th>Pending Payout</th>
+                <th>Total Payout</th>
+                <th>Actions</th>
+              </tr>
+              </thead>
+              <tbody>
+                <?php if ($isLoggedIn): ?>
+                  <!------ Dispplay earnings ------>
+                  <tr>
+                    <td>#</td>
+                    <td><?= $ratingManager->format((float)$walletStats['current_balance'] / BASE_CONVERSION_RATE ?? 0); ?> Coins</td>
+                    <td><?= $ratingManager->format((float)$walletStats['total_balance'] / BASE_CONVERSION_RATE ?? 0); ?> Coins</td>
+                    <td><?= $ratingManager->format((float)$walletStats['savings_balance'] / BASE_CONVERSION_RATE ?? 0); ?> Coins</td>
+                    <td><?= $ratingManager->format((float)$walletStats['pending_payout'] / BASE_CONVERSION_RATE ?? 0); ?> Coins</td>
+                    <td><?= $ratingManager->format((float)$walletStats['total_payout'] / BASE_CONVERSION_RATE ?? 0); ?> Coins</td>
+                    <td>
+                        <button class='btn btn-info btn-sm'>
+                        View
+                        </button> 
+                    </td>
+                  </tr>
 
-                    <?php else: ?>
+                  <?php else: ?>
                     <!-- No Login Detected -->
                     <tr>
                       <td colspan="8" class='text-center'>Login to view earning details</td>
                     </tr>
 
-                  <?php endif; ?>
-    
-                </tbody>
+                <?php endif; ?>
+  
+              </tbody>
             </table>
           </div>
           <!-- /.card-body -->

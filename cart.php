@@ -191,6 +191,6 @@
 
     <!-- Add user defined scripts here -->
     <script src="<?php echo $cacheManager->parse('assets/js/cart.js'); ?>" type="module"></script>
-</body>
 
+</body>
 </html>

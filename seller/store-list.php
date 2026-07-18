@@ -10,7 +10,7 @@
 
   // Get combined sales stats
   $storeStats = $storeModel->getVendorStoreStats($userId);
-  $storeList = $storeModel->findStoresByUser($userId);
+  $storeList  = $storeModel->findStoresByUser($userId);
 ?>
 
 <!DOCTYPE html>
@@ -81,42 +81,42 @@
                 </tr>
               </thead>
               <tbody>
-                 <?php if (!empty($storeList)): ?>
-                    <!------ Dispplay Stores ------>
-                    <?php foreach ($storeList as $store): ?>
+                <?php if (!empty($storeList)): ?>
+                  <!------ Dispplay Stores ------>
+                  <?php foreach ($storeList as $store): ?>
 
-                      <tr data-id='<?=$store['store_id'] ?>'>
-                        <td>#</td>
-                        <td><?= $store['store_name'] ?></td>
-                        <td>
-                          <img src='<?= $store['store_avatar'] ?? '../assets/img/avatar.jpg' ?>' class='profile-user-img img-fluid img-circle wmg-100 h-100' alt='Store Image'>
-                        </td>
-                        <td>
-                          <button class='btn <?= ($store['store_status'] === 'Active') ? 'btn-success' : 'btn-danger' ?> btn-sm'>
-                            <?= $store['store_status'] ?>
-                          </button> 
-                        </td>
-                        <td><?= $store['created_at'] ?></td>
-                        <td><?= mb_substr($store['facebook'] ?? 'Not set', 0, 17) . '...' ?></td>
-                        <td><?= mb_substr($store['instagram'] ?? 'Not set', 0, 17) . '...' ?></td>
-                        <td><?= mb_substr($store['tiktok'] ?? 'Not set', 0, 17) . '...' ?></td>
-                        <td><?= mb_substr($store['twitter'] ?? 'Not set', 0, 17) . '...' ?></td>
-                        <td>
-                          <div style="display: flex; gap: 10px;">
-                            <button class='btn <?= ($store['store_status'] !== 'Active') ? 'btn-disabled' : 'btn-info' ?> btn-sm btn-view wmg-70'>View</button> 
-                            <button class='btn <?= ($store['store_status'] !== 'Active') ? 'btn-disabled' : 'btn-info' ?> btn-sm btn-link wmg-100'>Copy Link</button> 
-                          </div>
-                        </td>
-                      </tr>
+                    <tr data-id='<?=$store['store_id'] ?>'>
+                      <td>#</td>
+                      <td><?= $store['store_name'] ?></td>
+                      <td>
+                        <img src='<?= $store['store_avatar'] ?? '../assets/img/avatar.jpg' ?>' class='profile-user-img img-fluid img-circle wmg-100 h-100' alt='Store Image'>
+                      </td>
+                      <td>
+                        <button class='btn <?= ($store['store_status'] === 'Active') ? 'btn-success' : 'btn-danger' ?> btn-sm'>
+                          <?= $store['store_status'] ?>
+                        </button> 
+                      </td>
+                      <td><?= $store['created_at'] ?></td>
+                      <td><?= mb_substr($store['facebook'] ?? 'Not set', 0, 17) . '...' ?></td>
+                      <td><?= mb_substr($store['instagram'] ?? 'Not set', 0, 17) . '...' ?></td>
+                      <td><?= mb_substr($store['tiktok'] ?? 'Not set', 0, 17) . '...' ?></td>
+                      <td><?= mb_substr($store['twitter'] ?? 'Not set', 0, 17) . '...' ?></td>
+                      <td>
+                        <div style="display: flex; gap: 10px;">
+                          <button class='btn <?= ($store['store_status'] !== 'Active') ? 'btn-disabled' : 'btn-info' ?> btn-sm btn-view wmg-70'>View</button> 
+                          <button class='btn <?= ($store['store_status'] !== 'Active') ? 'btn-disabled' : 'btn-info' ?> btn-sm btn-link wmg-100'>Copy Link</button> 
+                        </div>
+                      </td>
+                    </tr>
 
-                    <?php endforeach; ?>
+                  <?php endforeach; ?>
 
-                    <?php else: ?>
+                  <?php else: ?>
                     <tr>
                       <td colspan="11" class='text-center'>No store available</td>
                     </tr>
 
-                  <?php endif; ?>
+                <?php endif; ?>
               </tbody>
             </table>
           </div>

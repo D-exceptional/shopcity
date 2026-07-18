@@ -300,5 +300,6 @@
   <script src="<?php echo $cacheManager->parse('./scripts/bank.js'); ?>" type='module'></script>
   <script src="<?php echo $cacheManager->parse('./scripts/socials.js'); ?>" type='module'></script>
   <script src="<?php echo $cacheManager->parse('./scripts/security.js'); ?>" type='module'></script>
+  
 </body>
 </html>

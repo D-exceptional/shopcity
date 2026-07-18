@@ -15,7 +15,7 @@
     $orderList = $isLoggedIn ? $orderModel->getUserOrders($userId, $page) : [];
 
     // Pagination parameters
-    $totalPages = $orderList['total_pages'] ?? 1;
+    $totalPages  = $orderList['total_pages'] ?? 1;
     $currentPage = $orderList['page'] ?? 1;
     $baseUrl     = "orders?view=user";
 ?>
@@ -162,5 +162,4 @@
 
     <!-- Add user defined scripts here -->
 </body>
-
 </html>

@@ -3,7 +3,7 @@
     require_once __DIR__ . '/includes/init.php';
 
     // Get User Type
-    $param = isset($_GET['type']) && is_string($_GET['type']) ? $_GET['type'] : 'customer';
+    $param    = isset($_GET['type']) && is_string($_GET['type']) ? $_GET['type'] : 'customer';
     $userType = trim(ucfirst($param));
 ?>
 
@@ -122,6 +122,6 @@
 
     <!-- Add user defined scripts here -->
     <script src="<?php echo $cacheManager->parse('assets/js/register.js'); ?>" type="module"></script>
-</body>
 
+</body>
 </html>

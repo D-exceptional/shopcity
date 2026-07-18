@@ -6,7 +6,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <title>Admin| Update Password</title>
+  <title>Admin | Update Password</title>
   <?php include_once 'includes/head.php'; ?>
 </head>
 <body class="hold-transition login-page">
