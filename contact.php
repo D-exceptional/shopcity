@@ -85,7 +85,7 @@
                     <div class="col-lg-5 wow fadeInUp" data-wow-delay="0.2s">
                         <div class="h-100 rounded">
                             <iframe class="rounded w-100" style="height: 100%;"
-                                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d78518.6344471355!2d5.6269505!3d6.3380223!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x1042a0c4fd8c610d%3A0xc3a19ccbe636258c!2sBenin%20City%2C%20Edo%20State%2C%20Nigeria!5e0!3m2!1sen!2sng!4v1697520000000!5m2!1sen!2sng"
+                                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d32672871.50406597!2d-8.951156889854603!3d1.5344267001722196!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x10a06c0a948cf5d5%3A0x108270c99e90f0b3!2sAfrica!5e0!3m2!1sen!2sng!4v1768333546384!5m2!1sen!2sng"
                                 loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
                         </div>
                     </div>
