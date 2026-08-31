@@ -1,82 +1,98 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services;
 
-use App\Helpers\ResponseManager;
+use App\Core\Result;
 use App\Models\Cart;
 
 class CartService
 {
-    protected ResponseManager $response;
-    protected Cart $cartModel;
+    public function __construct(
+        protected Result $result, 
+        protected Cart $cartModel
+    ) {}
 
-    public function __construct(ResponseManager $response, Cart $cartModel)
-    {
-        $this->response  = $response;
-        // Required model for this controller class
-        $this->cartModel = $cartModel;
-    }
+    public function view(
+        int $userId
+    ): Result {
 
-    public function view(int $userId): array
-    {
         $cart = $this->cartModel->view($userId);
 
-        // Empty cart is NOT an error
-        return $this->response->success('Cart fetched', ['cart' => $cart]);
+        return $this->result->success('Cart fetched', ['cart' => $cart]);
     }
 
-    public function add(int $userId, int $productId, int $quantity): array
-    {
+    public function add(
+        int $productId, 
+        int $quantity,
+        int $userId
+    ): Result {
+
         if ($quantity <= 0) {
-            return $this->response->fail('Quantity must be greater than zero', 422);
+            return $this->result->error('Quantity must be greater than zero', 422);
         }
 
-        $added = $this->cartModel->add($userId, $productId, $quantity);
+        $added = $this->cartModel->add($productId, $quantity, $userId);
         if ($added === false) {
-            return $this->response->fail('Failed to add item', 500);
+            return $this->result->error('Failed to add item', 500);
         }
 
         $count = $this->cartModel->countCart($userId);
-        return $this->response->success('Item added to cart', ['count' => $count]);
+
+        return $this->result->success('Item added to cart', ['count' => $count]);
     }
 
-    public function update(int $userId, int $productId, int $quantity): array
-    {
+    public function update(
+        int $productId, 
+        int $quantity,
+        int $userId
+    ): Result {
+
         if ($quantity <= 0) {
-            return $this->response->fail('Quantity must be greater than zero', 422);
+            return $this->result->error('Quantity must be greater than zero', 422);
         }
 
-        $updated = $this->cartModel->update($userId, $productId, $quantity);
+        $updated = $this->cartModel->update($productId, $quantity, $userId);
         if ($updated === false) {
-            return $this->response->fail('Failed to update cart', 500);
+            return $this->result->error('Failed to update cart', 500);
         }
 
-        return $this->response->success('Cart updated successfully');
+        return $this->result->success('Cart updated successfully');
     }
 
-    public function remove(int $userId, int $productId): array
-    {
-        $removed = $this->cartModel->remove($userId, $productId);
+    public function remove(
+        int $productId,
+        int $userId
+    ): Result {
+
+        $removed = $this->cartModel->remove($productId, $userId);
         if ($removed === false) {
-            return $this->response->fail('Failed to remove item', 500);
+            return $this->result->error('Failed to remove item', 500);
         }
 
         $count = $this->cartModel->countCart($userId);
-        return $this->response->success('Item removed from cart', ['count' => $count]);
+
+        return $this->result->success('Item removed from cart', ['count' => $count]);
     }
 
-    public function clear(int $userId): array
-    {
+    public function clear(
+        int $userId
+    ): Result {
+
         $cleared = $this->cartModel->clear($userId);
         if ($cleared === false) {
-            return $this->response->fail('Failed to clear cart', 500);
+            return $this->result->error('Failed to clear cart', 500);
         }
 
-        return $this->response->success('Cart cleared', ['count' => 0]);
+        return $this->result->success('Cart cleared', ['count' => 0]);
     }
 
-    public function merge(int $userId, array $cart): array
-    {
+    public function merge(
+        array $cart, 
+        int $userId
+    ): Result {
+
         $errors = [];
         $successCount = 0;
 
@@ -91,7 +107,7 @@ class CartService
                 continue;
             }
 
-            if ($this->cartModel->add($userId, $item['productId'], $item['quantity'])) {
+            if ($this->cartModel->add($item['productId'], $item['quantity'], $userId)) {
                 $successCount++;
             } else {
                 $errors[] = "Failed to add product {$item['productId']}";
@@ -99,27 +115,32 @@ class CartService
         }
 
         if (!empty($errors)) {
-            return $this->response->success('Cart merged with some issues', ['processed' => $successCount, 'errors' => $errors], 207);
+            return $this->result->success('Cart merged with some issues', ['processed' => $successCount, 'errors' => $errors], 207);
         }
 
-        return $this->response->success('Cart merged successfully', ['processed' => $successCount]);
+        return $this->result->success('Cart merged successfully', ['processed' => $successCount]);
     }
 
-    public function countUser(int $userId): array
-    {
+    public function countUser(
+        int $userId
+    ): Result {
+
         $count = $this->cartModel->countCart($userId);
-        return $this->response->success('Cart counted', ['count' => $count]);
+
+        return $this->result->success('Cart counted', ['count' => $count]);
     }
 
-    public function countAll(): array
+    public function countAll(): Result
     {
         $count = $this->cartModel->countAll();
-        return $this->response->success('Carts counted', ['count' => $count]);
+
+        return $this->result->success('Carts counted', ['count' => $count]);
     }
 
-    public function getCartUsers(): array
+    public function getCartUsers(): Result
     {
         $users = $this->cartModel->getCartUsers();
-        return $this->response->success('Cart users fetched', ['users' => $users]);
+        
+        return $this->result->success('Cart users fetched', ['users' => $users]);
     }
 }

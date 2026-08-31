@@ -1,47 +1,66 @@
 <?php
+
+declare(strict_types=1);
+
 namespace App\Models;
+
 use PDO;
 
-class Order extends Database
+class Order extends Model
 {
-    /** Create a new order */
-    public function createOrder(?int $userId = null, ?float $subtotal = null, ?float $tax = null, ?float $discount = null, ?float $shipping = null, ?float $total = null, ?string $shippingAddress = null, array $items = [])
-    {
-        try {
-            $this->db->beginTransaction();
+    protected string $table = 'orders';
 
-            // Generate order tracking code
+    public function createOrder(
+        float $subtotal, 
+        float $tax, 
+        float $discount, 
+        float $shipping, 
+        float $total, 
+        string $address, 
+        array $items,
+        int $userId
+    ): mixed {
+
+        try {
+            $this->beginTransaction();
+
+            // Generate Order Tracking Code
             $orderCode = $this->generateOrderCode();
 
-            // Save order
-            $sql = "INSERT INTO orders (
-                user_id, subtotal_amount, tax_amount, discount_amount, 
-                shipping_amount, total_amount, shipping_address, 
-                tracking_code, facilitator_id
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
-            $stmt = $this->db->prepare($sql);
-            $stmt->execute([
-                $userId, $subtotal, $tax, $discount, $shipping, 
-                $total, $shippingAddress, $orderCode, $userId
-            ]);
+            // Create Order
+            $orderId = $this->query()
+                ->insertGetId([
+                    'user_id'          => $userId,
+                    'subtotal_amount'  => $subtotal,
+                    'tax_amount'       => $tax,
+                    'discount_amount'  => $discount,
+                    'shipping_amount'  => $shipping,
+                    'total_amount'     => $total,
+                    'shipping_address' => $address,
+                    'tracking_code'    => $orderCode,
+                    'facilitator_id'   => $userId  // This could be the referrer's ID 
+                ]);
 
-            // Get orderId
-            $orderId = $this->db->lastInsertId();
+            // Base Insert Query For Order Items
+            $itemQuery = "
+                INSERT INTO order_items (
+                    order_id, product_id, quantity, price, store_id, tracking_code
+                ) 
+                VALUES (?, ?, ?, ?, ?, ?)
+            ";
 
-            // Insert order items
-            $sqlItem = "INSERT INTO order_items (
-                order_id, product_id, quantity, price, store_id, tracking_code
-            ) VALUES (?, ?, ?, ?, ?, ?)";
-            $stmtItem = $this->db->prepare($sqlItem);
+            // Base Item Save Query
+            $saveQuery = $this->db->prepare($itemQuery);
 
-            // Track stores with totals
+            // Track Stores
             $stores = [];
 
             foreach ($items as $item) {
+
                 // Generate item tracking code
                 $itemCode = $this->generateItemCode();
 
-                $stmtItem->execute([
+                $saveQuery->execute([
                     $orderId,
                     $item['product_id'],
                     $item['quantity'],
@@ -50,11 +69,12 @@ class Order extends Database
                     $itemCode
                 ]);
 
-                // Calculate item total = price * quantity
+                // Calculate Item Total = Price * Quantity
                 $itemTotal = $item['price'] * $item['quantity'];
 
-                // Aggregate per store
+                // Aggregate Per Store
                 if (!isset($stores[$item['store_id']])) {
+
                     $stores[$item['store_id']] = [
                         'store_id' => $item['store_id'],
                         'total' => 0
@@ -64,25 +84,86 @@ class Order extends Database
                 $stores[$item['store_id']]['total'] += $itemTotal;
             }
 
-            $this->db->commit();
+            // Commit Transaction
+            $this->commit();
 
-            // Return orderId and unique store details
+            // Return OrderId And Unique Store Details
             return [
-                'id' => $orderId,
-                'code' => $orderCode,
+                'id'     => $orderId,
+                'code'   => $orderCode,
                 'stores' => array_values($stores) // reset keys
             ];
 
         } catch (\Exception $e) {
-            $this->db->rollBack();
+
+            $this->rollBack();
             throw $e;
         }
     }
 
-    /** Fetch orders */
-    private function fetchOrders(?string $sql = null, array $params = [], int $page = 1, int $perPage = 20): ?array
-    {
-        $offset = ($page - 1) * $perPage;
+    public function trackOrder(
+        int $userId, 
+        string $code
+    ): ?array {
+
+        return $this->query()
+            ->where('user_id', '=', $userId)
+            ->where('tracking_code', '=', $code)
+            ->first();
+    }
+
+    public function getOrder(
+        int $orderId
+    ): ?array {
+
+        $order = $this->query()
+            ->where('order_id', '=', $orderId)
+            ->first();
+
+        if (
+            $order 
+            && is_array($order)
+        ) {
+            $order['items'] = $this->getOrderItems($orderId);
+        }
+
+        return $order;
+    }
+
+    public function getOrderItems(
+        int $orderId
+    ): ?array {
+
+        $fetchQuery = "
+            SELECT 
+                oi.*,
+                p.product_name,
+                pm.media_url AS product_image
+            FROM order_items oi
+            JOIN products p ON p.product_id = oi.product_id
+            LEFT JOIN (
+                SELECT 
+                    product_id, 
+                    MIN(media_id) AS first_media_id
+                FROM product_media
+                GROUP BY product_id
+            ) pm_first ON pm_first.product_id = oi.product_id
+            LEFT JOIN product_media pm ON pm.media_id = pm_first.first_media_id
+            WHERE 
+                oi.order_id = ?
+        ";
+
+        return $this->queryAll($fetchQuery, [$orderId]);
+    }
+
+    private function fetchOrders(
+        ?string $sql = null, 
+        array $params = [], 
+        int $page = 1, 
+        int $limit = 20
+    ): ?array {
+        
+        $offset = ($page - 1) * $limit;
 
         $sql .= " LIMIT ? OFFSET ?";
         $stmt = $this->db->prepare($sql);
@@ -93,20 +174,25 @@ class Order extends Database
             $stmt->bindValue($i++, $param, $type);
         }
 
-        $stmt->bindValue($i++, (int)$perPage, PDO::PARAM_INT);
+        $stmt->bindValue($i++, (int)$limit, PDO::PARAM_INT);
         $stmt->bindValue($i, (int)$offset, PDO::PARAM_INT);
         $stmt->execute();
+
         return $stmt->fetchAll();
     }
 
-    /** Fetch orders */
-    private function processOrders(?string $sql = null, array $params = [], int $page = 1, int $perPage = 20): ?array
-    {
-        $offset = ($page - 1) * $perPage;
+    private function processOrders(
+        ?string $sql = null, 
+        array $params = [], 
+        int $page = 1, 
+        int $limit = 20
+    ): ?array {
+
+        $offset    = ($page - 1) * $limit;
         $baseQuery = $sql ?: "SELECT * FROM order_items";
 
-        // Attach product info and first image
-        $sql = "
+        // Attach Product Info And First Image
+        $fetchQuery = "
             SELECT 
                 oi.*, 
                 p.product_name,
@@ -124,7 +210,7 @@ class Order extends Database
             LIMIT ? OFFSET ?
         ";
 
-        $stmt = $this->db->prepare($sql);
+        $stmt = $this->db->prepare($fetchQuery);
 
         $i = 1;
         foreach ($params as $param) {
@@ -132,258 +218,340 @@ class Order extends Database
             $stmt->bindValue($i++, $param, $type);
         }
 
-        $stmt->bindValue($i++, (int)$perPage, PDO::PARAM_INT);
+        $stmt->bindValue($i++, (int)$limit, PDO::PARAM_INT);
         $stmt->bindValue($i, (int)$offset, PDO::PARAM_INT);
 
         $stmt->execute();
+
         return $stmt->fetchAll();
-
-        /************** EXAMPLE RESULT ******************
-        [
-            "item_id" => 15,
-            "store_id" => 2,
-            "product_id" => 5,
-            "item_status" => "pending",
-            "quantity" => 3,
-            "price" => 120.00,
-            "product_name" => "Wireless Headset",
-            "stock" => 18,
-            "product_image" => "uploads/products/5/thumbnail.jpg"
-        ]
-        /*****************************************/
-
     }
 
-    /** Count orders */
-    private function countOrders(?string $sql = null, array $params = []): int
-    {
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute($params);
-        return (int)$stmt->fetchColumn();
+    private function countOrders(
+        ?string $sql = null, 
+        array $params = []
+    ): int {
+
+        return $this->fetchColumn($sql, $params);
     }
 
-     /** Paginate orders */
-    private function paginate(array $data, int $total, int $page, int $perPage): ?array
-    {
+    private function format(
+        array $data, 
+        int $total, 
+        int $page, 
+        int $limit
+    ): array {
+
         return [
             'orders'      => $data,
             'total'       => $total,
             'page'        => $page,
-            'per_page'    => $perPage,
-            'total_pages' => ceil($total / $perPage),
+            'per_page'    => $limit,
+            'total_pages' => ceil($total / $limit),
         ];
     }
 
-    /** Track an order with code  */
-    public function trackOrder(int $userId, string $code)
-    {
-        $sql = "SELECT * FROM orders WHERE user_id = ? AND tracking_code = ?";
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute([$userId, $code]);
-        return $stmt->fetch();
-    }
+    public function getAllOrders(
+        int $page = 1, 
+        int $limit = 20
+    ): array {
 
-    /** Fetch single order with items */
-    public function getOrder(int $orderId)
-    {
-        $sql = "SELECT * FROM orders WHERE order_id = ?";
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute([$orderId]);
-        $order = $stmt->fetch();
-
-        if (is_array($order)) {
-            $order['items'] = $this->getOrderItems($orderId);
-        }
-        return $order;
-    }
-
-    /** Fetch items for a given order */
-    public function getOrderItems(int $orderId)
-    {
-        $sql = "
+        $fetchQuery = "
             SELECT 
-                oi.*,
-                p.product_name,
-                pm.media_url AS product_image
-            FROM order_items oi
-            JOIN products p ON p.product_id = oi.product_id
-            LEFT JOIN (
-                SELECT 
-                    product_id, 
-                    MIN(media_id) AS first_media_id
-                FROM product_media
-                GROUP BY product_id
-            ) pm_first ON pm_first.product_id = oi.product_id
-            LEFT JOIN product_media pm ON pm.media_id = pm_first.first_media_id
-            WHERE oi.order_id = ?
+                * 
+            FROM {$table} 
+            ORDER BY created_at DESC
         ";
 
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute([$orderId]);
-        return $stmt->fetchAll();
+        $countQuery = "
+            SELECT 
+                COUNT(*) 
+            FROM {$table}
+        ";
+
+        $orders = $this->fetchOrders($fetchQuery, [], $page, $limit);
+        $total  = $this->countOrders($countQuery);
+
+        return $this->format($orders, $total, $page, $limit);
     }
 
+    public function getOrdersByStatus(
+        ?string $status = null, 
+        int $page = 1, 
+        int $limit = 20
+    ): array {
 
-    /** Fetch all orders (admin use) */
-    public function getAllOrders(int $page = 1, int $perPage = 20)
-    {
-        $sql = "SELECT * FROM orders ORDER BY created_at DESC";
-        $orders = $this->fetchOrders($sql, [], $page, $perPage);
-        $total = $this->countOrders("SELECT COUNT(*) FROM orders");
-        return $this->paginate($orders, $total, $page, $perPage);
+        $fetchQuery = "
+            SELECT 
+                * 
+            FROM {$table} 
+            WHERE 
+                order_status = ? 
+            ORDER BY order_id DESC
+        ";
+
+        $countQuery = "
+            SELECT 
+                COUNT(*) 
+            FROM {$table}
+            WHERE 
+                order_status = ?
+        ";
+
+        $orders = $this->fetchOrders($fetchQuery, [$status], $page, $limit);
+        $total  = $this->countOrders($countQuery, [$status]);
+
+        return $this->format($orders, $total, $page, $limit);
     }
 
-    /** Fetch all orders by status (admin use) */
-    public function getOrdersByStatus(?string $status = null, int $page = 1, int $perPage = 20)
-    {
-        $sql = "SELECT * FROM orders WHERE order_status = ? ORDER BY order_id DESC";
-        $orders = $this->fetchOrders($sql, [$status], $page, $perPage);
-        $total = $this->countOrders("SELECT COUNT(*) FROM orders WHERE order_status = ?", [$status]);
-        return $this->paginate($orders, $total, $page, $perPage);
+    public function getUserOrders(
+        ?int $userId = null, 
+        int $page = 1, 
+        int $limit = 20
+    ): array {
+
+        $fetchQuery = "
+            SELECT 
+                * 
+            FROM {$table} 
+            WHERE 
+                user_id = ? 
+                AND order_status != 'Cancelled' 
+            ORDER BY created_at DESC
+        ";
+
+        $countQuery = "
+            SELECT 
+                COUNT(*) 
+            FROM {$table} 
+            WHERE 
+                user_id = ?
+        ";
+
+        $orders = $this->fetchOrders($fetchQuery, [$userId], $page, $limit);
+        $total  = $this->countOrders($countQuery, [$userId]);
+
+        return $this->format($orders, $total, $page, $limit);
     }
 
-    /** Fetch all orders for a user */
-    public function getUserOrders(?int $userId = null, int $page = 1, int $perPage = 20)
-    {
-        $sql = "SELECT * FROM orders WHERE user_id = ? AND order_status != 'Cancelled' ORDER BY created_at DESC";
-        $orders = $this->fetchOrders($sql, [$userId], $page, $perPage);
-        $total = $this->countOrders("SELECT COUNT(*) FROM orders WHERE user_id = ?", [$userId]);
-        return $this->paginate($orders, $total, $page, $perPage);
+    public function getStoreOrders(
+        ?int $storeId = null, 
+        int $page = 1, 
+        int $limit = 20
+    ): array {
+
+        $fetchQuery = "
+            SELECT 
+                * 
+            FROM order_items 
+            WHERE 
+                store_id = ? 
+            ORDER BY item_id DESC
+        ";
+
+        $countQuery = "
+            SELECT 
+                COUNT(*) 
+            FROM order_items
+            WHERE 
+                store_id = ?
+        ";
+
+        $orders = $this->processOrders($fetchQuery, [$storeId], $page, $limit);
+        $total  = $this->countOrders($countQuery, [$storeId]);
+
+        return $this->format($orders, $total, $page, $limit);
     }
 
-    /** Fetch all orders for a store */
-    public function getStoreOrders(?int $storeId = null, int $page = 1, int $perPage = 20)
-    {
-        $sql = "SELECT * FROM order_items WHERE store_id = ? ORDER BY item_id DESC";
-        $orders = $this->processOrders($sql, [$storeId], $page, $perPage);
-        $total = $this->countOrders("SELECT COUNT(*) FROM order_items WHERE store_id = ?", [$storeId]);
-        return $this->paginate($orders, $total, $page, $perPage);
+    public function getStoreOrdersByStatus(
+        ?int $storeId = null, 
+        ?string $status = null, 
+        int $page = 1, 
+        int $limit = 20
+    ): array {
+
+        $fetchQuery = "
+            SELECT 
+                * 
+            FROM order_items 
+            WHERE 
+                store_id = ? 
+                AND item_status = ? 
+            ORDER BY item_id DESC
+        ";
+
+        $countQuery = "
+            SELECT 
+                COUNT(*) 
+            FROM order_items 
+            WHERE 
+                store_id = ? 
+                AND item_status = ?
+        ";
+
+        $orders = $this->processOrders($fetchQuery, [$storeId, $status], $page, $limit);
+        $total  = $this->countOrders($countQuery, [$storeId, $status]);
+
+        return $this->format($orders, $total, $page, $limit);
     }
 
-    /** Fetch all orders for a store */
-    public function getStoreOrdersByStatus(?int $storeId = null, ?string $status = null, int $page = 1, int $perPage = 20)
-    {
-        $sql = "SELECT * FROM order_items WHERE store_id = ? AND item_status = ? ORDER BY item_id DESC";
-        $orders = $this->processOrders($sql, [$storeId, $status], $page, $perPage);
-        $total = $this->countOrders("SELECT COUNT(*) FROM order_items WHERE store_id = ? AND item_status = ?", [$storeId, $status]);
-        return $this->paginate($orders, $total, $page, $perPage);
+    public function updateItemStatus(
+        int $itemId, 
+        string $status
+    ): bool {
+
+        $sql = "
+            UPDATE order_items 
+            SET 
+                item_status = ? 
+            WHERE 
+                item_id = ?
+        ";
+
+        return $this->executeQuery($sql, [$status, $itemId]);
     }
 
-    /** Update order item status */
-    public function updateItemStatus(int $itemId, string $status)
-    {
-        $sql = "UPDATE order_items SET item_status = ? WHERE item_id = ?";
-        $stmt = $this->db->prepare($sql);
-        return $stmt->execute([$status, $itemId]);
+    public function updateItemFinalizedStatus(
+        int $itemId, 
+        string $status
+    ): bool {
+
+        $sql = "
+            UPDATE order_items 
+            SET 
+                finalized = ? 
+            WHERE 
+                item_id = ?
+        ";
+
+        return $this->executeQuery($sql, [$status, $itemId]);
     }
 
-     /** Update order item finalized status */
-    public function updateItemFinalizedStatus(int $itemId, string $status)
-    {
-        $sql = "UPDATE order_items SET finalized = ? WHERE item_id = ?";
-        $stmt = $this->db->prepare($sql);
-        return $stmt->execute([$status, $itemId]);
+    public function updateOrderStatus(
+        int $orderId, 
+        string $status
+    ): bool {
+
+        return $this->query()
+            ->where('order_id', '=', $orderId)
+            ->update(['order_status' => $status]);
     }
 
-    /** Update order status */
-    public function updateOrderStatus(int $orderId, string $status)
-    {
-        $sql = "UPDATE orders SET order_status = ? WHERE order_id = ?";
-        $stmt = $this->db->prepare($sql);
-        return $stmt->execute([$status, $orderId]);
-    }
+    public function completeOrder(
+        int $orderId
+    ): bool {
 
-    /** Mark an order completed */
-    public function completeOrder(int $orderId)
-    {
         return $this->updateOrderStatus($orderId, 'Completed');
     }
 
-    /** Cancel an order */
-    public function cancelOrder(int $orderId)
-    {
+    public function cancelOrder(
+        int $orderId
+    ): bool {
+
         return $this->updateOrderStatus($orderId, 'Cancelled');
     }
 
-    /** Delete an order */
-    public function deleteOrder(int $orderId)
-    {
-        $sql = "DELETE FROM orders WHERE order_id = ?";
-        $stmt = $this->db->prepare($sql);
-        return $stmt->execute([$orderId]);
+    public function deleteOrder(
+        int $orderId
+    ): bool {
+
+        return $this->query()
+            ->where('order_id', '=', $orderId)
+            ->delete();
     }
 
-    /** Delete an order items */
-    public function deleteOrderItems(int $orderId)
-    {
-        $sql = "DELETE FROM order_items WHERE order_id = ?";
-        $stmt = $this->db->prepare($sql);
-        return $stmt->execute([$orderId]);
+    public function deleteOrderItems(
+        int $orderId
+    ): bool {
+
+        $sql = "
+            DELETE FROM order_items 
+            WHERE 
+                order_id = ?
+        ";
+
+        return $this->executeQuery($sql, [$orderId]);
     }
 
-    /** Delete an order items */
-    public function deleteOrderPayment(int $orderId)
-    {
-        $sql = "DELETE FROM payments WHERE order_id = ?";
-        $stmt = $this->db->prepare($sql);
-        return $stmt->execute([$orderId]);
+    public function deleteOrderPayment(
+        int $orderId
+    ): bool {
+
+        $sql = "
+            DELETE FROM payments
+            WHERE 
+                order_id = ?
+        ";
+
+        return $this->executeQuery($sql, [$orderId]);
     }
 
-    /** Generate order tracking code */
-    public function generateOrderCode()
-    {
-       return '#Order-' . bin2hex(random_bytes(10));
+    public function getOrderTotal(
+        int $orderId
+    ): int {
+
+        $result = $this->query()
+            ->select(['total_amount'])
+            ->where('order_id', '=', $orderId)
+            ->first();
+
+        return $result ? $result['total_amount'] : 0;
     }
 
-     /** Generate order item tracking code */
-    public function generateItemCode()
-    {
-        return '#Item-' . bin2hex(random_bytes(10));
+    public function getOrderDetails(
+        int $orderId
+    ): ?array {
+
+        return $this->query()
+            ->select([
+                'total_amount',
+                'tracking_code',
+                'created_at'
+            ])
+            ->where('order_id', '=', $orderId)
+            ->get();
     }
 
-    /** Get order total by ID */
-    public function getOrderTotal(int $orderId)
-    {
-        $sql = "SELECT total_amount FROM orders WHERE order_id = ?";
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute([$orderId]);
-        return $stmt->fetchColumn(); // returns the single column value
+    public function getOrderStores(
+        int $orderId
+    ): ?array {
+
+        $sql = "
+            SELECT DISTINCT 
+                store_id 
+            FROM order_items 
+            WHERE 
+                order_id = ? 
+            ORDER BY store_id ASC
+        ";
+
+        return $this->queryAll($sql, [$orderId]);
     }
 
-    /** Get order status and total amount by ID */
-    public function getOrderDetails(int $orderId): ?array
-    {
-        $sql = "SELECT total_amount, tracking_code, created_at FROM orders WHERE order_id = ?";
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute([$orderId]);
-        return $stmt->fetch();
+    public function getItemDetails(
+        int $itemId
+    ): ?array {
+
+        $sql = "
+            SELECT 
+                * 
+            FROM order_items
+            WHERE 
+                item_id = ?
+        ";
+
+        return $this->queryOne($sql, [$itemId]);
     }
 
-    /** Get unique stores involved in an order */
-    public function getOrderStores(int $orderId): ?array
-    {
-        $sql = "SELECT DISTINCT store_id FROM order_items WHERE order_id = ? ORDER BY store_id ASC";
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute([$orderId]);
-        return $stmt->fetchAll();
-    }
+    public function getUserByOrderId(
+        int $orderId
+    ): ?int {
 
-    /** Get item details from itemId */
-    public function getItemDetails(int $itemId)
-    {
-        $sql = "SELECT * FROM order_items WHERE item_id = ?";
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute([$itemId]);
-        return $stmt->fetch();
-    }
+        $result = $this->query()
+            ->select(['user_id'])
+            ->where('order_id', '=', $orderId)
+            ->first();
 
-    /** Get userId from order details */
-    public function getUserByOrderId(int $orderId)
-    {
-        $sql = "SELECT user_id FROM orders WHERE order_id = ?";
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute([$orderId]);
-        return $stmt->fetchColumn();
+        return $result ? (int) $result['user_id'] : null;
     }
 
     /**
@@ -394,14 +562,18 @@ class Order extends Database
      * @return float
      */
 
-    public function getTotalRevenue(?int $userId = null, ?int $storeId = null): float
-    {
+    public function getTotalRevenue(
+        ?int $userId = null, 
+        ?int $storeId = null
+    ): float {
+
         $sql = "
             SELECT 
                 COALESCE(SUM(oi.price * oi.quantity), 0) AS total_revenue
             FROM order_items AS oi
             INNER JOIN stores AS s ON s.store_id = oi.store_id
-            WHERE oi.item_status = 'Delivered'
+            WHERE 
+                oi.item_status = 'Delivered'
         ";
 
         $params = [];
@@ -422,6 +594,7 @@ class Order extends Database
         $stmt->execute($params);
 
         $result = $stmt->fetchColumn();
+
         return (float) ($result !== false ? $result : 0);
     }
 
@@ -434,14 +607,19 @@ class Order extends Database
      * @return int
      */
 
-    public function getTotalOrdersByStatus(?int $userId = null, ?string $status = null, ?int $storeId = null): int
-    {
+    public function getTotalOrdersByStatus(
+        ?int $userId = null, 
+        ?string $status = null, 
+        ?int $storeId = null
+    ): int {
+
         $sql = "
             SELECT 
                 COALESCE(COUNT(oi.item_id), 0) AS total_orders
             FROM order_items AS oi
             INNER JOIN stores AS s ON s.store_id = oi.store_id
-            WHERE 1
+            WHERE 
+                1
         ";
 
         $params = [];
@@ -475,6 +653,7 @@ class Order extends Database
 
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);
+
         $result = $stmt->fetchColumn();
 
         return (int) ($result !== false ? $result : 0);
@@ -487,15 +666,20 @@ class Order extends Database
      * @param int|null $storeId - Optional specific store ID
      * @return int
     */
-    public function countUniqueCustomers(?int $userId = null, ?int $storeId = null, string $role = 'vendor'): int
-    {
+    public function countUniqueCustomers(
+        ?int $userId = null, 
+        ?int $storeId = null, 
+        string $role = 'vendor'
+    ): int {
+
         $sql = "
             SELECT 
                 COALESCE(COUNT(DISTINCT o.user_id), 0) AS unique_customers
             FROM order_items AS oi
             INNER JOIN stores AS s ON s.store_id = oi.store_id
             INNER JOIN orders AS o ON o.order_id = oi.order_id
-            WHERE 1
+            WHERE 
+                1
         ";
 
         $params = [];
@@ -514,30 +698,40 @@ class Order extends Database
 
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);
+
         $result = $stmt->fetchColumn();
 
         return (int) ($result !== false ? $result : 0);
     }
 
-    /**
-     * Fetch all key dashboard stats in one call.
-    */
-    public function getVendorOrderStats(int $userId): ?array
+    public function generateOrderCode(): string
     {
+       return '#Order-' . bin2hex(random_bytes(10));
+    }
+
+    public function generateItemCode(): string
+    {
+        return '#Item-' . bin2hex(random_bytes(10));
+    }
+
+    public function getVendorOrderStats(
+        int $userId
+    ): array {
+
         return [
             'total_revenue'    => $this->getTotalRevenue($userId),
             'pending_orders'   => $this->getTotalOrdersByStatus($userId, 'Pending'),
             'shipped_orders'   => $this->getTotalOrdersByStatus($userId, 'Shipped'),
             'delivered_orders' => $this->getTotalOrdersByStatus($userId, 'Delivered'),
-            'unique_customers'  => $this->countUniqueCustomers($userId, null, 'vendor'),
+            'unique_customers' => $this->countUniqueCustomers($userId, null, 'vendor'),
         ];
     }
 
-    /**
-     * Fetch all key dashboard stats in one call.
-    */
-    public function getVendorStoreStats(int $userId, int $storeId): ?array
-    {
+    public function getVendorStoreStats(
+        int $userId, 
+        int $storeId
+    ): array {
+
         return [
             'total_revenue'    => $this->getTotalRevenue($userId, $storeId),
             'pending_orders'   => $this->getTotalOrdersByStatus($userId, 'Pending', $storeId),
@@ -547,10 +741,7 @@ class Order extends Database
         ];
     }
 
-     /**
-     * Fetch all key dashboard stats in one call.
-    */
-    public function getAdminOrderStats(): ?array
+    public function getAdminOrderStats(): array
     {
         return [
             'total_revenue'    => $this->getTotalRevenue(),
@@ -567,48 +758,53 @@ class Order extends Database
      * This is useful for a dashboard usage
     */
     // Get dates
-    private function getDateRange($timeframe = 'today', $startDate = null, $endDate = null) {
+    private function getDateRange(
+        string $timeframe = 'today', 
+        string $startDate = null, 
+        string $endDate = null
+    ) {
         $today = new DateTime();
 
         switch ($timeframe) {
             case 'today':
                 $start = $today->format('Y-m-d 00:00:00');
-                $end = $today->format('Y-m-d 23:59:59');
+                $end   = $today->format('Y-m-d 23:59:59');
                 break;
 
             case 'yesterday':
                 $yesterday = (clone $today)->modify('-1 day');
-                $start = $yesterday->format('Y-m-d 00:00:00');
-                $end = $yesterday->format('Y-m-d 23:59:59');
+                $start     = $yesterday->format('Y-m-d 00:00:00');
+                $end       = $yesterday->format('Y-m-d 23:59:59');
                 break;
 
             case 'last_week':
                 $start = (clone $today)->modify('monday last week')->format('Y-m-d 00:00:00');
-                $end = (clone $today)->modify('sunday last week')->format('Y-m-d 23:59:59');
+                $end   = (clone $today)->modify('sunday last week')->format('Y-m-d 23:59:59');
                 break;
 
             case 'last_month':
                 $start = (clone $today)->modify('first day of last month')->format('Y-m-d 00:00:00');
-                $end = (clone $today)->modify('last day of last month')->format('Y-m-d 23:59:59');
+                $end   = (clone $today)->modify('last day of last month')->format('Y-m-d 23:59:59');
                 break;
 
             case 'last_year':
                 $start = (clone $today)->modify('first day of January last year')->format('Y-m-d 00:00:00');
-                $end = (clone $today)->modify('last day of December last year')->format('Y-m-d 23:59:59');
+                $end   = (clone $today)->modify('last day of December last year')->format('Y-m-d 23:59:59');
                 break;
 
             case 'custom':
                 if (!$startDate || !$endDate) {
                     throw new Exception("Custom timeframe requires start and end dates.");
                 }
+
                 $start = $startDate . ' 00:00:00';
-                $end = $endDate . ' 23:59:59';
+                $end   = $endDate . ' 23:59:59';
                 break;
 
             default:
                 // fallback to today
-                $start = $today->format('Y-m-d 00:00:00');
-                $end = $today->format('Y-m-d 23:59:59');
+                $start     = $today->format('Y-m-d 00:00:00');
+                $end       = $today->format('Y-m-d 23:59:59');
                 $timeframe = 'today';
         }
 
@@ -616,52 +812,64 @@ class Order extends Database
     }
 
     // Generate sales summary data
-    public function getSalesAndRevenue($view = 'admin', $userId = null, $timeframe = 'today', $startDate = null, $endDate = null) 
-    {
+    public function getSalesAndRevenue(
+        string $view = 'admin', 
+        ?int $userId = null, 
+        string $timeframe = 'today', 
+        string $startDate = null, 
+        string $endDate = null
+    ): ?array {
+
         list($start, $end, $resolvedTimeframe) = $this->getDateRange($timeframe, $startDate, $endDate);
 
         $params = [$start, $end];
 
         if ($view === 'admin') {
-            // Admin: global totals
+            // Admin: Global Totals
             $query = "
                 SELECT 
                     COUNT(*) AS total_sales,
                     SUM(oi.price) AS total_revenue
                 FROM order_items oi
-                WHERE oi.created_at BETWEEN ? AND ?";
+                WHERE 
+                    oi.created_at BETWEEN ? AND ?
+            ";
 
             $stmt = $this->db->prepare($query);
             $stmt->execute($params);
             $result = $stmt->fetch();
 
             return [
-                'view' => $view,
-                'total_sales' => (int)($result['total_sales'] ?? 0),
+                'view'          => $view,
+                'total_sales'   => (int)($result['total_sales'] ?? 0),
                 'total_revenue' => (float)($result['total_revenue'] ?? 0),
-                'timeframe' => $resolvedTimeframe,
-                'range' => ['start' => $start, 'end' => $end]
+                'timeframe'     => $resolvedTimeframe,
+                'range'         => ['start' => $start, 'end' => $end]
             ];
 
         } elseif ($view === 'vendor') {
+
             if (!$userId) {
                 throw new Exception("Vendor view requires user ID.");
             }
 
-            // --- 1️⃣ Vendor totals (all stores combined)
+            // --- 1️⃣ Vendor Totals (All Stores Combined)
             $summaryQuery = "
                 SELECT 
                     COUNT(*) AS total_sales,
                     SUM(oi.price) AS total_revenue
                 FROM order_items oi
                 INNER JOIN stores s ON s.store_id = oi.store_id
-                WHERE s.user_id = ? AND oi.created_at BETWEEN ? AND ?";
+                WHERE 
+                    s.user_id = ? 
+                    AND oi.created_at BETWEEN ? AND ?
+            ";
 
             $summaryStmt = $this->db->prepare($summaryQuery);
             $summaryStmt->execute([$userId, $start, $end]);
             $summary = $summaryStmt->fetch();
 
-            // --- 2️⃣ Store breakdown
+            // --- 2️⃣ Store Breakdown
             $storeQuery = "
                 SELECT 
                     s.store_id AS store_id,
@@ -670,25 +878,28 @@ class Order extends Database
                     SUM(oi.price) AS total_revenue
                 FROM order_items oi
                 INNER JOIN stores s ON s.store_id = oi.store_id
-                WHERE s.user_id = ? AND oi.created_at BETWEEN ? AND ?
+                WHERE 
+                    s.user_id = ? 
+                    AND oi.created_at BETWEEN ? AND ?
                 GROUP BY s.store_id
-                ORDER BY total_revenue DESC";
+                ORDER BY total_revenue DESC
+            ";
 
             $storeStmt = $this->db->prepare($storeQuery);
             $storeStmt->execute([$userId, $start, $end]);
             $stores = $storeStmt->fetchAll(PDO::FETCH_ASSOC);
 
             return [
-                'view' => $view,
-                'total_sales' => (int)($summary['total_sales'] ?? 0),
+                'view'          => $view,
+                'total_sales'   => (int)($summary['total_sales'] ?? 0),
                 'total_revenue' => (float)($summary['total_revenue'] ?? 0),
-                'timeframe' => $resolvedTimeframe,
-                'range' => ['start' => $start, 'end' => $end],
-                'stores' => array_map(function($store) {
+                'timeframe'     => $resolvedTimeframe,
+                'range'         => ['start' => $start, 'end' => $end],
+                'stores'        => array_map(function($store) {
                     return [
-                        'store_id' => (int)$store['store_id'],
-                        'store_name' => $store['store_name'],
-                        'total_sales' => (int)($store['total_sales'] ?? 0),
+                        'store_id'      => (int)$store['store_id'],
+                        'store_name'    => $store['store_name'],
+                        'total_sales'   => (int)($store['total_sales'] ?? 0),
                         'total_revenue' => (float)($store['total_revenue'] ?? 0)
                     ];
                 }, $stores)
@@ -724,16 +935,16 @@ class Order extends Database
         },
         "stores": [
             {
-            "store_id": 3,
-            "store_name": "TechWorld",
-            "total_sales": 32,
-            "total_revenue": 1650.00
+                "store_id": 3,
+                "store_name": "TechWorld",
+                "total_sales": 32,
+                "total_revenue": 1650.00
             },
             {
-            "store_id": 9,
-            "store_name": "StyleHub",
-            "total_sales": 22,
-            "total_revenue": 500.75
+                "store_id": 9,
+                "store_name": "StyleHub",
+                "total_sales": 22,
+                "total_revenue": 500.75
             }
         ]
     }
@@ -744,24 +955,34 @@ class Order extends Database
      * For each vendor, it also genertes store-wide sales and revenue summary
      * This is useful for a dashboard usage
     */
-    public function getSalesAndRevenueByPeriod(string $view = 'admin', ?int $userId = null, ?int $storeId = null, ?string $period = 'today', ?string $startDate = null, ?string $endDate = null) 
-    {
-        $baseCondition = "item_status IN ('Shipped', 'Delivered')";
-        $conditions = [];
-        $params = [];
+    public function getSalesAndRevenueByPeriod(
+        string $view = 'admin', 
+        ?int $userId = null, 
+        ?int $storeId = null, 
+        ?string $period = 'today', 
+        ?string $startDate = null, 
+        ?string $endDate = null
+    ): array {
 
-        // 1️⃣ Role-based filtering
+        $baseCondition = "item_status IN ('Shipped', 'Delivered')";
+        $conditions    = [];
+        $params        = [];
+
+        // 1️⃣ Role-based Filtering
         if ($view === 'admin') {
             $conditions[] = '1'; // no restriction
-        } elseif ($view === 'vendor' && $userId !== null) {
+        } elseif (
+            $view === 'vendor' 
+            && $userId !== null
+        ) {
             $conditions[] = 'store_id IN (SELECT store_id FROM stores WHERE user_id = ?)';
-            $params[] = $userId;
+            $params[]     = $userId;
         }
 
-        // 2️⃣ Optional store filter
+        // 2️⃣ Optional Store Filter
         if ($storeId !== null) {
             $conditions[] = 'store_id = ?';
-            $params[] = $storeId;
+            $params[]     = $storeId;
         }
 
         // 3️⃣ Date filtering
@@ -785,36 +1006,35 @@ class Order extends Database
             case 'custom':
                 if ($startDate && $endDate) {
                     $conditions[] = 'DATE(created_at) BETWEEN ? AND ?';
-                    $params[] = $startDate;
-                    $params[] = $endDate;
+                    $params[]     = $startDate;
+                    $params[]     = $endDate;
                 } else {
                     throw new InvalidArgumentException('Custom range requires start_date and end_date');
                 }
                 break;
         }
 
-        // 4️⃣ Merge conditions
+        // 4️⃣ Merge Conditions
         $allConditions = array_merge([$baseCondition], $conditions);
 
-        // 5️⃣ Build query
+        // 5️⃣ Build Query
         $sql = "
             SELECT 
                 COUNT(DISTINCT order_id) AS total_orders,
                 SUM(quantity) AS total_items_sold,
                 SUM(price) AS total_revenue
             FROM order_items
-            WHERE " . implode(' AND ', $allConditions);
+            WHERE 
+        " . implode(' AND ', $allConditions);
 
         // 6️⃣ Execute
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute($params);
-        $result = $stmt->fetch();
+        $result = $this->queryOne($sql, [$params]);
 
         // 7️⃣ Return clean values
         return [
-            'total_orders'      => (int)($result['total_orders'] ?? 0),
-            'total_items_sold'  => (int)($result['total_items_sold'] ?? 0),
-            'total_revenue'     => (float)($result['total_revenue'] ?? 0)
+            'total_orders'     => (int)($result['total_orders'] ?? 0),
+            'total_items_sold' => (int)($result['total_items_sold'] ?? 0),
+            'total_revenue'    => (float)($result['total_revenue'] ?? 0)
         ];
     }
 
@@ -823,19 +1043,22 @@ class Order extends Database
 
     // Admin - All stores
     $stats = $analytics->getSalesAndRevenueByPeriod('admin', null, null, 'last_month');
+
     // Vendor - All their stores
     $stats = $analytics->getSalesAndRevenueByPeriod('vendor', $vendorId, null, 'last_week');
+
     // Vendor - One specific store
     $stats = $analytics->getSalesAndRevenueByPeriod('vendor', $vendorId, $storeId, 'today');
+
     // Vendor - Custom range
     $stats = $analytics->getSalesAndRevenueByPeriod('vendor', $vendorId, $storeId, 'custom', '2025-10-01', '2025-10-31');
 
     DEMO FUNCTION RESULT FOR A VENDOR
     Result for a demo vendor:
     [
-        'total_orders'      => 10,
-        'total_items_sold'  => 50,
-        'total_revenue'     => 500
+        'total_orders'     => 10,
+        'total_items_sold' => 50,
+        'total_revenue'    => 500
     ];
     */
 }

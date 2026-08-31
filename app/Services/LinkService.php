@@ -1,119 +1,110 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services;
 
-use App\Helpers\ResponseManager;
+use App\Core\Result;
 use App\Models\Link;
 
 class LinkService
 {
-    protected ResponseManager $response;
-    protected Link $linkModel;
+    public function __construct(
+        protected Result $result,  
+        protected Link $linkModel
+    ) {}
 
-    public function __construct(ResponseManager $response, Link $linkModel)
-    {
-        // Required helpers for this controller class
-        $this->response  = $response;
-        // Required model for this controller class
-        $this->linkModel = $linkModel;
-    }
+    public function create(
+        int $productId, 
+        int $userId, 
+        string $short, 
+        string $long, 
+        string $code, 
+        string $status
+    ): Result {
 
-    /**
-     * Create a new product link
-    */
-    public function create(array $payload)
-    {
-        $created = $this->linkModel->create($payload['product'], $payload['user'], $payload['short'], $payload['long'], $payload['code'], $payload['status']);
+        $created = $this->linkModel->create($productId, $userId, $short, $long, $code, $status);
         if ($created === false) {
-            return $this->response->fail('Failed to create link', 500);
+            return $this->result->error('Failed to create link', 500);
         }
 
-        return $this->response->success('Link created successfully');
+        return $this->result->success('Link created successfully');
     }
 
-    /**
-     * Fetch all links (product_id)
-    */
-    public function findAll(int $id)
-    {
-        $links = $this->linkModel->findAll($id);
+    public function findAll(
+        int $productId
+    ): Result {
+
+        $links = $this->linkModel->findAll($productId);
         if ($links === false) {
-            return $this->response->fail('No links found', 404);
+            return $this->result->error('No links found', 404);
         }
 
-        // Prepare data
-        return $this->response->success('Links fetched successfully', ['links' => $links]);
+        return $this->result->success('Links fetched successfully', ['links' => $links]);
     }
 
-    /**
-     * Fetch one link (link_id)
-    */
-    public function findOne(int $id)
-    {
-        $link = $this->linkModel->findOne($id);
+    public function findOne(
+        int $linkId
+    ): Result {
+
+        $link = $this->linkModel->findOne($linkId);
         if ($link === false) {
-            return $this->response->fail('No link found', 404);
+            return $this->result->error('No link found', 404);
         }
 
-        // Prepare data
-        return $this->response->success('Link fetched successfully', ['link' => $link]);
+        return $this->result->success('Link fetched successfully', ['link' => $link]);
     }
 
-    /**
-     * Update all link status (product_id)
-    */
-    public function updateAll(int $id, string $status)
-    {
-        $updated = $this->linkModel->updateAll($id, $status);
+    public function updateAll(
+        int $productId, 
+        string $status
+    ): Result {
+
+        $updated = $this->linkModel->updateAll($productId, $status);
         if ($updated === false) {
-            return $this->response->fail('Failed to update link status', 500);
+            return $this->result->error('Failed to update link status', 500);
         }
 
-        return $this->response->success('Link status updated successfully');
+        return $this->result->success('Link status updated successfully');
     }
 
-    /**
-     * Update one link status (link_id)
-    */
-    public function updateOne(int $id, string $status)
-    {
-        $updated = $this->linkModel->updateOne($id, $status);
+    public function updateOne(
+        int $linkId, 
+        string $status
+    ): Result {
+
+        $updated = $this->linkModel->updateOne($linkId, $status);
         if ($updated === false) {
-            return $this->response->fail('Failed to update link status', 500);
+            return $this->result->error('Failed to update link status', 500);
         }
 
-        return $this->response->success('Link updated successfully');
+        return $this->result->success('Link updated successfully');
     }
 
-    /**
-     * Delete all link (product_id)
-    */
-    public function deleteAll(int $id)
-    {
-        $deleted = $this->linkModel->deleteAll($id);
+    public function deleteAll(
+        int $productId
+    ): Result {
+
+        $deleted = $this->linkModel->deleteAll($productId);
         if ($deleted === false) {
-            return $this->response->fail('Failed to delete links', 500);
+            return $this->result->error('Failed to delete links', 500);
         }
 
-        return $this->response->success('Links deleted successfully');
+        return $this->result->success('Links deleted successfully');
     }
 
-    /**
-     * Delete a link (link_id)
-    */
-    public function deleteOne(int $id)
-    {
-        $deleted = $this->linkModel->deleteOne($id);
+    public function deleteOne(
+        int $linkId
+    ): Result {
+        
+        $deleted = $this->linkModel->deleteOne($linkId);
         if ($deleted === false) {
-            return $this->response->fail('Failed to delete link', 500);
+            return $this->result->error('Failed to delete link', 500);
         }
 
-        return $this->response->success('Link deleted successfully');
+        return $this->result->success('Link deleted successfully');
     }
 
-    /**
-     * Generate unique affiliate code
-    */
     public function generateCode(): string
     {
         return bin2hex(random_bytes(6));

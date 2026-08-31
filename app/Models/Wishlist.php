@@ -1,13 +1,23 @@
 <?php
+
+declare(strict_types=1);
+
 namespace App\Models;
+
 use PDO;
 
-class Wishlist extends Database
+class Wishlist extends Model
 {
-    /** Fetch orders */
-    private function fetchWishlist(?string $sql = null, array $params = [], int $page = 1, int $perPage = 20): ?array
-    {
-        $offset = ($page - 1) * $perPage;
+    protected string $table = 'wishlist';
+
+    private function fetchWishlist(
+        ?string $sql = null, 
+        array $params = [], 
+        int $page = 1, 
+        int $limit = 20
+    ): ?array {
+
+        $offset = ($page - 1) * $limit;
 
         $sql .= " LIMIT ? OFFSET ?";
         $stmt = $this->db->prepare($sql);
@@ -18,36 +28,44 @@ class Wishlist extends Database
             $stmt->bindValue($i++, $param, $type);
         }
 
-        $stmt->bindValue($i++, (int)$perPage, PDO::PARAM_INT);
+        $stmt->bindValue($i++, (int)$limit, PDO::PARAM_INT);
         $stmt->bindValue($i, (int)$offset, PDO::PARAM_INT);
         $stmt->execute();
+
         return $stmt->fetchAll();
     }
 
-    /** Count orders */
-    private function countWishlist(?string $sql = null, array $params = []): int
-    {
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute($params);
-        return (int)$stmt->fetchColumn();
+    private function countWishlist(
+        ?string $sql = null, 
+        array $params = []
+    ): int {
+
+        return $this->fetchColumn($sql, $params);
     }
 
-     /** Paginate orders */
-    private function paginate(array $data, int $total, int $page, int $perPage): ?array
-    {
+    private function format(
+        array $data, 
+        int $total, 
+        int $page, 
+        int $limit
+    ): array {
+
         return [
             'wishlist'    => $data,
             'total'       => $total,
             'page'        => $page,
-            'per_page'    => $perPage,
-            'total_pages' => ceil($total / $perPage),
+            'per_page'    => $limit,
+            'total_pages' => ceil($total / $limit),
         ];
     }
 
-    // Get all items in a user's wishlist
-    public function view(?int $userId = null, int $page = 1, int $perPage = 20)
-    {
-        $sql = "
+    public function view(
+        ?int $userId = null, 
+        int $page = 1, 
+        int $limit = 20
+    ): ?array {
+
+        $fetchQuery = "
             SELECT 
                 w.wishlist_id, 
                 w.user_id, 
@@ -65,41 +83,65 @@ class Wishlist extends Database
                     FROM product_media 
                     WHERE product_id = p.product_id
                 )
-            WHERE w.user_id = ?
+            WHERE 
+                w.user_id = ?
         ";
-        $wishlist = $this->fetchWishlist($sql, [$userId], $page, $perPage);
-        $total = $this->countWishlist("SELECT COUNT(*) FROM wishlist WHERE user_id = ?", [$userId]);
-        return $this->paginate($wishlist, $total, $page, $perPage);
+
+        $countQuery = "
+            SELECT 
+                COUNT(*) 
+            FROM wishlist 
+            WHERE 
+                user_id = ?
+        ";
+
+        $wishlist = $this->fetchWishlist($fetchQuery, [$userId], $page, $limit);
+        $total    = $this->countWishlist($countQuery, [$userId]);
+
+        return $this->format($wishlist, $total, $page, $limit);
     }
 
-    // Add item to wishlist
-    public function add(int $userId, int $productId)
-    {
-        // check if already exists
-        $stmt = $this->db->prepare("SELECT * FROM wishlist WHERE user_id = ? AND product_id = ?");
-        $stmt->execute([$userId, $productId]);
-        $existing = $stmt->fetch();
+    public function add(
+        int $userId, 
+        int $productId
+    ): ?bool {
 
-        if ($existing) {
+        // check If Already Exists
+        $isExisting = $this->query()
+            ->where('user_id', '=', $userId)
+            ->where('product_id', '=', $productId)
+            ->first();
+
+        if ($isExisting) {
             return null;
         } else {
+
             // insert new
-            $stmt = $this->db->prepare("INSERT INTO wishlist (product_id, user_id) VALUES (?, ?)");
-            return $stmt->execute([$productId, $userId]);
+            return $this->query()
+                ->insert([
+                    'product_id' => $productId,
+                    'user_id'    => $userId
+                ]);
         }
     }
 
-    // Remove item
-    public function remove(int $userId, int $productId)
-    {
-        $stmt = $this->db->prepare("DELETE FROM wishlist WHERE user_id = ? AND product_id = ?");
-        return $stmt->execute([$userId, $productId]);
+    public function remove(
+        int $userId, 
+        int $productId
+    ): bool {
+
+        return $this->query()
+            ->where('user_id', '=', $userId)
+            ->where('product_id', '=', $productId)
+            ->delete();
     }
 
-    // Clear cart
-    public function clear(int $userId)
-    {
-        $stmt = $this->db->prepare("DELETE FROM wishlist WHERE user_id = ?");
-        return $stmt->execute([$userId]);
+    public function clear(
+        int $userId
+    ): bool {
+
+        return $this->query()
+            ->where('user_id', '=', $userId)
+            ->delete();
     }
 }

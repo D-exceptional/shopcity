@@ -280,6 +280,7 @@ CREATE TABLE IF NOT EXISTS products (
   reselling ENUM('Enabled', 'Disabled') DEFAULT 'Disabled' NOT NULL,
   commission INT DEFAULT 0 NOT NULL,
   visibility ENUM('Visible', 'Hidden') DEFAULT 'Visible' NOT NULL,
+  is_featured BOOLEAN DEFAULT FALSE NOT NULL,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (product_id),

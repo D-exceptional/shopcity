@@ -1,13 +1,18 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
-class Cart extends Database
+class Cart extends Model
 {
-    // Get all items in a user's cart
-    public function view(int $userId): ?array
-    {
-        $stmt = $this->db->prepare("
+    protected string $table = 'cart';
+
+    public function view(
+        int $userId
+    ): ?array {
+
+        $sql = "
             SELECT 
                 c.cart_id, 
                 c.user_id, 
@@ -28,92 +33,127 @@ class Cart extends Database
                     FROM product_media 
                     WHERE product_id = p.product_id
                 )
-            WHERE c.user_id = ?
-        ");
-        
-        $stmt->execute([$userId]);
-        return $stmt->fetchAll();
+            WHERE 
+                c.user_id = ?
+        ";
+
+        return $this->queryAll($sql, [$userId]);
     }
 
-    // Add item to cart
-    public function add(int $userId, int $productId, int $quantity)
-    {
-        // check if already exists
-        $stmt = $this->db->prepare("SELECT * FROM cart WHERE user_id = ? AND product_id = ?");
-        $stmt->execute([$userId, $productId]);
-        $existing = $stmt->fetch();
+    public function add(
+        int $productId, 
+        int $quantity, 
+        int $userId
+    ): bool {
 
-        if ($existing) {
-            // update quantity
-            $stmt = $this->db->prepare("UPDATE cart SET quantity = quantity + ? WHERE cart_id = ?");
-            return $stmt->execute([$quantity, $existing['cart_id']]);
+        $isExisting = $this->query()
+            ->where('user_id', '=', $userId)
+            ->where('product_id', '=', $productId)
+            ->first();
+
+        if ($isExisting) {
+
+            $updateQuery = "
+                UPDATE {$table} 
+                SET 
+                    quantity = quantity + ? 
+                WHERE 
+                    cart_id = ?
+            ";
+           
+            return $this->executeQuery(
+                $updateQuery,
+                [$quantity, $isExisting['cart_id']]
+            );
+
         } else {
-            // insert new
-            $stmt = $this->db->prepare("INSERT INTO cart (product_id, quantity, user_id) VALUES (?, ?, ?)");
-            return $stmt->execute([$productId, $quantity, $userId]);
+            
+            return $this->query()
+                ->insert([
+                    'product_id' => $productId,
+                    'quantity'   => $quantity,
+                    'user_id'    => $userId,
+                ]);
         }
     }
 
-    // Update quantity
-    public function update(int $userId, int $productId, int $quantity)
-    {
-        $stmt = $this->db->prepare("UPDATE cart SET quantity = ? WHERE user_id = ? AND product_id = ?");
-        return $stmt->execute([$quantity, $userId, $productId]);
+    public function update(
+        int $productId, 
+        int $quantity, 
+        int $userId
+    ): bool {
+
+        return $this->query()
+            ->update([
+                'quantity'   => $quantity,
+                'product_id' => $productId,
+                'user_id'    => $userId,
+            ]);
     }
 
-    // Remove item
-    public function remove(int $userId, int $productId)
-    {
-        $stmt = $this->db->prepare("DELETE FROM cart WHERE user_id = ? AND product_id = ?");
-        return $stmt->execute([$userId, $productId]);
+    public function remove(
+        int $productId, 
+        int $userId
+    ): bool {
+
+        return $this->query()
+            ->delete([
+                'product_id' => $productId,
+                'user_id'    => $userId,
+            ]);
     }
 
-    // Clear cart
-    public function clear(int $userId)
-    {
-        $stmt = $this->db->prepare("DELETE FROM cart WHERE user_id = ?");
-        return $stmt->execute([$userId]);
+    public function clear(
+        int $userId
+    ): bool {
+
+        return $this->query()
+            ->delete([
+                'user_id' => $userId,
+            ]);
     }
 
-    // Count cart total items for a user
-    public function countTotal(int $userId)
-    {
-        $stmt = $this->db->prepare("
-            SELECT COALESCE(SUM(quantity), 0) AS total_items
-            FROM cart
-            WHERE user_id = ?
-        ");
-        $stmt->execute([$userId]);
-        $result = $stmt->fetch();
-        return (int) $result['total_items'];
+    public function countTotal(
+        int $userId
+    ): int {
+
+        $countQuery = "
+            SELECT 
+                COALESCE(SUM(quantity), 0) AS total_items
+            FROM {$table}
+            WHERE 
+                user_id = ?
+        ";
+
+        $result = $this->queryOne($countQuery, [$userId]);
+
+        return (int) $result['total_items'] ?? 0;
     }
 
-    public function countCart(int $userId): int
-    {
-        $stmt = $this->db->prepare("
-            SELECT COUNT(*)
-            FROM cart
-            WHERE user_id = ?
-        ");
-        $stmt->execute([$userId]);
-        return (int)$stmt->fetchColumn();
+    public function countCart(
+        int $userId
+    ): int {
+
+        return $this->query()
+            ->where('user_id', '=', $userId)
+            ->count();
     }
 
-    // Count all carts (abandoned carts)
     public function countAll(): int
     {
-        $stmt = $this->db->query("
+        $countQuery = "
             SELECT COUNT(DISTINCT user_id) AS pending_carts
-            FROM cart
-        ");
-        $result = $stmt->fetch();
+            FROM {$table}
+        ";
+
+        $result = $this->queryOne($countQuery);
+
         return (int) $result['pending_carts'];
     }
 
-    // Get pending carts count + users involved + items they have at once
-    public function getCartUsers(): ?array
+    public function getCartUsers(): array
     {
-        $sql = "
+        $fetchQuery = "
             SELECT 
                 u.user_id, 
                 u.firstname, 
@@ -125,8 +165,7 @@ class Cart extends Database
             GROUP BY u.user_id, u.firstname, u.lastname, u.email
         ";
 
-        $stmt = $this->db->query($sql);
-        $users = $stmt->fetchAll();
+        $users = $this->queryAll($fetchQuery);
 
         return [
             'count' => count($users),   // total distinct users with carts

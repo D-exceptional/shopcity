@@ -1,0 +1,46 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Listeners\Wallet;
+
+use App\Events\Wallet\RegistrationPaymentFinalized;
+use App\Models\User;
+use App\Models\Notification;
+use App\Listeners\Listener;
+
+class CreateAdminRegistrationPaymentFinalizedNotification extends Listener
+{
+    public function __construct(
+        protected User $userModel,
+        protected Notification $notificationModel
+    ) {}
+
+    public function handle(
+        RegistrationPaymentFinalized $event
+    ): void {
+
+        $message = "
+            Hello Admin, 
+
+            <br> A new {$event->regType}, <b>{$event->userName}</b>, just registered on the platform!
+            <br> Kindly review and take necessary actions. 
+        ";
+
+        $admins = $this->userModel->allByRole('Admin');
+
+        foreach ($admins as $admin) {
+
+            $created = $this->notificationModel->create(
+                $message,
+                'New Registration',
+                $admin['user_id']
+            );
+
+            if ($created === false) {
+
+                $this->logError("Failed to create registration notification for admin: {$admin['email']}");
+            }
+        }
+    }
+}

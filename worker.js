@@ -5,7 +5,9 @@
 */
 if ('serviceWorker' in navigator) {
     window.addEventListener("load", () => {
-        navigator.serviceWorker.register('service-worker.js', { scope: '/projects/demos/ecommerce/'}).then(reg => console.log("Service worker registered")).catch(err => console.error(`Service Worker Error: ${err}`));
+        navigator.serviceWorker.register('service-worker.js', { scope: '/projects/showcase/shopcity/' })
+            .then(reg => console.log("Service worker registered", reg))
+            .catch(err => console.error(`Service Worker Error: ${err}`));
     });
 }
  else {

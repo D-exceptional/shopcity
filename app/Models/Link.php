@@ -1,104 +1,115 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
-class Link extends Database
+class Link extends Model
 {
-    /**
-     * Create a new product link
-    */
-    public function create(int $product, int $user, string $short, string $long, string $code, string $status): int
-    {
-        $stmt = $this->db->prepare("
-            INSERT INTO product_links (product_id, user_id, short_link, long_link, short_code, link_status)
-            VALUES (?, ?, ?, ?, ?, ?)
-        ");
-        return $stmt->execute([$product, $user, $short, $long, $code, $status]);
+    protected string $table = 'product_links';
+
+    public function create(
+        int $productId, 
+        int $userId, 
+        string $short, 
+        string $long, 
+        string $code, 
+        string $status
+    ): bool {
+
+        return $this->query()
+            ->insert([
+                'product_id'  => $productId,
+                'user_id'     => $userId,
+                'short_link'  => $short,
+                'long_link'   => $long,
+                'short_code'  => $code,
+                'link_status' => $status,
+            ]);
     }
 
-    /**
-     * Find all links by product_id
-     */
-    public function findAll(int $productId): ?array
-    {
-        $stmt = $this->db->prepare("SELECT * FROM product_links WHERE product_id = ?");
-        $stmt->execute([$productId]);
-        return $stmt->fetchAll();
+    public function findAll(
+        int $productId
+    ): ?array {
+
+        return $this->query()
+            ->where('product_id', '=', $productId)
+            ->get();
     }
 
-    /**
-     * Find one link by link_id
-     */
-    public function findOne(int $linkId): ?array
-    {
-        $stmt = $this->db->prepare("SELECT * FROM product_links WHERE link_id = ?");
-        $stmt->execute([$linkId]);
-        return $stmt->fetch();
+    public function findOne(
+        int $linkId
+    ): ?array {
+
+        return $this->query()
+            ->where('link_id', '=', $linkId)
+            ->first();
     }
 
-    /**
-     * Find link by product + user
-     */
-    public function findByUser(int $productId, int $userId): ?array
-    {
-        $stmt = $this->db->prepare("SELECT * FROM product_links WHERE product_id = ? AND user_id = ?");
-        $stmt->execute([$productId, $userId]);
-        return  $stmt->fetch();
+    public function findByUser(
+        int $productId, 
+        int $userId
+    ): ?array {
+
+        return $this->query()
+            ->where('product_id', '=', $productId)
+            ->where('user_id', '=', $userId)
+            ->first();
     }
 
-    /**
-     * Enable/Disable all links for a product
-     */
-    public function updateAll(int $productId, string $status): bool
-    {
-        $stmt = $this->db->prepare("UPDATE product_links SET link_status = ? WHERE product_id = ?");
-        return $stmt->execute([$status, $productId]);
+    public function updateAll(
+        int $productId, 
+        string $status
+    ): bool {
+
+        return $this->query()
+            ->where('product_id', '=', $productId)
+            ->update(['link_status' => $status]);
     }
 
-    /**
-     * Enable/Disable one link
-     */
-    public function updateOne(int $linkId, string $status): bool
-    {
-        $stmt = $this->db->prepare("UPDATE product_links SET link_status = ? WHERE link_id = ?");
-        return $stmt->execute([$status, $linkId]);
+    public function updateOne(
+        int $linkId, 
+        string $status
+    ): bool {
+
+        return $this->query()
+            ->where('link_id', '=', $linkId)
+            ->update(['link_status' => $status]);
     }
 
-    /**
-     * Delete all links for a product
-     */
-    public function deleteAll(int $productId): bool
-    {
-        $stmt = $this->db->prepare("DELETE FROM product_links WHERE product_id = ?");
-        return $stmt->execute([$productId]);
+    public function deleteAll(
+        int $productId
+    ): bool {
+
+        return $this->query()
+            ->where('product_id', '=', $productId)
+            ->delete();
     }
 
-    /**
-     * Delete one link
-     */
-    public function deleteOne(int $linkId): bool
-    {
-        $stmt = $this->db->prepare("DELETE FROM product_links WHERE link_id = ?");
-        return $stmt->execute([$linkId]);
+    public function deleteOne(
+        int $linkId
+    ): bool {
+
+        return $this->query()
+            ->where('link_id', '=', $linkId)
+            ->delete();
     }
 
-    /**
-     * Count links (optionally filter by product)
-     */
-    public function count(?int $productId = null): int
-    {
-        if ($productId !== null) {
-            $stmt = $this->db->prepare("SELECT COUNT(*) FROM product_links WHERE product_id = ?");
-            $stmt->execute([$productId]);
-        } else {
-            $stmt = $this->db->query("SELECT COUNT(*) FROM product_links");
-        }
-        return (int) $stmt->fetchColumn();
+    public function count(
+        ?int $productId = null
+    ): int {
+
+        return $this->query()
+            ->when(
+                $productId
+                && !is_null($productId),
+
+                fn($query) =>
+                    $query->where('product_id', '=', $productId)
+            )
+            ->count();
     }
 
-    /**
-     * Generate unique affiliate code
-    */
     public function generateCode(): string
     {
         return bin2hex(random_bytes(6));

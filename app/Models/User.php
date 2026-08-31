@@ -1,105 +1,212 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
+
 use PDO;
 
-class User extends Database
+class User extends Model
 {
-    /** @return int|false */
-    public function createAccount(string $avatar, string $firstname, string $lastname, string $email, string $contact, string $country, string $state, string $password, string $role, string $status)
-    {
-        $stmt = $this->db->prepare("INSERT INTO users (avatar, firstname, lastname, email, contact, country, user_state, user_password, user_role, user_status) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ");
-        $ok = $stmt->execute([$avatar, $firstname, $lastname, $email, $contact, $country, $state, $password, $role, $status]);
-        return $ok ? (int) $this->db->lastInsertId() : false;
+    protected string $table = 'users';
+
+    public function createAccount(
+        string $avatar, 
+        string $firstname, 
+        string $lastname, 
+        string $email, 
+        string $contact, 
+        string $country, 
+        string $state, 
+        string $password, 
+        string $role, 
+        string $status
+    ): ?int {
+
+        return $this->query()
+            ->insertGetId([
+                'avatar'        => $avatar,
+                'firstname'     => $firstname,
+                'lastname'      => $lastname,
+                'email'         => $email,
+                'contact'       => $contact,
+                'country'       => $country,
+                'user_state'    => $state,
+                'user_password' => $password,
+                'user_role'     => $role,
+                'user_status'   => $status
+            ]);
     }
 
-    public function createSocials(int $userId): bool
-    {
-        $stmt = $this->db->prepare("INSERT INTO user_socials (facebook, instagram, tiktok, twitter, user_id) VALUES ('None', 'None', 'None', 'None', ?)");
-        return $stmt->execute([$userId]);
+    public function createSocials(
+        int $userId
+    ): bool {
+
+        $socialQuery = "
+            INSERT INTO user_socials (facebook, instagram, tiktok, twitter, user_id) 
+            VALUES ('None', 'None', 'None', 'None', ?)
+        ";
+
+        return $this->executeQuery(
+            $socialQuery, 
+            ['None', 'None', 'None', 'None', $userId]
+        );
     }
 
-    public function createBillingDetails(string $address, string $city, string $code, int $userId)
-    {
-        $stmt = $this->db->prepare("INSERT INTO billing_details (delivery_address, city, postcode, user_id) VALUES (?, ?, ?, ?)");
-        $ok = $stmt->execute([$address, $city, $code, $userId]);
-        return $ok ? (int) $this->db->lastInsertId() : false;
+    public function createBillingDetails(
+        string $address, 
+        string $city, 
+        string $code, 
+        int $userId
+    ): bool {
+
+        $billingsQuery = "
+            INSERT INTO billing_details (delivery_address, city, postcode, user_id) 
+            VALUES (?, ?, ?, ?)
+        ";
+
+        return $this->executeQuery(
+            $billingsQuery, 
+            [$address, $city, $code, $userId]
+        );
     }
 
-    public function uploadID(string $file, int $userId): bool
-    {
-        $stmt = $this->db->prepare("INSERT INTO user_documents (identity_file, user_id) VALUES (?, ?)");
-        return $stmt->execute([$file, $userId]);
+    public function uploadID(
+        string $file, 
+        int $userId
+    ): bool {
+
+        $documentQuery = "
+           INSERT INTO user_documents (identity_file, user_id) 
+           VALUES (?, ?)
+        ";
+
+        return $this->executeQuery($documentQuery, [$file, $userId]);
     }
     
-    public function getID(int $userId): string
-    {
-        $stmt = $this->db->prepare("SELECT identity_file FROM user_documents WHERE user_id = ?");
-        $stmt->execute([$userId]);
-        return $stmt->fetchColumn();
+    public function getID(
+        int $userId
+    ): ?string {
+
+        $fetchQuery = "
+            SELECT 
+                identity_file 
+            FROM user_documents 
+            WHERE 
+                user_id = ?
+        ";
+
+        $result = $this->queryOne($fetchQuery, [$userId]);
+
+        return $result ? $result['identity_file'] : null;
     }
 
-     /** @return array|false */
-    public function findByEmail(string $email)
-    {
-        $stmt = $this->db->prepare("SELECT * FROM users WHERE email = ?");
-        $stmt->execute([$email]);
-        return $stmt->fetch();
+    public function findByEmail(
+        string $email
+    ): ?array {
+
+        return $this->query()
+            ->where('email', '=', $email)
+            ->first();
     }
 
-    public function findById(int $userId)
-    {
-        $stmt = $this->db->prepare("SELECT * FROM users WHERE user_id = ?");
-        $stmt->execute([$userId]);
-        return $stmt->fetch();
+    public function findById(
+        int $userId
+    ): ?array {
+
+        return $this->query()
+            ->where('user_id', '=', $userId)
+            ->first();
     }
 
-    public function updatePassword(string $email, string $password): bool
-    {
-        $stmt = $this->db->prepare("UPDATE users SET user_password = ? WHERE email = ?");
-        return $stmt->execute([$password, $email]);
+    public function updatePassword(
+        string $email, 
+        string $password
+    ): bool {
+
+        return $this->query()
+            ->where('email', '=', $email)
+            ->update(['user_password' => $password]);
     }
 
-    public function updateProfile(string $profile, int $userId): bool
-    {
-        $stmt = $this->db->prepare("UPDATE users SET avatar = ? WHERE user_id = ?");
-        return $stmt->execute([$profile, $userId]);
+    public function updateProfile(
+        string $avatar, 
+        int $userId
+    ): bool {
+
+        return $this->query()
+            ->where('user_id', '=', $userId)
+            ->update(['avatar' => $avatar]);
     }
 
-    public function updateDetails(string $firstname, string $lastname, string $contact, int $userId): bool
-    {
-        $stmt = $this->db->prepare("UPDATE users SET firstname = ?, lastname = ?, contact = ? WHERE user_id = ?");
-        return $stmt->execute([$firstname, $lastname, $contact, $userId]);
+    public function updateDetails(
+        string $firstname, 
+        string $lastname, 
+        string $contact, 
+        int $userId
+    ): bool {
+
+        return $this->query()
+            ->where('user_id', '=', $userId)
+            ->update([
+                'firstname' => $firstname,
+                'lastname'  => $lastname,
+                'contact'   => $contact
+            ]);
     }
 
-    public function updateSocials(string $facebook, string $instagram, string $tiktok, string $twitter, int $userId): bool
-    {
-        $stmt = $this->db->prepare("UPDATE user_socials SET facebook = ?, instagram = ?, tiktok = ?, twitter = ? WHERE user_id = ?");
-        return $stmt->execute([$facebook, $instagram, $tiktok, $twitter, $userId]);
+    public function updateSocials(
+        string $facebook, 
+        string $instagram, 
+        string $tiktok, 
+        string $twitter, 
+        int $userId
+    ): bool {
+
+        $updateQuery = "
+           UPDATE user_socials 
+           SET 
+                facebook = ?, instagram = ?, tiktok = ?, twitter = ? 
+           WHERE 
+                user_id = ?
+        ";
+
+        return $this->executeQuery(
+            $updateQuery, 
+            [$facebook, $instagram, $tiktok, $twitter, $userId]
+        );
     }
 
-    public function allByRole(string $role): ?array
-    {
-        $stmt = $this->db->prepare("SELECT * FROM users WHERE user_role = ? ORDER BY firstname ASC");
-        $stmt->execute([$role]);
-        return $stmt->fetchAll();
+    public function allByRole(
+        string $role
+    ): ?array {
+
+        return $this->query()
+            ->where('user_role', '=', $role)
+            ->orderBy('firstname', 'ASC')
+            ->get();
     }
 
-    public function getProfile(int $userId)
-    {
-        $stmt = $this->db->prepare("SELECT avatar FROM users WHERE user_id = ?");
-        $stmt->execute([$userId]);
-        return $stmt->fetchColumn();
+    public function getProfile(
+        int $userId
+    ): ?string {
+
+        $result = $this->query()
+            ->select(['avatar'])
+            ->where('user_id', '=', $userId)
+            ->first();
+
+        return $result ? $result['avatar'] : null;
     }
 
-     /**
-     * Generic fetch with enrichment & pagination
-    */
-    private function fetchUsers(?string $sql = null, array $params = [], int $page = 1, int $perPage = 20): ?array
-    {
-        $offset = ($page - 1) * $perPage;
+    private function fetchUsers(
+        ?string $sql = null, 
+        array $params = [], 
+        int $page = 1, 
+        int $limit = 20
+    ): ?array {
+
+        $offset = ($page - 1) * $limit;
 
         $sql .= " LIMIT ? OFFSET ?";
         $stmt = $this->db->prepare($sql);
@@ -110,94 +217,155 @@ class User extends Database
             $stmt->bindValue($i++, $param, $type);
         }
 
-        $stmt->bindValue($i++, (int)$perPage, PDO::PARAM_INT);
+        $stmt->bindValue($i++, (int)$limit, PDO::PARAM_INT);
         $stmt->bindValue($i, (int)$offset, PDO::PARAM_INT);
 
         $stmt->execute();
+
         return $stmt->fetchAll();
     }
 
-    private function countUsers(string $sql, array $params = []): int
-    {
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute($params);
-        return (int)$stmt->fetchColumn();
+    private function countUsers(
+        string $sql, 
+        array $params = []
+    ): int {
+
+        return $this->fetchColumn($sql, $params);
     }
 
-    private function paginate(array $data, int $total, int $page, int $perPage): ?array
-    {
+    private function format(
+        array $data, 
+        int $total, 
+        int $page, 
+        int $limit
+    ): array {
+
         return [
             'users'       => $data,
             'total'       => $total,
             'page'        => $page,
-            'per_page'    => $perPage,
-            'total_pages' => ceil($total / $perPage),
+            'per_page'    => $limit,
+            'total_pages' => ceil($total / $limit),
         ];
     }
 
-    public function getByRole(?string $role = null, int $page = 1, int $perPage = 20): ?array
-    {
-        $sql = "SELECT * FROM users WHERE user_role = ? ORDER BY user_id ASC";
-        $users = $this->fetchUsers($sql, [$role], $page, $perPage);
-        $total = $this->countUsers("SELECT COUNT(*) FROM users WHERE user_role = ?", [$role]);
-        return $this->paginate($users, $total, $page, $perPage);
+    public function getByRole(
+        ?string $role = null, 
+        int $page = 1, 
+        int $limit = 20
+    ): ?array {
+
+        $users = $this->query()
+            ->when(
+                $role
+                && !is_null($role),
+
+                fn($query) =>
+                    $query->where('user_role', '=', $role)
+            )
+            ->orderBy('user_id', 'ASC')
+            ->paginate($page, $limit)
+            ->get();
+
+        $total = $this->query()
+            ->where('user_role', '=', $role)
+            ->count();
+
+        return $this->format($users, $total, $page, $limit);
     }
 
-    public function updateStatus(string $status, int $userId): bool
-    {
-        $stmt = $this->db->prepare("UPDATE users SET user_status = ? WHERE user_id = ?");
-        return $stmt->execute([$status, $userId]);
+    public function updateStatus(
+        string $status, 
+        int $userId
+    ): bool {
+
+        return $this->query()
+            ->where('user_id', '=', $userId)
+            ->update(['user_status' => $status]);
     }
 
-    public function getBillingDetails(int $userId)
-    {
-        $stmt = $this->db->prepare("SELECT * FROM billing_details WHERE user_id = ?");
-        $stmt->execute([$userId]);
-        return $stmt->fetch();
+    public function getBillingDetails(
+        int $userId
+    ): ?array {
+
+        $fetchQuery = "
+            SELECT 
+                * 
+            FROM billing_details 
+            WHERE 
+                user_id = ?
+        ";
+
+        return $this->queryOne($fetchQuery, [$userId]);
     }
 
-    public function updateBillingDetails(string $address, string $city, string $code, int $userId): bool
-    {
-        $stmt = $this->db->prepare("UPDATE billing_details SET delivery_address = ?, city = ?, postcode = ? WHERE user_id = ?");
-        return $stmt->execute([$address, $city, $code, $userId]);
+    public function updateBillingDetails(
+        string $address, 
+        string $city, 
+        string $code, 
+        int $userId
+    ): bool {
+
+        $updateQuery = "
+            UPDATE billing_details 
+            SET 
+                delivery_address = ?, city = ?, postcode = ? 
+            WHERE 
+                user_id = ?
+        ";
+
+        return $this->executeQuery(
+            $updateQuery, 
+            [$address, $city, $code, $userId]
+        );
     }
 
-    public function getSocials(int $userId): ?array
-    {
-        $stmt = $this->db->prepare("SELECT * FROM user_socials WHERE user_id = ?");
-        $stmt->execute([$userId]);
-        return $stmt->fetch();
+    public function getSocials(
+        int $userId
+    ): ?array {
+
+        $fetchQuery = "
+            SELECT 
+                * 
+            FROM user_socials 
+            WHERE 
+                user_id = ?
+        ";
+
+        return $this->executeQuery($fetchQuery, [$userId]);
     }
 
     public function countAllRoles(): ?array
     {
-        // Define all possible roles
+        // Define All Possible Roles
         $roles = ["Admin", "Vendor", "User"];
 
-        // Query counts from DB
-        $stmt = $this->db->prepare("
-            SELECT user_role, COUNT(*) AS total 
+        $fetchQuery = "
+            SELECT 
+                user_role, COUNT(*) AS total 
             FROM users 
             GROUP BY user_role
-        ");
-        $stmt->execute();
+        ";
         
-        $rows = $stmt->fetchAll();
+        $results = $this->queryAll($fetchQuery);
 
-        // Initialize all roles with zero
-        $counts = array_fill_keys($roles, 0);
+        // Initialize All Roles With Zero
+        $countKeys = array_fill_keys($roles, 0);
 
-        // Overwrite with actual counts from DB
-        foreach ($rows as $row) {
-            $counts[$row['user_role']] = (int) $row['total'];
+        // Overwrite With Actual Counts From DB
+        foreach ($results as $row) {
+            $countKeys[$row['user_role']] = (int) $row['total'];
         }
 
-        return $counts;
+        return $countKeys;
     }
 
-    public function deleteUser(int $userId): bool
-    {
-        $stmt = $this->db->prepare("DELETE FROM users WHERE user_id = ?");
-        return $stmt->execute([$userId]);
+    public function deleteUser(
+        int $userId
+    ): bool {
+
+        return $this->query()
+            ->where('user_id', '=', $userId)
+            ->delete();
     }
 }

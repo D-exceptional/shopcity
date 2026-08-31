@@ -1,101 +1,95 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services;
 
-use App\Helpers\ResponseManager;
+use App\Core\Result;
 use App\Models\Notification;
 
 class NotificationService
 {
-    protected ResponseManager $response;
-    protected Notification $notificationModel;
+    public function __construct(
+        protected Result $result,  
+        protected Notification $notificationModel
+    ) {}
 
-    public function __construct(ResponseManager $response, Notification $notificationModel)
-    {
-        // Required helpers for this controller class
-        $this->response  = $response;
-        // Required model for this controller class
-        $this->notificationModel = $notificationModel;
-    }
+    public function create(
+        string $details, 
+        string $type, 
+        int $receiver
+    ): Result {
 
-    /**
-     * Create a new notification
-     */
-    public function create(array $payload)
-    {
-        $created = $this->notificationModel->create($payload['details'], $payload['type'], $payload['receiver'], $payload['date'], $payload['status']);
+        $created = $this->notificationModel->create($details, $type, $receiver);
         if ($created === false) {
-            return $this->response->fail('Failed to create notification', 500);
+            return $this->result->error('Failed to create notification', 500);
         }
 
-        return $this->response->success('Notification created', 201);
+        return $this->result->success('Notification created', 201);
     }
 
-    /**
-     * Count all notifications
-    */
-    public function countAll()
+    public function countAll(): Result
     {
         $count = $this->notificationModel->countAll();
-        return $this->response->success('All notifications counted', ['count' => $count]);
+
+        return $this->result->success('All notifications counted', ['count' => $count]);
     }
 
-    /**
-     * Count notifications by id
-     */
-    public function countAllById(int $userId)
-    {
+    public function countAllById(
+        int $userId
+    ): Result {
+
         $count = $this->notificationModel->countAllById($userId);
-        return $this->response->success('All notifications counted', ['count' => $count]);
+
+        return $this->result->success('All notifications counted', ['count' => $count]);
     }
 
-    /**
-     * Count unread notifications by id
-    */
-    public function countUnreadById(int $userId)
-    {
+    public function countUnreadById(
+        int $userId
+    ): Result {
+
         $count = $this->notificationModel->countUnreadById($userId);
-        return $this->response->success('Unread notifications counted', ['count' => $count]);
+
+        return $this->result->success('Unread notifications counted', ['count' => $count]);
     }
 
-    /**
-     * Get unread notifications
-     */
-    public function getUnread(int $userId, int $limit, int $offset)
-    {
-        $notifications = $this->notificationModel->getUnreadById($userId, $limit, $offset);
+    public function getUnread(
+        int $userId, 
+        int $page, 
+        int $limit
+    ): Result {
+
+        $notifications = $this->notificationModel->getUnreadById($userId, $page, $limit);
         if ($notifications === false) {
-           return $this->response->fail('Failed to fetch notifications', 400);
+           return $this->result->error('Failed to fetch notifications', 400);
         }
 
-        // Prepare data
-        return $this->response->success('Unread notifications fetched', ['notifications' => $notifications]);
+        return $this->result->success('Unread notifications fetched', ['notifications' => $notifications]);
     }
 
-    /**
-     * Fetch notifications by id
-    */
-    public function fetchById(int $userId, int $limit, int $offset)
-    {
-        $notifications = $this->notificationModel->getAllById($userId, $limit, $offset);
+    public function fetchById(
+        int $userId, 
+        int $page, 
+        int $limit
+    ): Result {
+
+        $notifications = $this->notificationModel->getAllById($userId, $page, $limit);
         if ($notifications === false) {
-           return $this->response->fail('Failed to fetch notifications', 400);
+           return $this->result->error('Failed to fetch notifications', 400);
         }
 
-        // Prepare data
-        return $this->response->success('Notifications fetched', $notifications);
+        return $this->result->success('Notifications fetched', $notifications);
     }
 
-    /**
-     * Mark a notification as read
-     */
-    public function markAsRead(int $userId)
-    {
+    public function markAsRead(
+        int $userId
+    ): Result {
+        
         $marked = $this->notificationModel->markAsRead($userId);
         if ($marked === false) {
-            return $this->response->fail('Failed to mark as read', 500);
+            return $this->result->error('Failed to mark as read', 500);
         }
         
-        return $this->response->success('Notification marked as read');
+        return $this->result->success('Notification marked as read');
     }
 }

@@ -1,13 +1,13 @@
 <?php
+
+declare(strict_types=1);
+
 namespace App\Models;
 
-use PDO;
-
-class Mail extends Database
+class Mail extends Model
 {
-    /**
-     * Create a new mail
-    */
+   protected string $table = 'mailbox';
+
     public function createMail(
         string $type, 
         string $subject, 
@@ -18,136 +18,131 @@ class Mail extends Database
         string $message,
         string $filename,
         string $extension
-    ): bool
-    {
-        $stmt = $this->db->prepare("
-           INSERT INTO mailbox 
-            (mail_type, mail_subject, mail_sender, mail_receiver, mail_date, mail_time, mail_message, mail_filename, mail_extension) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ");
-        return $stmt->execute([$type, $subject, $sender, $receiver, $date, $time, $message, $filename, $extension]);
+    ): bool {
+
+        return $this->query()
+            ->insert([
+                'mail_type'      => $type,
+                'mail_subject'   => $subject,
+                'mail_sender'    => $sender,
+                'mail_receiver'  => $receiver,
+                'mail_date'      => $date,
+                'mail_time'      => $time,
+                'mail_message'   => $message,
+                'mail_filename'  => $filename,
+                'mail_extension' => $extension,
+            ]);
     }
     
-     /**
-     * Count admin inbox
-    */
-    public function countInbox(string $email): int
-    {
-        $stmt = $this->db->prepare("SELECT COUNT(*) FROM mailbox WHERE mail_receiver = ?");
-        $stmt->execute([$email]);
-        return (int)$stmt->fetchColumn();
+    public function countInbox(
+        string $email
+    ): int {
+
+        return $this->query()
+            ->where('mail_receiver', '=', $email)
+            ->count();
     }
 
-    /**
-     * Count admin outbox
-    */
-    public function countOutbox(string $name): int
-    {
-        $stmt = $this->db->prepare("SELECT COUNT(*) FROM mailbox WHERE mail_sender = ?");
-        $stmt->execute([$name]);
-        return (int)$stmt->fetchColumn();
+    public function countOutbox(
+        string $name
+    ): int {
+
+        return $this->query()
+            ->where('mail_sender', '=', $name)
+            ->count();
     }
 
-    /**
-     * Paginate results
-    */
-    private function paginate(array $data, int $total, int $page, int $perPage): ?array
-    {
-        // Calculate start and end item numbers
-        $start = ($page - 1) * $perPage + 1;
-        $end   = min($page * $perPage, $total); // ensures it doesn’t exceed total
+    public function getInbox(
+        ?string $email = null, 
+        int $page = 1, 
+        int $limit = 20
+    ): array {
+
+        $mails = $this->query()
+            ->where('mail_receiver', '=', $email)
+            ->orderBy('mail_date', 'DESC')
+            ->paginate($page, $limit)
+            ->get();
+
+        $total = $this->countInbox($email);
+
+        return $this->format($mails, $total, $page, $limit);
+    }
+
+    public function getOutbox(
+        ?string $name = null, 
+        int $page = 1, 
+        int $limit = 20
+    ): array {
+
+        $mails = $this->query()
+            ->where('mail_sender', '=', $name)
+            ->orderBy('mail_date', 'DESC')
+            ->paginate($page, $limit)
+            ->get();
+
+        $total = $this->countOutbox($name);
+
+        return $this->format($mails, $total, $page, $limit);
+    }
+
+    public function getMail(
+        int $mailId
+    ): ?array {
+
+        return $this->query()
+            ->where('mail_id', '=', $mailId)
+            ->first();
+    }
+
+    public function deleteMail(
+        int $mailId
+    ): bool {
+
+        return $this->query()
+            ->where('mail_id', '=', $mailId)
+            ->delete();
+    }
+
+    public function getVendorMailStats(
+        string $email, 
+        string $name
+    ): array {
+
+        return [
+            'inbox'  => $this->countInbox($email),
+            'outbox' => $this->countOutbox($name),
+        ];
+    }
+
+    public function getAdminMailStats(
+        string $email, 
+        string $name
+    ): array {
+
+        return [
+            'inbox'  => $this->countInbox($email),
+            'outbox' => $this->countOutbox($name),
+        ];
+    }
+
+    private function format(
+        array $data, 
+        int $total, 
+        int $page, 
+        int $limit
+    ): array {
+
+        $start = ($page - 1) * $limit + 1;
+        $end   = min($page * $limit, $total); // ensures it doesn’t exceed total
 
         return [
             'mails'         => $data,
             'total'         => $total,
             'page'          => $page,
-            'per_page'      => $perPage,
-            'total_pages'   => ceil($total / $perPage),
+            'per_page'      => $limit,
+            'total_pages'   => ceil($total / $limit),
             'display_range' => "{$start}-{$end}/{$total}" // e.g. "1-5/200"
-        ];
-    }
-
-     /**
-     * Fetch admin inbox logs
-    */
-    public function getInbox(?string $email = null, int $page = 1, int $perPage = 20): ?array
-    {
-        $offset = ($page - 1) * $perPage;
-
-        $stmt = $this->db->prepare("SELECT * FROM mailbox WHERE mail_receiver = ? ORDER BY mail_date DESC LIMIT ? OFFSET ?");
-        $stmt->bindValue(1, (string)$email, PDO::PARAM_STR);
-        $stmt->bindValue(2, (int)$perPage, PDO::PARAM_INT);
-        $stmt->bindValue(3, (int)$offset, PDO::PARAM_INT);
-        $stmt->execute();
-        // return $stmt->fetchAll();
-
-        // Modification
-        $mails = $stmt->fetchAll();
-        $total = $this->countInbox($email);
-
-        return $this->paginate($mails, $total, $page, $perPage);
-    }
-
-     /**
-     * Fetch admin outbox logs
-    */
-    public function getOutbox(?string $name = null, int $page = 1, int $perPage = 20): ?array
-    {
-        $offset = ($page - 1) * $perPage;
-
-        $stmt = $this->db->prepare("SELECT * FROM mailbox WHERE mail_sender = ? ORDER BY mail_date DESC LIMIT ? OFFSET ?");
-        $stmt->bindValue(1, (string)$name, PDO::PARAM_STR);
-        $stmt->bindValue(2, (int)$perPage, PDO::PARAM_INT);
-        $stmt->bindValue(3, (int)$offset, PDO::PARAM_INT);
-        $stmt->execute();
-        // return $stmt->fetchAll();
-
-        // Modification
-        $mails = $stmt->fetchAll();
-        $total = $this->countOutbox($name);
-
-        return $this->paginate($mails, $total, $page, $perPage);
-    }
-
-    /**
-     * Get mail by ID
-     */
-    public function getMail(int $mailId): ?array
-    {
-        $stmt = $this->db->prepare("SELECT * FROM mailbox WHERE mail_id = ?");
-        $stmt->execute([$mailId]);
-        $result = $stmt->fetch();
-        return $result;
-    }
-
-    /**
-     * Delete mail record
-     */
-    public function deleteMail(int $mailId): bool
-    {
-        $stmt = $this->db->prepare("DELETE FROM mailbox WHERE mail_id = ?");
-        return $stmt->execute([$mailId]);
-    }
-
-    /**
-     * Fetch all key dashboard stats in one call.
-    */
-    public function getVendorMailStats(string $email, string $name): ?array
-    {
-        return [
-            'inbox'  => $this->countInbox($email),
-            'outbox' => $this->countOutbox($name),
-        ];
-    }
-
-     /**
-     * Fetch all key dashboard stats in one call.
-    */
-    public function getAdminMailStats(string $email, string $name): ?array
-    {
-        return [
-            'inbox'  => $this->countInbox($email),
-            'outbox' => $this->countOutbox($name),
         ];
     }
 }

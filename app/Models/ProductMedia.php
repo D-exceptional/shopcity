@@ -1,65 +1,70 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
-class ProductMedia extends Database
+class ProductMedia extends Model
 {
-    /**
-     * Create a new media record
-     */
-    public function create(string $url, string $type, int $productId): int
-    {
-        $stmt = $this->db->prepare("
-            INSERT INTO product_media (media_url, media_type, product_id)
-            VALUES (?, ?, ?)
-        ");
-        return $stmt->execute([$url, $type, $productId]);
+    protected string $table = 'product_media';
+
+    public function create(
+        string $url, 
+        string $type, 
+        int $productId
+    ): bool {
+
+        return $this->query()
+            ->insert([
+                'media_url'  => $url,
+                'media_type' => $type,
+                'product_id' => $productId,
+            ]);
     }
 
-    /**
-     * Find all media for a product
-     */
-    public function findAll(int $productId): ?array
-    {
-        $stmt = $this->db->prepare("SELECT * FROM product_media WHERE product_id = ?");
-        $stmt->execute([$productId]);
-        return $stmt->fetchAll();
+    public function findAll(
+        int $productId
+    ): ?array {
+
+        return $this->query()
+            ->where('product_id', '=', $productId)
+            ->get();
     }
 
-    /**
-     * Find one media record by ID
-     */
-    public function findOne(int $mediaId)
-    {
-        $stmt = $this->db->prepare("SELECT * FROM product_media WHERE media_id = ?");
-        $stmt->execute([$mediaId]);
-        return $stmt->fetch();
+    public function findOne(
+        int $mediaId
+    ): ?array {
+
+        return $this->query()
+            ->where('media_id', '=', $mediaId)
+            ->first();
     }
 
-    /**
-     * Update a media record
-     */
-    public function update(string $url, int $productId): bool
-    {
-        $stmt = $this->db->prepare("UPDATE product_media SET media_url = ? WHERE media_id = ?");
-        return $stmt->execute([$url, $productId]);
+    public function update(
+        int $mediaId,
+        string $url
+    ): bool {
+
+        return $this->query()
+            ->where('media_id', '=', $mediaId)
+            ->update(['media_url' => $url]);
     }
 
-    /**
-     * Delete all media records for a product
-     */
-    public function deleteAll(int $productId): bool
-    {
-        $stmt = $this->db->prepare("DELETE FROM product_media WHERE product_id = ?");
-        return $stmt->execute([$productId]);
+    public function deleteAll(
+        int $productId
+    ): bool {
+
+        return $this->query()
+            ->where('product_id', '=', $productId)
+            ->delete();
     }
 
-    /**
-     * Delete a single media record
-     */
-    public function deleteOne(int $mediaId): bool
-    {
-        $stmt = $this->db->prepare("DELETE FROM product_media WHERE media_id = ?");
-        return $stmt->execute([$mediaId]);
+    public function deleteOne(
+        int $mediaId
+    ): bool {
+
+        return $this->query()
+            ->where('media_id', '=', $mediaId)
+            ->delete();
     }
 }

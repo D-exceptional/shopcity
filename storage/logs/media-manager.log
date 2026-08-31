@@ -1,0 +1,4 @@
+[2026-08-19 22:03:43] CloudinaryManager initialized. Log file: C:\wamp64\www\projects\showcase\jobspot/storage/logs/media-manager.log
+[2026-08-19 22:03:43] Deleting: https://res.cloudinary.com/da1kbkchq/image/upload/v1752449550/i1suewpc0cptq6umn2sy.jpg
+[2026-08-19 22:03:45] Delete result: {"result":"not found"}
+[2026-08-19 22:03:45] File deletion not confirmed: {"result":"not found"}

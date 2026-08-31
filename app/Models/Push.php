@@ -1,49 +1,73 @@
 <?php
+
+declare(strict_types=1);
+
 namespace App\Models;
 
-class Push extends Database
+use PDO;
+
+class Push extends Model
 {
-    /**
-     * Get Token IDs based on target type
-     */
-    public function getTokenIds(string $targetType = 'All', ?int $targetId = null): array
-    {
+    protected string $table = 'push_tokens';
+
+    public function getTokenIds(
+        string $targetType = 'all', 
+        ?int $targetId = null
+    ): array {
+
         $targetType = ucwords($targetType);
 
         switch ($targetType) {
 
-            case 'All':
-                $stmt = $this->db->prepare(
-                    "SELECT token FROM push_tokens WHERE is_active = 1"
-                );
+            case 'all':
+
+                $stmt = $this->db->prepare("
+                    SELECT 
+                        token 
+                    FROM {$table}
+                    WHERE 
+                        is_active = 1
+                ");
+
                 $stmt->execute();
                 break;
 
-            case 'Admin':
-            case 'Customer':
-            case 'Vendor':
-                $stmt = $this->db->prepare(
-                    "SELECT token FROM push_tokens 
-                    WHERE user_type = ? AND is_active = 1"
-                );
+            case 'admin':
+            case 'customer':
+            case 'vendor':
+
+                $stmt = $this->db->prepare("
+                    SELECT 
+                        token 
+                    FROM {$table}
+                    WHERE 
+                        user_type = ? 
+                        AND is_active = 1
+                ");
+
                 $stmt->execute([$targetType]);
                 break;
 
-            case 'Single Admin':
-            case 'Single Customer':
-            case 'Single Vendor':
+            case 'single admin':
+            case 'single customer':
+            case 'single vendor':
+
                 if ($targetId === null) {
                     return [];
                 }
 
-                $userType = str_replace('Single ', '', $targetType);
+                $userType = str_replace('single ', '', $targetType);
 
-                $stmt = $this->db->prepare(
-                    "SELECT token FROM push_tokens 
-                    WHERE user_type = ? 
-                    AND user_id = ? 
-                    AND is_active = 1"
-                );
+                $stmt = $this->db->prepare("
+                    SELECT 
+                        token 
+                    FROM {$table}
+                    WHERE 
+                        user_type = ? 
+                        AND user_id = ? 
+                        AND is_active = 1
+                ");
+
                 $stmt->execute([$userType, $targetId]);
                 break;
 
@@ -51,15 +75,16 @@ class Push extends Database
                 return [];
         }
 
-        return $stmt->fetchAll(\PDO::FETCH_COLUMN);
+        return $stmt->fetchAll(PDO::FETCH_COLUMN);
     }
 
-    /**
-     * Save or re-activate a token.
-     * Called on subscribe & auto-sync.
-     */
-    public function saveToken(string $token, string $deviceId, int $userId, string $userType): bool
-    {
+    public function saveToken(
+        string $token, 
+        string $deviceId, 
+        int $userId, 
+        string $userType
+    ): bool {
+
         $stmt = $this->db->prepare("
             INSERT INTO push_tokens (token, device_id, user_id, user_type, is_active, last_seen)
             VALUES (?, ?, ?, ?, 1, NOW())
@@ -72,17 +97,18 @@ class Push extends Database
         return $stmt->execute([$token, $deviceId, $userId, $userType]);
     }
 
-    /**
-     * Mark token as inactive (unsubscribe).
-     * Optionally restrict by deviceId
-     */
-    public function deactivateToken(string $token, ?string $deviceId = null): bool
-    {
+    public function deactivateToken(
+        string $token, 
+        ?string $deviceId = null
+    ): bool {
+
         $sql = "
             UPDATE push_tokens
-            SET is_active = 0,
+            SET 
+                is_active = 0,
                 last_seen = NOW()
-            WHERE token = ?
+            WHERE 
+                token = ?
         ";
 
         $params = [$token];
@@ -93,16 +119,16 @@ class Push extends Database
         }
 
         $stmt = $this->db->prepare($sql);
+
         return $stmt->execute($params);
     }
 
-    /**
-     * Permanently delete dead tokens (cleanup).
-     */
     public function deleteToken(string $token): void
     {
         $stmt = $this->db->prepare("
-            DELETE FROM push_tokens WHERE token = ?
+            DELETE FROM {$table}
+            WHERE 
+                token = ?
         ");
 
         $stmt->execute([$token]);

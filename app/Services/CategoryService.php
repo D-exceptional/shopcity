@@ -1,77 +1,83 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services;
 
-use App\Helpers\ResponseManager;
+use App\Core\Result;
 use App\Models\Category;
 
-class CategoryController
+class CategoryService
 {
-    protected ResponseManager $response;
-    protected Category $categoryModel;
+    public function __construct(
+        protected Result $result,  
+        protected Category $categoryModel
+    ) {}
 
-    public function __construct(ResponseManager $response, Category $categoryModel)
-    {
-        $this->response = $response;
-        // Required model for this controller class
-        $this->categoryModel = $categoryModel;
-    }
-
-    public function all()
+    public function all(): Result
     {
         $categories = $this->categoryModel->all();
 
-        // Empty cart is NOT an error
-        return $this->response->success('All categories fetched', ['categories' => $categories]);
+        return $this->result->success('All categories fetched', ['categories' => $categories]);
     }
 
-    public function group()
+    public function group(): Result
     {
         $categories = $this->categoryModel->group();
 
-        // Empty cart is NOT an error
-        return $this->response->success('Categories with product counts fetched', ['categories' => $categories]);
+        return $this->result->success('Categories with product counts fetched', ['categories' => $categories]);
     }
 
-    public function create(string $category)
-    {
+    public function create(
+        string $category
+    ): Result {
+
         $created = $this->categoryModel->create($category);
         if ($created === false) {
-            return $this->response->fail('Failed to create category', [], 500);
+            return $this->result->error('Failed to create category', [], 500);
         }
 
-        return $this->response->success('Category created successfully', [], 201);
+        return $this->result->success('Category created successfully', [], 201);
     }
 
-    public function update(string $name, int $id)
-    {
-        $updated = $this->categoryModel->update($name, $id);
+    public function update(
+        string $name, 
+        int $categoryId
+    ): Result {
+
+        $updated = $this->categoryModel->update($name, $categoryId);
         if ($updated === false) {
-            return $this->response->fail('Failed to update category', 500);
+            return $this->result->error('Failed to update category', 500);
         }
 
-        return $this->response->success('Category updated successfully');
+        return $this->result->success('Category updated successfully');
     }
 
-    public function delete(int $id)
-    { 
-        $deleted = $this->categoryModel->delete($id);
+    public function delete(
+        int $categoryId
+    ): Result { 
+
+        $deleted = $this->categoryModel->delete($categoryId);
         if ($deleted === false) {
-            return $this->response->fail('Failed to delete category', 500);
+            return $this->result->error('Failed to delete category', 500);
         }
         
-        return $this->response->success('Category deleted successfully');
+        return $this->result->success('Category deleted successfully');
     }
 
-    public function count()
+    public function count(): Result
     { 
         $count = $this->categoryModel->count();
-        return $this->response->success('Categories counted', ['count' => $count]);
+
+        return $this->result->success('Categories counted', ['count' => $count]);
     }
     
-    public function fetch(string $category)
-    { 
+    public function fetch(
+        string $category
+    ): Result { 
+
         $subcategories = $this->categoryModel->fetch($category);
-        return $this->response->success('Sub categories fetched', ['subcategories' => $subcategories]);
+        
+        return $this->result->success('Sub categories fetched', ['subcategories' => $subcategories]);
     }
 }
