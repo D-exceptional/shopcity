@@ -5,6 +5,9 @@ attachments/
 uploads/
 vendor/
 node_modules/
+storage/*
+!storage/framework/
+!storage/logs/
 
 # ================================
 # Prevent env from uploading
