@@ -188,7 +188,7 @@ class ExceptionHandler
          * Web / HTML response. 
          * Change to renderView() if you want to use the error view templates instead of the custom error page.
          */
-        return $this->renderHtml(
+        return $this->renderView(
             $exception
         );
     }
@@ -288,7 +288,7 @@ class ExceptionHandler
          * Default error page. 
          * Could be changed to 500.php or any other error page as needed.
          */
-        $errorFile = ROOT_PATH . '/404.php'; 
+        $errorFile = ROOT_PATH . '/resources/errors/template.php'; 
 
         if (!is_file($errorFile)) {
 

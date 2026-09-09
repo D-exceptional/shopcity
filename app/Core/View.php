@@ -6,6 +6,23 @@ namespace App\Core;
 
 class View
 {
+     /**
+     * Shared data available to all views.
+     *
+     * @var array<string, mixed>
+     */
+    protected array $shared = [];
+
+    /**
+     * Share data with all views.
+     */
+    public function share(
+        string $key,
+        mixed $value
+    ): void {
+        $this->shared[$key] = $value;
+    }
+
     /**
      * Render a view and return its HTML.
      *
@@ -48,6 +65,12 @@ class View
                 "View [{$view}] not found."
             );
         }
+
+        // Merge shared data with view-specific data.
+        $data = array_merge(
+            $this->shared,
+            $data
+        );
 
         // Extract variables.
         extract($data, EXTR_SKIP);

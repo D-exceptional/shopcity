@@ -24,6 +24,8 @@ return [
 
         App\Providers\EventServiceProvider::class,
 
+        App\Providers\ViewServiceProvider::class,
+
     ],
 
 ];

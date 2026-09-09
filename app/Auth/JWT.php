@@ -6,14 +6,14 @@ namespace App\Auth;
 
 use Exception;
 
-class JWT
+class Jwt
 {
     protected string $secret;
     protected string $algo = 'sha256';
 
     public function __construct()
     {
-        $this->secret = config('jwt.secret'); // Load secret from config
+        $this->secret = config('jwt.secret'); 
     }
 
     /**

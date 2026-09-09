@@ -59,10 +59,14 @@ services:
     restart: unless-stopped
 
     environment:
-      MYSQL_DATABASE: ${DB_DATABASE:-framework}
-      MYSQL_USER: ${DB_USERNAME:-framework}
-      MYSQL_PASSWORD: ${DB_PASSWORD:-secret}
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root}
+      # If you want fallback, use: ${DB_DATABASE:-__fallback name__}
+      MYSQL_DATABASE: ${DB_DATABASE}  
+      # If you want fallback, use: ${DB_USERNAME:-__fallback user__}         
+      MYSQL_USER: ${DB_USERNAME}   
+      # If you want fallback, use: ${DB_PASSWORD:-__fallback password__}            
+      MYSQL_PASSWORD: ${DB_PASSWORD}  
+      # If you want fallback, use: ${DB_ROOT_PASSWORD:-__fallback root password__}         
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD} 
 
     ports:
       - "3306:3306"
@@ -137,8 +141,18 @@ services:
     environment:
       PMA_HOST: mysql
       PMA_PORT: 3306
-      PMA_USER: ${DB_USERNAME:-framework}
-      PMA_PASSWORD: ${DB_PASSWORD:-secret}
+
+      # These last two are disabled so you can manually decide the how you want to access the MySQL server.
+      # By disabling these options, you'll manually go to the browser to login to MySQL server.
+
+      # If you want to access it as administrator,    
+        # set PMA_USER: and PMA_PASSWORD: to `root` and  `${DB_ROOT_PASSWORD}` respectively
+
+      # If you want to access it as a client instead, 
+        # set PMA_USER: and PMA_PASSWORD: to `${DB_USERNAME}` and  `${DB_PASSWORD}` respectively
+
+      # PMA_USER: ${DB_USERNAME}   
+      # PMA_PASSWORD: ${DB_PASSWORD} 
 
     ports:
       - "8081:80"

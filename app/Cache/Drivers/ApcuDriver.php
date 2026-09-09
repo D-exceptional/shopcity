@@ -44,4 +44,26 @@ class ApcuDriver implements CacheInterface
 
         return apcu_delete($key);
     }
+
+    // =========================================
+    // REMEMBER APCU CACHE DATA
+    // =========================================
+    public function remember(
+        string $key,
+        callable $callback,
+        int $ttl = 60
+    ): mixed {
+
+        $value = $this->get($key);
+
+        if ($value !== null) {
+            return $value;
+        }
+
+        $value = $callback();
+
+        $this->set($key, $value, $ttl);
+
+        return $value;
+    }
 }

@@ -10,11 +10,11 @@ return [
 
         'host' => env('DB_HOST') ?? 'mysql',
 
-        'name' => env('DB_NAME') ?? '',
+        'name' => env('DB_DATABASE') ?? 'shopcity',
 
-        'user' => env('DB_USER') ?? '',
+        'user' => env('DB_USERNAME') ?? 'shopcity_user',
 
-        'pass' => env('DB_PASS') ?? '',
+        'pass' => env('DB_PASSWORD') ?? '',
 
-    ]
+    ],
 ];

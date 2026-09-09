@@ -9,6 +9,13 @@ class NumberManager
     // =========================================
     // GENERATED FORMATTED VALUES IN THOUSANDS
     // =========================================
+
+    /**
+     * Generate formatted value in thousands.
+     *
+     * @param float|int $num - Numeric value (e.g., 1, 100, 1000)
+     * @return string - Formatted number
+     */
     public function format(
         float $num
     ): string {

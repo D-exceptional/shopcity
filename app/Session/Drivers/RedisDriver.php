@@ -13,6 +13,7 @@ class RedisDriver extends RedisStore implements SessionInterface
 {
     protected string $sessionId;
     protected int $ttl = 7200;
+    protected int $jwtExpireAt;
 
     public function __construct(
         RedisManager $redis,
@@ -21,6 +22,8 @@ class RedisDriver extends RedisStore implements SessionInterface
         parent::__construct(
             $redis->session()
         );
+
+        $this->jwtExpireAt = config('jwt.expire_at');
     }
 
     public function start(): void
@@ -170,7 +173,7 @@ class RedisDriver extends RedisStore implements SessionInterface
             'role'       => $user['role'],
             'session_id' => $sessionId,
             'iat'        => time(),
-            'exp'        => time() + 900 
+            'exp'        => $this->jwtExpireAt
         ]);
 
         $metadata = [
@@ -179,8 +182,7 @@ class RedisDriver extends RedisStore implements SessionInterface
             '_csrf_token'   => bin2hex(random_bytes(32))
         ];
 
-        // $this->store('user', $user);
-        $this->store('jwt', $token);
+        $this->store('user', $user);
         $this->store('metadata', $metadata);
 
         return ['token' => $token];
@@ -287,12 +289,11 @@ class RedisDriver extends RedisStore implements SessionInterface
     public function token(): ?string
     {
         return $this->retrieve('metadata')['_csrf_token'] ?? null;
-
     }
 
     public function tokenSet(): bool
     {
-        return !empty( $this->retrieve('metadata')['_csrf_token']);
+        return !empty($this->retrieve('metadata')['_csrf_token']);
     }
 
     public function validateCsrf(

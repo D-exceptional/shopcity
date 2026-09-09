@@ -58,6 +58,24 @@ class Notification extends Model
             ->count();
     }
 
+    public function countUnreadByType(
+        int $userId
+    ): ?array {
+
+        $fetchQuery = "
+            SELECT 
+                notification_type, 
+                COUNT(*) AS count, 
+                MAX(notification_date) AS last_date
+            FROM {$this->table}
+            WHERE 
+                notification_receiver = ?
+                AND notification_status = 'Unread'
+            GROUP BY notification_type
+        ";
+
+        return $this->queryAll($fetchQuery, [$userId]);
+    }
 
     public function countByTypeWithLastDate(
         string $type, 

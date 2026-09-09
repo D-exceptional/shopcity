@@ -29,18 +29,13 @@ class CsrfMiddleware
             return $next($request);
         }
 
-        // Get headers & token
-        $headers = $request->headers();
-        $token =
-            $headers['X-CSRF-TOKEN']
-            ?? $headers['x-csrf-token']
-            ?? $_SERVER['HTTP_X_CSRF_TOKEN']
-            ?? $_POST['_csrf']
-            ?? null;
+        // Get token
+        $token = $request->header('X-CSRF-TOKEN') ?? $request->input('_csrf_token');
 
         // Check token validity
-        if (!$this->session->validateCsrf($token)) {
-            throw new MiddlewareException('Invalid or missing CSRF token', 419, 'json', '/login');
+        $isValidToken = $this->session->validateCsrf($token);
+        if (!$isValidToken) {
+            throw new MiddlewareException('Invalid or missing CSRF token', 419);
         }
 
         // Continue pipeline

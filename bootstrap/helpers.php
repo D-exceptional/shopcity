@@ -105,6 +105,77 @@ if (!function_exists('route')) {
     }
 }
 
+/**
+ * -----------------------------------------
+ * Generate page counter url
+ * -----------------------------------------
+ */
+if (!function_exists('page_url')) {
+
+    function page_url(
+        int $page, 
+        string $baseUrl
+    ): string {
+
+        // return $baseUrl . '&page=' . $page; Query  String Format
+        return $baseUrl . '/page/' . $page; // Pretty Url Format
+    }
+}
+
+/**
+ * -----------------------------------------------
+ * Generate asset url with optional versioning
+ * -----------------------------------------------
+ */
+if (!function_exists('asset')) {
+
+    function asset(
+        string $path
+    ): string {
+
+        $path = ltrim($path, '/');
+
+        $url = '/assets/' . $path;
+
+        return $url;
+    }
+}
+
+/**
+ * -----------------------------------------------
+ * Generate asset url with full versioning
+ * -----------------------------------------------
+ */
+if (!function_exists('asset_versioned')) {
+
+    function asset_versioned(
+        string $path
+    ): string {
+
+        $path = ltrim($path, '/');
+
+        $url = '/assets/' . $path;
+
+        $filePath = config('app.base_path')
+            . DIRECTORY_SEPARATOR
+            . 'public'
+            . DIRECTORY_SEPARATOR
+            . 'assets'
+            . DIRECTORY_SEPARATOR
+            . str_replace(
+                '/',
+                DIRECTORY_SEPARATOR,
+                $path
+            );
+
+        if (is_file($filePath)) {
+            return $url . '?v=' . filemtime($filePath);
+        }
+
+        return $url;
+    }
+}
+
 /*
 config_path()
 public_path()

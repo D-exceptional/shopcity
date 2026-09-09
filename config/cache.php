@@ -11,11 +11,13 @@ return [
         'file' => [
 
             'path' => storage_path('cache')
+
         ],
 
         'redis' => [
             
             'connection' => 'cache'
+            
         ],
 
         'apcu' => []

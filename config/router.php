@@ -23,7 +23,7 @@ return [
 
     ],
 
-    'cache' => true,
+    'cache'          => true,
 
     'case_sensitive' => false,
 

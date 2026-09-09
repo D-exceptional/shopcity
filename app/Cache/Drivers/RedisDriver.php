@@ -60,4 +60,26 @@ class RedisDriver extends RedisStore implements CacheInterface
 
         return (bool) $this->deleteValue($key);
     }
+
+    // =========================================
+    // REMEMBER REDIS CACHE DATA
+    // =========================================
+    public function remember(
+        string $key,
+        callable $callback,
+        int $ttl = 60
+    ): mixed {
+
+        $value = $this->get($key);
+
+        if ($value !== null) {
+            return $value;
+        }
+
+        $value = $callback();
+
+        $this->set($key, $value, $ttl);
+
+        return $value;
+    }
 }

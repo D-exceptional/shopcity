@@ -17,5 +17,6 @@ return [
     'url' => [
 
         'secure' => true,   // Use HTTPS URLs by default
+        
     ],
 ];

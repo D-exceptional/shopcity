@@ -570,7 +570,7 @@ class Router
 
         $this->writeLog("Route not found: $uri");
 
-        throw new RouteNotFoundException("Route not found: $uri");
+        throw new RouteNotFoundException("Route not found: $uri", 404);
     }
 
     // =========================================
@@ -579,14 +579,6 @@ class Router
     private function writeLog(
         mixed $data
     ): void {
-        
-        /*
-        $logFile   = dirname(__DIR__, 2) . '/storage/logs/router-error.log';
-        $timestamp = date('Y-m-d H:i:s');
-        $entry     = "[{$timestamp}] {$message}\n";
-        
-        error_log($entry, 3, $logFile);
-        */
 
         $timestamp = date('Y-m-d H:i:s');
 

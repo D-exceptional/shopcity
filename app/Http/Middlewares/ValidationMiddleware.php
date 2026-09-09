@@ -28,8 +28,7 @@ class ValidationMiddleware
 
             throw new MiddlewareException(
                 'Validation rules not provided',
-                400,
-                'json'
+                400
             );
         }
 

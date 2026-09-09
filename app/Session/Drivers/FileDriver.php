@@ -9,9 +9,13 @@ use App\Auth\JWT;
 
 class FileDriver implements SessionInterface
 {
+    protected int $jwtExpireAt;
+
     public function __construct(
         protected JWT $jwt
-    ) {}
+    ) {
+        $this->jwtExpireAt = config('jwt.expire_at');
+    }
 
     public function start(): void
     {
@@ -79,11 +83,6 @@ class FileDriver implements SessionInterface
 
         $this->store('user', $user);
         $this->store('metadata', $metadata);
-
-        // $this->store('role', strtolower($user['role'] ?? ''));
-        // $this->store('login_time', time());
-        // $this->store('last_activity', time());
-        // $this->store('_csrf_token', bin2hex(random_bytes(32)));
     }
 
     // =========================================
@@ -104,7 +103,7 @@ class FileDriver implements SessionInterface
             'role'       => $user['role'],
             'session_id' => $sessionId,
             'iat'        => time(),
-            'exp'        => time() + 900 
+            'exp'        => $this->jwtExpireAt
         ]);
 
         $metadata = [
@@ -113,8 +112,7 @@ class FileDriver implements SessionInterface
             '_csrf_token'   => bin2hex(random_bytes(32))
         ];
 
-        // $this->store('user', $user);
-        $this->store('jwt', $token);
+        $this->store('user', $user);
         $this->store('metadata', $metadata);
 
         return ['token' => $token];
