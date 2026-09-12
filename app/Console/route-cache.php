@@ -24,7 +24,7 @@ use App\Routing\Router;
 |--------------------------------------------------------------------------
 */
 
-require_once BASE_PATH . '/bootstrap.php';
+require_once BASE_PATH . '/bootstrap/bootstrap.php';
 
 /*
 |--------------------------------------------------------------------------
@@ -88,7 +88,7 @@ $cacheRoutes = $router->toCacheArray();
 |--------------------------------------------------------------------------
 */
 
-$cacheDirectory = BASE_PATH . '/storage/cache/route';
+$cacheDirectory = BASE_PATH . '/storage/framework/cache/route';
 
 $cacheFile = $cacheDirectory . '/routes.php';
 

@@ -9,7 +9,7 @@ declare(strict_types=1);
 */
 define('BASE_PATH', dirname(__DIR__, 2));
 
-$cacheFile = BASE_PATH . '/storage/cache/route/routes.php';
+$cacheFile = BASE_PATH . '/storage/framework/cache/route/routes.php';
 
 if (file_exists($cacheFile)) {
 

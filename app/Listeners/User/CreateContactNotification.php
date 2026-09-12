@@ -20,7 +20,7 @@ class CreateContactNotification extends Listener
         ContactMessageReceived $event
     ): void {
 
-        $message = "
+        $adminNotificationMessage = "
             A message was sent by <b> " . trim($event->name) . "</b> from  <b> " . trim($event->country) . "</b>
 
             <br> You can reach out to them via their mobile: <b>" . trim($event->contact) . "</b> or email address: <b>" . trim($event->email) . "</b>
@@ -31,7 +31,7 @@ class CreateContactNotification extends Listener
         foreach ($admins as $admin) {
 
             $this->notificationModel->create(
-                $message,
+                $adminNotificationMessage,
                 'New Message',
                 $admin['user_id']
             );

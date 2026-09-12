@@ -26,17 +26,12 @@ class SendAdminRegistrationPush extends Listener
         $message = "
             Hello Admin,
 
-            <br> A new {$event->membership}, <b>{$event->fullName}</b>, just registered on the platform.
+            <br> A new {$event->role}, <b>{$event->name}</b>, just registered on the platform.
             <br> Kindly review and take necessary actions. 
         ";
 
-        $message = $this->textProcessor
+        $adminPushMessage = $this->textProcessor
             ->formatPushMessage($message);
-
-        $baseUrl = config(
-            'app.base_path',
-            '/'
-        );
 
         $admins = $this->userModel->allByRole('Admin');
 
@@ -48,9 +43,9 @@ class SendAdminRegistrationPush extends Listener
                     'Single Admin',
                     $admin['user_id'],
                     'New Registration',
-                    $message,
+                    $adminPushMessage,
                     [
-                        'url' => "{$baseUrl}/admin",
+                        'url' => "/auth/admin/login",
                         'type' => 'registration'
                     ]
                 ],

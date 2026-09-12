@@ -9,8 +9,7 @@ use App\Contracts\EventInterface;
 class UserStatusUpdated implements EventInterface
 {
     public function __construct(
-        public readonly string $name,
-        public readonly string $email,
+        public readonly int $userId,
         public readonly string $status,
     ) {}
 }

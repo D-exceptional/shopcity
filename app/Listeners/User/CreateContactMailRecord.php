@@ -20,7 +20,7 @@ class CreateContactMailRecord extends Listener
         ContactMessageReceived $event
     ): void {
 
-        $message = "
+        $adminEmailMessage = "
             A message was sent by <b> " . trim($event->name) . "</b> from  <b> " . trim($event->country) . "</b>
 
             <br> You can reach out to them via their mobile: <b>" . trim($event->contact) . "</b> or email address: <b>" . trim($event->email) . "</b>
@@ -37,7 +37,7 @@ class CreateContactMailRecord extends Listener
                 $event->subject,
                 $event->name,
                 $admin['email'],
-                $message,
+                $adminEmailMessage,
                 'None', 
                 'None'
             );

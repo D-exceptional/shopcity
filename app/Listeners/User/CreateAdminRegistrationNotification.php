@@ -20,9 +20,9 @@ class CreateAdminRegistrationNotification extends Listener
         UserRegistered $event
     ): void {
 
-        $message = "
-            A new {$event->membership},
-            <b>{$event->fullName}</b>,
+        $adminNotificationMessage = "
+            A new {$event->role},
+            <b>{$event->name}</b>,
             just registered on the platform.
         ";
 
@@ -31,14 +31,14 @@ class CreateAdminRegistrationNotification extends Listener
         foreach ($admins as $admin) {
 
             $created = $this->notificationModel->create(
-                $message,
+                $adminNotificationMessage,
                 'New Registration',
                 $admin['user_id']
             );
 
             if ($created === false) {
 
-                $this->logError("Failed to create registration notification for admin: {$admin['email']}");
+                $this->logError("Failed to create new user registration notification for admin: {$admin['email']}");
             }
         }
     }

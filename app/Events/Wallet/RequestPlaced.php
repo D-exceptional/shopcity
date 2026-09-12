@@ -10,9 +10,6 @@ class RequestPlaced implements EventInterface
 {
     public function __construct(
         public readonly int $userId,
-        public readonly string $name,
-        public readonly string $email,
-        public readonly string $role,
-        public readonly string $amount,
+        public readonly float $amount,
     ) {}
 }

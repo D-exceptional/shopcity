@@ -9,10 +9,10 @@ use App\Contracts\EventInterface;
 class UserRegistered implements EventInterface
 {
     public function __construct(
-        public readonly string $fullName,
+        public readonly string $name,
         public readonly string $email,
-        public readonly string $contact,
-        public readonly string $membership,
-        public readonly ?string $reference,
+        public readonly string $role,
+        public readonly string $creator,
+        public readonly string $subject,
     ) {}
 }

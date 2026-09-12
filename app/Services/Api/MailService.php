@@ -4,15 +4,10 @@ declare(strict_types=1);
 
 namespace App\Services\Api;
 
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;  
-use PHPMailer\PHPMailer\SMTP;
-
 use App\Core\Result;
 use App\Support\TextManager;
-use App\Mail\MailManager;
-use App\Models\Mail;
-use App\Models\Notification;
+use App\Events\Mail\MailSent;
+use App\Events\EventDispatcher;
 
 class MailService
 {
@@ -20,11 +15,10 @@ class MailService
     private string $baseUrl;
 
     public function __construct(
-        protected Result $result, 
-        protected TextManager $textManager, 
-        protected MailManager $mailManager,
+        protected Result $result,
+        protected TextManager $textProcessor,
+        protected EventDispatcher $eventDispatcher,
         protected Mail $mailModel,
-        protected Notification $notificationModel
     ) {
         $this->smtpConfig = [
             'host'      => env('MAIL_HOST'),
@@ -193,7 +187,6 @@ class MailService
             return $this->result->error('No valid email recipients found');
         }
 
-        /*
         $this->eventDispatcher->dispatch(
             new MailSent(
                 recipients: $mailRecipients,
@@ -201,113 +194,7 @@ class MailService
                 type: $type,
             )
         );
-        */
 
-        return $this->sendBulkMail($mailRecipients, $hasAttachment, $type);
-    }
-
-    private function sendBulkMail(
-        array $recipients, 
-        bool $hasAttachment = false, 
-        string $type = 'Text'
-    ): Result {
-
-        $errors  = [
-            'mail'         => [],
-            'notification' => [],
-            'smtp'         => []
-        ];
-
-        $batches = array_chunk($recipients, 10);
-
-        foreach ($batches as $index => $batch) {
-            foreach ($batch as $recipient) {
-                
-                // Create in-app mail 
-                $mailCreated = $this->mailModel->createMail(
-                    $recipient['mail_type'],
-                    $recipient['mail_subject'],
-                    $recipient['mail_sender'],
-                    $recipient['mail_receiver'],
-                    $recipient['mail_date'],
-                    $recipient['mail_time'],
-                    $recipient['mail_message'],
-                    $recipient['mail_filename'],
-                    $recipient['mail_extension']
-                );
-
-                if (!$mailCreated) {
-                    $errors['mail'][] = ['mailbox_error' => "Failed to save mail for {$recipient['mail_receiver']}"];
-                    continue;
-                }
-
-                // Create in-app notification
-                $notificationCreated = $this->notificationModel->create(
-                    'An incoming mail was received',
-                    'New Message',
-                    $recipient['userId'],
-                );
-
-                if (!$notificationCreated) {
-                    $errors['notification'][] = ['notification_error' => "Failed to save notification for {$recipient['mail_receiver']}"];
-                    continue;
-                }
-
-                // Send email
-                if ($type === 'Text') {
-                    $this->mailManager->sendSimpleMail($recipient['mail_subject'], $recipient['mail_receiver'], $recipient['mail_message']);
-                } else {
-                    if (!$this->sendEmail($recipient, $hasAttachment)) {
-                        $errors['smtp'][] = ['email_error' => "Failed to send email to {$recipient['mail_receiver']}"];
-                    }
-                }
-            }
-
-            if ($index < count($batches) - 1) sleep(2);
-        }
-
-        if (
-            !empty($errors['mail']) 
-            || !empty($errors['notification']) 
-            || !empty($errors['smtp']) 
-        ) {
-            return $this->result->error('Some emails, notifications failed to send or save.', 500, ['errors' => $errors]);
-        }
-
-        return $this->result->success('Message sent successfully');
-    }
-
-    private function sendEmail(
-        array $recipient, 
-        bool $hasAttachment = false
-    ): bool {
-        try {
-            $mail = new PHPMailer(true);
-            $mail->isSMTP();
-            $mail->Host       = $this->smtpConfig['host'];
-            $mail->SMTPAuth   = true;
-            $mail->Username   = $this->smtpConfig['username'];
-            $mail->Password   = $this->smtpConfig['password'];
-            $mail->SMTPSecure = $this->smtpConfig['secure'];
-            $mail->Port       = $this->smtpConfig['port'];
-
-            $mail->setFrom($this->smtpConfig['fromEmail'], $this->smtpConfig['fromName']);
-            $mail->addAddress($recipient['mail_receiver']);
-
-            if ($hasAttachment && isset($recipient['filePath']) && file_exists($recipient['filePath'])) {
-                $mail->addAttachment($recipient['filePath']);
-            }
-
-            $mail->isHTML(true);
-            $mail->CharSet = 'UTF-8';
-            $mail->Subject = $recipient['mail_subject'];
-            $mail->Body    = $recipient['mail_message'];
-            $mail->send();
-
-            return true;
-        } catch (Exception $e) {
-            error_log("PHPMailer Error ({$recipient['mail_receiver']}): " . $e->getMessage());
-            return false;
-        }
+        return $this->result->success('Message queued successfully');
     }
 }

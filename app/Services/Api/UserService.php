@@ -6,15 +6,15 @@ namespace App\Services\Api;
 
 use App\Core\Result;
 use App\Contracts\SessionInterface;
+use App\Events\User\UserRegistered;
+use App\Events\User\OtpRequested;
+use App\Events\User\ProfileUpdated;
+use App\Events\User\UserStatusUpdated;
+use App\Events\User\ContactMessageReceived;
+use App\Events\EventDispatcher;
 use App\Support\TextManager;
-use App\Mail\MailManager;
-use App\Notification\PushManager;
-use App\Media\CloudinaryManager;
 use App\Models\User;
 use App\Models\Wallet;
-use App\Models\Notification;
-use App\Models\Mail;
-use App\Models\Push;
 
 class UserService
 {
@@ -24,15 +24,10 @@ class UserService
     public function __construct(
         protected Result $result, 
         protected SessionInterface $sessionManager,
-        protected TextManager $textManager, 
-        protected MailManager $mailManager,
-        protected PushManager $pushManager,
-        protected CloudinaryManager $cloudinaryManager, 
+        protected EventDispatcher $eventDispatcher,
+        protected TextManager $textManager,  
         protected User $userModel, 
         protected Wallet $walletModel, 
-        protected Notification $notificationModel, 
-        protected Mail $mailModel, 
-        protected Push $pushModel
     ) {
         $this->dbConn  = $this->userModel->db;
         $this->baseUrl = $appUrl; 
@@ -87,6 +82,10 @@ class UserService
         $fullName = $firstname . ' ' . $lastname;
         $status   = in_array($role, $rolesConfig['active'], true) ? 'Active' : 'Pending';
 
+        // Prepare Mail Data
+        $isActiveRole = in_array($role, $rolesConfig['active'], true);
+        $userSubject  = $isActiveRole ? 'Registration Successful' : 'Registration Under Review';
+
         // 4. Begin Transaction (So DB + File Upload Are Atomic)
         $this->dbConn->beginTransaction();
 
@@ -139,74 +138,15 @@ class UserService
             return $this->result->error('Registration failed: ' . $e->getMessage(), 500);
         }
 
-        // 5. Role-based Messaging (DRY pproach)
-        $defaultMessage = "
-            Hi <b>{$fullName}</b>, 
-
-            <br> We are currently reviewing your registration. 
-            <br> We'll notify you as soon as there's any new developments.
-            <br> Thank you for your patience.
-        ";
-
-        $roleMessages = [
-            'Customer'  => $this->buildWelcomeMessage($fullName),
-            'Affiliate' => $this->buildWelcomeMessage($fullName),
-            'Worker'    => $this->buildWelcomeMessage($fullName),
-            'Vendor'    => ($creator === 'Admin') 
-            ? $this->buildWelcomeMessage($fullName) 
-            : "
-                Hi <b>{$fullName}</b>, 
-
-                <br> Your registration is currently <b>undergoing review</b>. 
-                <br> Our team is reviewing your details. Once approved, you'll be able to start selling. 
-                <br> We'll notify you as soon as the status changes.
-                <br> Thank you for your patience.
-            ",
-        ];
-
-        // Prepare Mail Data
-        $isActiveRole = in_array($role, $rolesConfig['active'], true);
-        $userMessage  = $roleMessages[$role] ?? $defaultMessage;
-        $userSubject  = $isActiveRole ? 'Registration Successful' : 'Registration Under Review';
-
-        // Send User Email
-        $this->mailManager->sendSimpleMail($userSubject, $email, $userMessage);
-
-        /*
-            Loop through the admins, 
-            Notify them via email
-            Notify them via push if available
-        */
-
-        // Build Admin Message
-        $adminMessage = "
-            Hello Admin, 
-
-            <br> A new {$role}, <b>{$fullName}</b>, just registered on the platform!
-            <br> Kindly review and take necessary actions. 
-        ";
-
-        // Process Admin Notifications
-        $admins = $this->userModel->allByRole('Admin');
-        foreach ($admins as $admin) {
-
-            // Create In-App Admin Notification
-            $notification = $this->notificationModel->create($adminMessage, 'New Registration', $admin['user_id']);
-            if ($notification === false) {
-                return $this->result->error('Failed to create notification for admin', 500);
-            }
-
-            // Send Admin Email
-            $this->mailManager->sendSimpleMail('New Registration', $admin['email'], $adminMessage);
-
-            // Send Admin Push Notification
-            $adminPushMessage = $this->textManager->formatPushMessage($adminMessage);
-
-            $this->pushManager->send('Single Admin', $admin['user_id'], 'New Registration', $adminPushMessage, [
-                'url' => "{$this->baseUrl}/admin/",
-                'type' => 'registration'
-            ]);
-        }
+        $this->eventDispatcher->dispatch(
+            new UserRegistered(
+                name: $fullName,
+                email: $email,
+                role: strtolower($role),
+                creator: strtolower($creator),
+                subject: $userSubject,
+            )
+        );
 
         return $this->result->success('Registration successful');
     }
@@ -278,16 +218,13 @@ class UserService
         // Store OTP Session Data
         $this->sessionManager->store('otp', $otpData);
 
-        // Build User Message
-        $userMessage = "
-            Hi, 
-
-            <br> Your password reset OTP is <b>{$otpCode}</b> and it expires in 5 minutes.
-            <br> Ensure you never share OTP code with anyone to prevent your account from being compromised.
-        ";
-
-        // Send User Email
-        $this->mailManager->sendSimpleMail('Password Reset OTP', $email, $userMessage);
+        $this->eventDispatcher->dispatch(
+            new OtpRequested(
+                name: $user['fullname'],
+                email: $email,
+                otp: $otp,
+            )
+        );
 
         return $this->result->success('OTP sent to your email');
     }
@@ -368,9 +305,15 @@ class UserService
             return $this->result->error('Failed to update profile', 500);
         }
 
-        // Later Use Cloudinary Events To Delete Old Profile
         if ($profile !== 'None') {
-            $this->cloudinaryManager->delete($profile);
+
+            $this->eventDispatcher->dispatch(
+                new ProfileUpdated(
+                    oldAvatar: $profile,
+                    newAvatar: $avatar,
+                )
+            );
+
         }
 
         return $this->result->success('Profile updated successfully');
@@ -416,41 +359,12 @@ class UserService
             return $this->result->error('Failed to update status', 500);
         }
 
-        $userData  = $this->getBiodata($userId);
-        $userName  = $userData['name'];
-        $userEmail = $userData['email'];
-
-        // Build Message Based On Status
-        $statusMessages = [
-            'Active' => "
-                Hi <b>{$userName}</b>, 
-
-                <br> Great news! 🎉 Your account has been <b>activated</b>. 
-                <br> You can now log into your account and pick up from where you left off. 
-                <br> Take care to adhere to the regulations in order to prevent sanctions of this nature.
-                <br> We're excited to have you back!
-            ",
-
-            'Deactivated' => "
-                Hi <b>{$userName}</b>, 
-
-                <br> Your account has been <b>deactivated</b>. 
-                <br> This may be due to policy violations, inactivity, or other issues. 
-                <br> Please contact support at <b>support@mrsamase.com</b> or visit <b><a href='{$this->baseUrl}/contact'>Appeal Page</a></b> to resolve this and restore your account. 
-                <br> We value your partnership and hope to have you back soon.
-            ",
-        ];
-
-        // Fallback In Case Of Unknown Status
-        $userMessage = $statusMessages[$status] ?? "
-            Hi <b>{$userName}</b>, 
-
-            <br> There has been an update to your account status. 
-            <br> Please check account for more details.
-        ";
-
-        // Send User Email
-        $this->mailManager->sendSimpleMail('Account Status Updated', $userEmail, $userMessage);
+        $this->eventDispatcher->dispatch(
+            new UserStatusUpdated(
+                userId: $userId,
+                status: $status,
+            )
+        );
 
         return $this->result->success('Account status updated successfully');
     }
@@ -516,51 +430,18 @@ class UserService
     ): Result {
 
         // Handle Contact: Strip Leading 0 Only If It Exists
-        $cleanContact = ltrim($contact, '0');
-        $contact      = $code . $cleanContact;
+        $contact = $code . ltrim($contact, '0');
 
-        // Build Message
-        $adminMessage = "
-            A message was sent by <b>" . trim($name) . "</b> from  <b> " . trim($country) . " </b>
-            <br>
-            You can reach out to them via their mobile: <b>" . trim($contact) . "</b> or email address: <b>" . trim($email) . "</b>
-        ";
-
-        // Define Dates & Time
-        $fullDate    = date('Y-m-d H:i:s');
-        $shortDate   = date('Y-m-d');
-        $currentTime = date('H:i');
-
-        // Process Admin Notifications
-        $admins = $this->userModel->allByRole('Admin');
-        foreach ($admins as $admin) {
-
-            // Create In-App Admin Notification
-            $notification = $this->notificationModel->create($adminMessage, 'New Message', $admin['user_id']);
-            if ($notification === false) {
-                return $this->result->error('Failed to create notification for admin', 500);
-            }
-
-            // Create In-App Admin Mail Notification
-            $mail = $this->mailModel->createMail(
-                'Text', 
-                $subject, 
-                $name, 
-                $admin['email'], 
-                $shortDate, 
-                $currentTime, 
-                $message, 
-                'None', 
-                'None'
-            );
-
-            if ($mail === false) {
-                return $this->result->error("Failed to create mail record for admin {$admin['email']}", 500);
-            }
-
-            // Send Admin Email
-            $this->mailManager->sendSimpleMil($subject, $admin['email'], $adminMessage);
-        }
+        $this->eventDispatcher->dispatch(
+            new ContactMessageReceived(
+                name: $name,
+                email: $email,
+                contact: $contact,
+                country: $country,
+                subject: $subject,
+                message: $message,
+            )
+        );
 
         return $this->result->success('Message sent successfully');
     }
@@ -630,33 +511,6 @@ class UserService
         return $this->result->success('Document fetched successfully', ['file' => $file]);
     }
 
-    private function getBiodata(
-        int $userId
-    ): array {
-
-        $userData = $this->userModel->findById($userId);
-
-        return [
-            'name'  => $userData['firstname'] . ' ' . $userData['lastname'],
-            'email' => $userData['email'],
-            'role'  => $userData['user_role']
-        ];
-    }
-
-    private function buildWelcomeMessage(
-        string $name
-    ): string {
-
-        return "
-            Hi <b>{$name}</b>,
-
-            <br> Great news! 🎉 Your registration is successful. 
-            <br> Login to your account for maximum shopping experience curated just for you!
-            <br> Thank you for choosing to shop with us.
-            <br> We're excited to have you on our platform!
-        ";
-    }
-
     private function getPath(
         string $role, 
         string $action
@@ -674,6 +528,6 @@ class UserService
             'affiliate' => $action === 'login' ? '/affiliate/dashboard' : $publicLoginLink,
         ];
 
-        return $pathConfig[$userRole];
+        return $baseUrl . $pathConfig[$userRole];
     }
 }

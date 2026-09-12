@@ -5,15 +5,15 @@ declare(strict_types=1);
 namespace App\Services\Api;
 
 use App\Core\Result;
+use App\Events\Product\ProductCreated;
+use App\Events\Product\ReviewCreated;
+use App\Events\EventDispatcher;
 use App\Support\TextManager;
-use App\Mail\MailManager;
-use App\Notification\PushManager;
 use App\Media\CloudinaryManager;
 use App\Models\Product;
 use App\Models\ProductMedia;
 use App\Models\Link;
 use App\Models\User;
-use App\Models\Notification;
 
 class ProductService
 {
@@ -21,15 +21,13 @@ class ProductService
 
     public function __construct(
         protected Result $result, 
+        protected EventDispatcher $eventDispatcher,
         protected TextManager $textManager, 
-        protected MailManager $mailManager,
-        protected PushManager $pushManager,
         protected CloudinaryManager $cloudinaryManager,
         protected Product $productModel, 
         protected ProductMedia $productMedia, 
         protected Link $linkModel, 
         protected User $userModel, 
-        protected Notification $notificationModel
     ) {
         $this->baseUrl = $appUrl;
     }
@@ -75,32 +73,11 @@ class ProductService
             }
         }
 
-        /*
-            Loop through the admins, 
-            Notify them via email
-        */
-
-        // Build Admin Message
-        $adminMessage = "
-            Hello Admin, 
-
-            <br> A new product, <b>{$name}</b>, was created on the platform!
-            <br> Kindly review and take necessary actions. 
-        ";
-
-        // Process Admin Notifications
-        $admins = $this->userModel->allByRole('Admin');
-        foreach ($admins as $admin) {
-
-            // Create In-App Admin Notification
-            $notification = $this->notificationModel->create($adminMessage, 'New Product', $admin['user_id']);
-            if ($notification === false) {
-                return $this->result->error('Failed to create notification for admin', 500);
-            }
-
-            // Send Admin Email
-            $this->mailManager->sendSimpleMail('New Product', $admin['email'], $adminMessage);
-        }
+        $this->eventDispatcher->dispatch(
+            new ProductCreated(
+                name: $name,
+            )
+        );
 
         return $this->result->success('Product created successfully', [], 201);
     }
@@ -404,30 +381,15 @@ class ProductService
         $productName = $productData['product_name'];
         $storeId     = $productData['store_id'];
 
-        // Get Vendor Details
-        $vendorId    = $this->storeModel->findUserByStoreId($storeId);
-        $vendorData  = $this->getBiodata($vendorId);
-        $vendorName  = $vendorData['name'];
-        $vendorEmail = $vendorData['email'];
+        // Get Vendor ID
+        $vendorId = $this->storeModel->findUserByStoreId($storeId);
 
-        // Build Vendor Message
-        $vendorMessage = "
-            Hi <b>{$vendorName}</b>, 
-
-            <br> Your product, <b>{$productName}</b>, just got a new review. 
-            <br> It's a positive sign customers love it.
-            <br> Keep updating your store with awesome products like this one.
-            <br> Have a great day ahead.
-        ";
-
-        // Create In-App Customer Notification
-        $notification = $this->notificationModel->create($vendorMessage, "Product Review", $vendorId);
-        if ($notification === false) {
-            return $this->result->error('Failed to create notification', 500);
-        }
-
-        // Send Vendor Email
-        $this->mailManager->sendSimpleMail("New Product Review", $vendorEmail, $vendorMessage);
+        $this->eventDispatcher->dispatch(
+            new ReviewCreated(
+                name: $productName,
+                vendorId: $vendorId,
+            )
+        );
 
         return $this->result->success('Review added successfully');
     }

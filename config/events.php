@@ -2,17 +2,8 @@
 
 declare(strict_types=1);
 
-// Blog Events Imports
-use App\Events\Blog\BlogCreated;
-use App\Events\Blog\BannerUpdated;
-use App\Events\Blog\BlogStatusUpdated;
-
 // Mail Events Imports
 use App\Events\Mail\MailSent;
-
-// Task Events Imports
-use App\Events\Task\TaskCreated;
-use App\Events\Task\TaskStatusUpdated;
 
 // User Events Imports
 use App\Events\User\ContactMessageReceived;
@@ -26,25 +17,8 @@ use App\Events\Wallet\PaymentProcessed;
 use App\Events\Wallet\RegistrationPaymentFinalized;
 use App\Events\Wallet\RequestPlaced;
 
-// Blog Listeners Imports
-use App\Listeners\Blog\CreateAdminBlogCreationNotification;
-use App\Listeners\Blog\SendAdminBlogCreationEmail;
-use App\Listeners\Blog\SendAdminBlogCreationPush;
-use App\Listeners\Blog\SendAuthorBlogCreationEmail;
-use App\Listeners\Blog\SendAuthorBlogCreationPush;
-use App\Listeners\Blog\SendAuthorBlogStatusUpdatedEmail;
-use App\Listeners\Blog\SendAuthorBlogStatusUpdatedPush;
-use App\Listeners\Blog\UpdateBanner;
-
 // Mail Listeners Imports
 use App\Listeners\Mail\SendBulkMail;
-
-// Task Listeners Imports
-use App\Listeners\Task\CreateAdminTaskCreationNotification;
-use App\Listeners\Task\SendAdminTaskCreationEmail;
-use App\Listeners\Task\SendAdminTaskCreationPush;
-use App\Listeners\Task\SendUserTaskStatusUpdatedEmail;
-use App\Listeners\Task\SendUserTaskStatusUpdatedPush;
 
 // User Listeners Imports
 use App\Listeners\User\CreateAdminRegistrationNotification;
@@ -76,39 +50,9 @@ use App\Listeners\Wallet\SendUserRequestPlacedPush;
 
 return [
 
-    // Blog Events
-    BlogCreated::class => [
-        CreateAdminBlogCreationNotification::class,
-        SendAdminBlogCreationEmail::class,
-        SendAdminBlogCreationPush::class,
-        SendAuthorBlogCreationEmail::class,
-        SendAuthorBlogCreationPush::class,
-    ],
-
-    BannerUpdated::class => [
-        UpdateBanner::class,
-    ],
-
-    BlogStatusUpdated::class => [
-        SendAuthorBlogStatusUpdatedEmail::class,
-        SendAuthorBlogStatusUpdatedPush::class,
-    ],
-
     // Mail Events
     MailSent::class => [
         SendBulkMail::class,
-    ],
-
-    // Task Events
-    TaskCreated::class => [
-        CreateAdminTaskCreationNotification::class,
-        SendAdminTaskCreationEmail::class,
-        SendAdminTaskCreationPush::class,
-    ],
-
-    TaskStatusUpdated::class => [
-        SendUserTaskStatusUpdatedEmail::class,
-        SendUserTaskStatusUpdatedPush::class,
     ],
 
     // User Events
@@ -142,17 +86,6 @@ return [
         CreateUserPaymentProcessedNotification::class,
         SendUserPaymentProcessedEmail::class,
         SendUserPaymentProcessedPush::class,
-    ],
-
-    RegistrationPaymentFinalized::class => [
-        CreateAdminRegistrationPaymentFinalizedNotification::class,
-        CreateAffiliateRegistrationPaymentFinalizedNotification::class,
-        SendAdminRegistrationPaymentFinalizedEmail::class,
-        SendAdminRegistrationPaymentFinalizedPush::class,
-        SendAffiliateRegistrationPaymentFinalizedEmail::class,
-        SendAffiliateRegistrationPaymentFinalizedPush::class,
-        SendUserRegistrationPaymentFinalizedEmail::class,
-        SendUserRegistrationPaymentFinalizedPush::class,
     ],
 
     RequestPlaced::class => [

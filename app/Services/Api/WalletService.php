@@ -5,13 +5,14 @@ declare(strict_types=1);
 namespace App\Services\Api;
 
 use App\Core\Result;
+use App\Events\Wallet\RequestPlaced;
+use App\Events\Wallet\TopupProcessed;
+use App\Events\Wallet\PayoutProcessed;
+use App\Events\EventDispatcher;
 use App\Support\TextManager;
-use App\Mail\MailManager;
-use App\Notification\PushManager;
 use App\Support\CurrencyManager;
 use App\Models\Wallet;
 use App\Models\User;
-use App\Models\Notification;
 use App\Models\Order;
 use App\Models\Store;
 
@@ -25,12 +26,9 @@ class WalletService
     public function __construct(
         protected Result $result, 
         protected TextManager $textManager, 
-        protected MailManager $mailManager,
-        protected PushManager $pushManager,
         protected CurrencyManager $currencyManager,
         protected Wallet $walletModel, 
         protected User $userModel, 
-        protected Notification $notificationModel, 
         protected Order $orderModel, 
         protected Store $storeModel
     ) {
@@ -68,78 +66,18 @@ class WalletService
 
         // Get User Data
         $userData = $this->getBiodata($userId);
-        $userName    = $userData['name'];
-        $userEmail   = $userData['email'];
-        $userContact = $userData['phone'];
 
         // Payment Data
         $paymentData = [
             'reference' => $reference, 
             'user' => [
-                'name'  => $userName, 
-                'email' => $userEmail, 
-                'phone' => $userContact
+                'name'  => $userData['name'], 
+                'email' => $userData['email'], 
+                'phone' => $userData['phone']
             ]
         ];
 
         return $this->result->success('Payment reference generated', $paymentData);
-    }
-
-    public function redeemFunds(
-        int $itemId, 
-        int $storeId, 
-        string $status
-    ): Result { 
-
-        // Get Vendor Data
-        $vendorId    = $this->storeModel->findUserByStoreId($storeId);
-        $vendorData  = $this->getBiodata($vendorId);
-        $vendorName  = $vendorData['name'];
-        $vendorEmail = $vendorData['email'];
-
-        // Redeem Funds
-        $pendingFunds = $this->walletModel->redeemFunds($vendorId);
-        if (!$pendingFunds || $pendingFunds === 0) {
-           return $this->result->error('Failed to redeem funds', 400);
-        }
-
-        $remittedFunds = $this->currencyManager->format((float) $pendingFunds);
-
-        // Credit Wallets
-        $this->walletModel->creditWallet('wallet_payout', $pendingFunds, $vendorId);
-        $this->walletModel->creditWallet('wallet_payout_backup', $pendingFunds, $vendorId);
-
-        // Update Item Status
-        $this->orderModel->updateItemFinalizedStatus($itemId, $status);
-
-        // Build Vendor Message
-        $vendorMessage = "
-            Hi <b>{$vendorName}</b>, 
-
-            <br> A total of <b>{$remittedFunds}</b> has been credited to your withdrawable wallet. 
-            <br> You can proceed to withdraw the funds if you deem necessary.
-            <br> We hope to see more sales from your store.
-            <br> Have a great day ahead.
-        ";
-
-        // Create In-App Vendor Notification
-        $notification = $this->notificationModel->create($vendorMessage, 'Fund Redeem', $vendorId);
-        if ($notification === false) {
-            return $this->result->error('Failed to create notification for vendor', 500);
-        }
-
-        // Send Vendor Email
-        $this->mailManager->sendSimpleMail('Funds Redeemed', $vendorEmail, $vendorMessage);
-
-        // Send Vendor Push Notification
-        $vendorPushMessage = $this->textManager->formatPushMessage($vendorMessage);
-
-        $this->pushManager->send('Single Vendor', $vendorId, 'Funds Redeemed', $vendorPushMessage, [
-            'url' => "{$this->baseUrl}/seller/",
-            'type' => 'funds'
-        ]);
-
-        return $this->result->success('Item completed and funds redeemed successfully');
     }
 
     public function requestFunds(
@@ -147,11 +85,6 @@ class WalletService
         string $narration, 
         int $userId
     ): Result {
-
-        // Get User Data
-        $userData  = $this->getBiodata($userId);
-        $userName  = $userData['name'];
-        $userEmail = $userData['email'];
 
         // Get Bank Details
         $bankDetails   = $this->walletModel->getBankDetails($userId);
@@ -185,38 +118,12 @@ class WalletService
            return $this->result->error('Failed to place withdrawal', 500);
         }
 
-        // Debit Wallet
-        $this->walletModel->debitWallet($this->withdrawalTable, $amount, $userId);
-
-        // Format Payout Amount
-        $payoutFunds = $this->currencyManager->format((float) $amount); 
-
-        // Build User Message
-        $userMessage = "
-            Hi <b>{$userName}</b>, 
-
-            <br> You have successfully placed a withdrawal of <b>{$payoutFunds}</b>. 
-            <br> A total of <b>{$payoutFunds}</b> will be paid into your bank account shortly. 
-            <br> We hope to see more sales from your store.
-            <br> Have a great day ahead.
-        ";
-
-        // Create In-App User Notification
-        $notification = $this->notificationModel->create($userMessage, 'Fund Request', $userId);
-        if ($notification === false) {
-            return $this->result->error('Failed to create notification for vendor', 500);
-        }
-
-        // Send User Email
-        $this->mailManager->sendSimpleMail('Withdrawal Initiated', $userEmail, $userMessage);
-
-        // Send User Push Notification
-        $userPushMessage = $this->textManager->formatPushMessage($userMessage);
-
-        $this->pushManager->send('Single Vendor', $userId, 'Withdrawal Initiated', $userPushMessage, [
-            'url' => "{$this->baseUrl}/seller/",
-            'type' => 'withdrawal'
-        ]);
+        $this->eventDispatcher->dispatch(
+            new RequestPlaced(
+                userId: $userId,
+                amount: $amount
+            )
+        );
 
         return $this->result->success('Withdrawal successful');
     }
@@ -423,10 +330,7 @@ class WalletService
         // Already resolved? → ignore duplicate webhook/API calls
         if (in_array($record['status'], ['Completed', 'Failed'])) return true;
 
-        $customerId    = $record['user_id'];
-        $customerData  = $this->getBiodata($customerId);
-        $customerName  = $customerData['name'];
-        $customerEmail = $customerData['email'];
+        $customerId = $record['user_id'];
 
         if ($status === 'successful') {
             $amount = $amount ?: $record['amount'];
@@ -440,30 +344,14 @@ class WalletService
             // Fetch New Balance
             $newBalance = $this->walletModel->getBalance('wallet_coin', $customerId);
 
-            // Format Amounts
-            $topupAmount   = $this->currencyManager->format((float) $amount); 
-            $balanceAmount = $this->currencyManager->format((float) $newBalance); 
-
-            // Build Customer Message
-            $customerMessage = "
-                Hi <b>{$customerName}</b>, 
-
-                <br> You have successfully funded your shopping wallet with <b>{$topupAmount}</b>.
-                <br> Your new wallet balance is <b>{$balanceAmount}</b>.
-                <br> Your transaction reference is: <b>{$reference}</b>.
-                <br> We hope to see you shop again soon enough.
-            ";
-
-            // Send Customer Email
-            $this->mailManager->sendSimpleMail('Wallet Topup', $customerEmail, $customerMessage);
-
-            // Send Customer Push Notification
-            $customerPushMessage = $this->textManager->formatPushMessage($customerMessage);
-
-            $this->pushManger->send('Single Customer', $customerId, 'Wallet Topup', $customerPushMessage, [
-                'url' => "{$this->baseUrl}/login",
-                'type' => 'topup'
-            ]);
+            $this->eventDispatcher->dispatch(
+                new TopupProcessed(
+                    userId: $customerId,
+                    amount: $amount,
+                    balance: $newBalance,
+                    reference: $reference,
+                )
+            );
 
             return true;
         }
@@ -488,40 +376,19 @@ class WalletService
 
         if (in_array($record['status'], ['Completed', 'Failed'])) return true;
 
-        $vendorId    = $record['user_id'];
-        $vendorData  = $this->getBiodata($vendorId);
-        $vendorName  = $vendorData['name'];
-        $vendorEmail = $vendorData['email'];
-
         if ($status === 'successful') {
             $amount = $amount ?: $record['amount'];
 
             // Update DB Status
             $this->walletModel->updateStatus('withdrawals', 'reference', $reference, 'Completed');
 
-            // Format Amount
-            $payoutAmount = $this->currencyManager->format((float) $amount);
-
-            // Build User Message
-            $vendorMessage = "
-                Hi <b>{$vendorName}</b>, 
-
-                <br> You have received a payout of <b>{$payoutAmount}</b> from ShopCity.
-                <br> Your transaction reference is: <b>{$reference}</b>.
-                <br> We hope to see more sales from your stores</b>.
-                <br> Have a great day ahead.
-            ";
-
-            // Send Vendor Email
-            $this->mailManager->sendimpleMail('ShopCity Payout', $vendorEmail, $vendorMessage);
-
-            // Send Vendor Push Notification
-            $vendorPushMessage = $this->textManager->formatPushMessage($vendorMessage);
-
-            $this->pushManager->send('Single Vendor', $vendorId, 'ShopCity Payout', $vendorPushMessage, [
-                'url' => "{$this->baseUrl}/seller/",
-                'type' => 'payout'
-            ]);
+            $this->eventDispatcher->dispatch(
+                new PayoutProcessed(
+                    userId: $record['user_id'],
+                    amount: $amount,
+                    reference: $reference,
+                )
+            );
 
             return true;
         }
@@ -573,9 +440,7 @@ class WalletService
         return [
             'name'  => $userData['firstname'] . ' ' . $userData['lastname'],
             'email' => $userData['email'],
-            'role'  => $userData['user_role'],
-            'phone' => $userData['contact'],
-
+            'phone' => $userData['contact']
         ];
     }
 }

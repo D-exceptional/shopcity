@@ -5,13 +5,12 @@ declare(strict_types=1);
 namespace App\Services\Api;
 
 use App\Core\Result;
+use App\Events\Store\StoreCreated;
+use App\Events\Store\StoreStatusUpdated;
+use App\Events\Store\StoreAvatarUpdated;
+use App\Events\EventDispatcher;
 use App\Support\TextManager;
-use App\Mail\MailManager;
-use App\Notification\PushManager;
-use App\Media\CloudinaryManager;
 use App\Models\Store;
-use App\Models\User;
-use App\Models\Notification;
 
 class StoreService
 {
@@ -19,13 +18,9 @@ class StoreService
 
     public function __construct(
         protected Result $result, 
-        protected TextManager $textManager, 
-        protected MailManager $mailManager, 
-        protected PushManager $pushManager, 
-        protected CloudinaryManager $cloudinaryManager, 
+        protected EventDispatcher $eventDispatcher,
+        protected TextManager $textManager,  
         protected Store $storeModel, 
-        protected User $userModel, 
-        protected Notification $notificationModel
     ) {
         $this->baseUrl = $appUrl; 
     }
@@ -56,68 +51,12 @@ class StoreService
             return $this->result->error('Failed to create store', 500);
         }
 
-        $vendorData  = $this->getBiodata($userId);
-        $vendorName  = $vendorData['name'];
-        $vendorEmail = $vendorData['email'];
-
-        // Build Vendor Message
-        $vendorMessage = "
-            Hi <b>{$vendorName}</b>, 
-
-            <br> Your store is currently <b>pending approval</b>. 
-            <br> Our team is reviewing your store details. Once approved, you'll be able to start selling. 
-            <br> We'll notify you as soon as the status changes.
-            <br> Thank you for your patience.
-        ";
-
-        // Send Vendor Email
-        $this->mailManager->sendSimpleMail('Store Creation Successful', $vendorEmail, $vendorMessage);
-
-        // Send Vendor Push Notification
-        $vendorPushMessage = $this->textManager->formatPushMessage($vendorMessage);
-
-        $this->pushManager->send('Single Vendor', $userId, 'Store Creation Successful', $vendorPushMessage, [
-            'url' => "{$this->baseUrl}/login",
-            'type' => 'store'
-        ]);
-
-
-        /*
-            Loop through the admins, 
-            Create notifications
-            Notify them via email
-            Notify them via push if available
-        */
-
-        // Build Admin Message
-        $adminMessage =  "
-            Hello Admin, 
-
-            <br> A new store, <b>{$name}</b>, was created on the platform!
-            <br> Kindly review and take necessary actions. 
-        ";
-
-        // Process Admin Notifications
-        $admins = $this->userModel->allByRole('Admin');
-        foreach ($admins as $admin) {
-
-            // Create In-App Admin Notification
-            $notification = $this->notificationModel->create($adminMessage, 'New Store', $admin['user_id']);
-            if ($notification === false) {
-                return $this->result->error('Failed to create notification for admin', 500);
-            }
-
-            // Send Admin Email
-            $this->mailManager->sendSimpleMail('New Store', $admin['email'], $adminMessage);
-
-            // Send Admin Push Notification
-            $adminPushMessage = $this->textManager->formatPushMessage($adminMessage);
-
-            $this->push->send('Single Admin', $admin['user_id'], 'New Store', $adminPushMessage, [
-                'url' => "{$this->baseUrl}/admin/",
-                'type' => 'store'
-            ]);
-        }
+        $this->eventDispatcher->dispatch(
+            new StoreCreated(
+                name: $name,
+                vendorId: $userId
+            )
+        );
 
         return $this->result->success('Store created successfully', [], 201);
     }
@@ -168,8 +107,16 @@ class StoreService
             return $this->result->error('Failed to update store avatar', 500);
         }
 
-        // Use Cloudinary Events later to delete old avatar
-        $this->cloudinaryManager->delete($oldAvatar);
+        if ($oldAvatar !== 'None') {
+
+            $this->eventDispatcher->dispatch(
+                new StoreAvatarUpdated(
+                    oldAvatar: $oldAvatar,
+                    newAvatar: $newAvatar,
+                )
+            );
+
+        }
 
         return $this->result->success('Avatar updated successfully');
     }
@@ -184,50 +131,14 @@ class StoreService
             return $this->result->error('Failed to update status', 500);
         }
 
-        $vendorId    = $this->storeModel->findUserByStoreId($storeId);
-        $vendorData  = $this->getBiodata($vendorId);
-        $vendorName  = $vendorData['name'];
-        $vendorEmail = $vendorData['email'];
+        $vendorId = $this->storeModel->findUserByStoreId($storeId);
 
-        // Build Venor Message Based On Status
-        $statusMessages = [
-            'Active' => "
-                Hi <b>{$vendorName}</b>, 
-
-                <br> Great news! 🎉 Your store is now <b>active</b>. 
-                <br> Customers can start placing orders, and you'll receive credits into your savings wallet for every order fulfilled. 
-                <br> Keep your inventory updated to maximize your sales.
-                <br> We're excited to see your growth on our platform!
-            ",
-
-            'Deactivated' => "
-                Hi <b>{$vendorName}</b>, 
-
-                <br> Your store has been <b>deactivated</b>. 
-                <br> This may be due to policy violations, inactivity, or other issues. 
-                <br> Please contact support at <b>support@shopcity.com</b> or visit <b><a href='{$this->baseUrl}/contact'>Appeal Page</a></b> to resolve this and restore your store. 
-                <br> We value your partnership and hope to have you back soon.
-            ",
-        ];
-
-        // Fallback In Case Of Unknown Status
-        $vendorMessage = $statusMessages[$status] ?? "
-            Hi <b>{$vendorName}</b>,
-
-            <br> There has been an update to your store status. 
-            <br> Please check your vendor dashboard for more details.
-        ";
-
-        // Send Vendor Email
-        $this->mailManager->sendSimpleMail('Store Status Updated', $vendorEmail, $vendorMessage);
-
-        // Send Vendor Push Notification
-        $vendorPushMessage = $this->textManager->formatPushMessage($vendorMessage);
-
-        $this->pushManager->send('Single Vendor', $vendorId, 'Store Status Update', $vendorPushMessage, [
-            'url' => "{$this->baseUrl}/login",
-            'type' => 'store'
-        ]);
+        $this->eventDispatcher->dispatch(
+            new StoreStatusUpdated(
+                status: $status,
+                vendorId: $vendorId
+            )
+        );
 
         return $this->result->success('Status updated successfully');
     }
@@ -397,18 +308,5 @@ class StoreService
         }
         
         return $this->result->success('Customers fetched successfully', $customers);
-    }
-
-    private function getBiodata(
-        int $userId
-    ): array {
-
-        $userData = $this->userModel->findById($userId);
-
-        return [
-            'name'  => $userData['firstname'] . ' ' . $userData['lastname'],
-            'email' => $userData['email'],
-            'role'  => $userData['user_role']
-        ];
     }
 }

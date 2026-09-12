@@ -21,10 +21,10 @@ class SendAdminRegistrationEmail extends Listener
         UserRegistered $event
     ): void {
 
-        $message = "
+        $adminEmailMessage = "
             Hello Admin,
 
-            <br> A new {$event->membership}, <b>{$event->fullName}</b>, just registered on the platform!
+            <br> A new {$event->role}, <b>{$event->name}</b>, just registered on the platform!
             <br> Kindly review and take necessary actions.
         ";
 
@@ -37,7 +37,7 @@ class SendAdminRegistrationEmail extends Listener
                 [
                     'New Registration',
                     $admin['email'],
-                    $message
+                    $adminEmailMessage
                 ],
                 'emails'
             );
