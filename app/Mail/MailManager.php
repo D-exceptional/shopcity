@@ -78,7 +78,7 @@ class MailManager
     ): string {
 
         $templatePath = dirname(__DIR__, 2)
-            . "/app/Mail/Templates/mail.php";
+            . "/resources/templates/mail.php";
 
         if (!file_exists($templatePath)) {
             throw new \RuntimeException(

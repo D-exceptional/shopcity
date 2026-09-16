@@ -9,7 +9,8 @@ use App\Media\CloudinaryManager;
 
 class CloudinaryJob implements JobInterface
 {
-    public string $url;
+    public mixed $media;
+    public string $type;
 
     public function __construct(
         public CloudinaryManager $cloudinary
@@ -17,13 +18,24 @@ class CloudinaryJob implements JobInterface
 
     public function setPayload(array $data): void
     {
-        $this->url = $data[0];
+        $this->media = $data[0];
+        $this->type  = is_array($data[0]) ? 'bulk' : 'single';
     }
 
     public function handle(): void
     {
-        $this->cloudinary->delete(
-            $this->url
-        );
+        if ($this->type === 'bulk') {
+
+            $this->cloudinary->deleteBulk(
+                $this->media
+            );
+            
+        }
+        else {
+
+            $this->cloudinary->delete(
+                $this->media
+            );
+        }
     }
 }

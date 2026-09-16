@@ -24,7 +24,7 @@ class Cart extends Model
                 p.store_id,
                 (p.product_price * c.quantity) AS total_price,
                 pm.media_url AS product_image
-            FROM cart c
+            FROM {$this->table} c
             JOIN products p ON p.product_id = c.product_id
             LEFT JOIN product_media pm 
                 ON pm.product_id = p.product_id
@@ -54,7 +54,7 @@ class Cart extends Model
         if ($isExisting) {
 
             $updateQuery = "
-                UPDATE {$table} 
+                UPDATE {$this->table} 
                 SET 
                     quantity = quantity + ? 
                 WHERE 
@@ -120,7 +120,7 @@ class Cart extends Model
         $countQuery = "
             SELECT 
                 COALESCE(SUM(quantity), 0) AS total_items
-            FROM {$table}
+            FROM {$this->table}
             WHERE 
                 user_id = ?
         ";
@@ -143,7 +143,7 @@ class Cart extends Model
     {
         $countQuery = "
             SELECT COUNT(DISTINCT user_id) AS pending_carts
-            FROM {$table}
+            FROM {$this->table}
         ";
 
         $result = $this->queryOne($countQuery);
@@ -160,7 +160,7 @@ class Cart extends Model
                 u.lastname, 
                 u.email,
                 COALESCE(SUM(c.quantity), 0) AS total_items
-            FROM cart c
+            FROM {$this->table} c
             INNER JOIN users u ON c.user_id = u.user_id
             GROUP BY u.user_id, u.firstname, u.lastname, u.email
         ";

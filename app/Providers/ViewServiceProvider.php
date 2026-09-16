@@ -73,11 +73,6 @@ class ViewServiceProvider extends ServiceProvider
             3600
         );
 
-        // Public Pages Cart
-        $cartCount = $isLoggedIn && $userId !== null
-            ? $cartModel->countCart($userId)
-            : 0;
-
         // Login State Checker
         $isLoggedIn = $session->validate(7200, 1800);
 
@@ -100,6 +95,11 @@ class ViewServiceProvider extends ServiceProvider
             $avatar  = $userModel->getProfile($userId);
             $profile = ($avatar === 'None') ? asset('img/avatar.jpg') : $avatar;
         }
+
+        // Public Pages Cart
+        $cartCount = $isLoggedIn && $userId !== null
+            ? $cartModel->countCart($userId)
+            : 0;
 
         // Dashboard Notifications
         $notifications = [];

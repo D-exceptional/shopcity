@@ -22,8 +22,9 @@ class SendContactMessageEmail extends Listener
     ): void {
 
         $message = "
-            A message was sent by <b> " . trim($event->name) . "</b> from  <b> " . trim($event->country) . "</b>
+            Hello Admin,
 
+            <br> A message was sent by <b> " . trim($event->name) . "</b> from  <b> " . trim($event->country) . "</b>
             <br> You can reach out to them via their mobile: <b>" . trim($event->contact) . "</b> or email address: <b>" . trim($event->email) . "</b>
             <br> Below is the message:
             <br> {$event->message}

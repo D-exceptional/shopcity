@@ -1,0 +1,283 @@
+services:
+
+  # ============================================================
+  # PHP APPLICATION
+  # ============================================================
+
+  app:
+    image: d-exceptional/shopcity-php:1.0.0
+
+    restart: unless-stopped
+
+    env_file:
+      - .env
+
+    networks:
+      - framework
+
+    volumes:
+      - shopcity_logs:/var/www/storage/logs
+      - shopcity_cache:/var/www/storage/framework/cache
+      - shopcity_sessions:/var/www/storage/framework/sessions
+
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+
+  # ============================================================
+  # NGINX
+  # ============================================================
+
+  nginx:
+    image: d-exceptional/shopcity-nginx:1.0.0
+
+    restart: unless-stopped
+
+    ports:
+      - "80:80"
+
+    depends_on:
+      - app
+
+    networks:
+      - framework
+
+
+  # ============================================================
+  # MYSQL
+  # ============================================================
+
+  mysql:
+    image: mysql:8.4
+
+    restart: unless-stopped
+
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-u",
+          "root",
+          "-p${DB_ROOT_PASSWORD}"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+    networks:
+      - framework
+
+
+  # ============================================================
+  # REDIS
+  # ============================================================
+
+  redis:
+    image: redis:7-alpine
+
+    restart: unless-stopped
+
+    command: redis-server --appendonly yes
+
+    volumes:
+      - redis_data:/data
+
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "redis-cli",
+          "ping"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    networks:
+      - framework
+
+
+  # ============================================================
+  # EMAIL WORKER
+  # ============================================================
+
+  email-worker:
+    image: d-exceptional/shopcity-php:1.0.0
+
+    restart: unless-stopped
+
+    env_file:
+      - .env
+
+    command: php app/Console/queue-work.php email
+
+    volumes:
+      - shopcity_logs:/var/www/storage/logs
+      - shopcity_cache:/var/www/storage/framework/cache
+      - shopcity_sessions:/var/www/storage/framework/sessions
+
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+    networks:
+      - framework
+
+
+  # ============================================================
+  # PUSH WORKER
+  # ============================================================
+
+  push-worker:
+    image: d-exceptional/shopcity-php:1.0.0
+
+    restart: unless-stopped
+
+    env_file:
+      - .env
+
+    command: php app/Console/queue-work.php push
+
+    volumes:
+      - shopcity_logs:/var/www/storage/logs
+      - shopcity_cache:/var/www/storage/framework/cache
+      - shopcity_sessions:/var/www/storage/framework/sessions
+
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+    networks:
+      - framework
+
+
+  # ============================================================
+  # OTP WORKER
+  # ============================================================
+
+  otp-worker:
+    image: d-exceptional/shopcity-php:1.0.0
+
+    restart: unless-stopped
+
+    env_file:
+      - .env
+
+    command: php app/Console/queue-work.php otp
+
+    volumes:
+      - shopcity_logs:/var/www/storage/logs
+      - shopcity_cache:/var/www/storage/framework/cache
+      - shopcity_sessions:/var/www/storage/framework/sessions
+
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+    networks:
+      - framework
+
+
+  # ============================================================
+  # BROADCAST WORKER
+  # ============================================================
+
+  broadcast-worker:
+    image: d-exceptional/shopcity-php:1.0.0
+
+    restart: unless-stopped
+
+    env_file:
+      - .env
+
+    command: php app/Console/queue-work.php broadcast
+
+    volumes:
+      - shopcity_logs:/var/www/storage/logs
+      - shopcity_cache:/var/www/storage/framework/cache
+      - shopcity_sessions:/var/www/storage/framework/sessions
+
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+    networks:
+      - framework
+
+
+  # ============================================================
+  # CLOUDINARY WORKER
+  # ============================================================
+
+  cloudinary-worker:
+    image: d-exceptional/shopcity-php:1.0.0
+
+    restart: unless-stopped
+
+    env_file:
+      - .env
+
+    command: php app/Console/queue-work.php cloudinary
+
+    volumes:
+      - shopcity_logs:/var/www/storage/logs
+      - shopcity_cache:/var/www/storage/framework/cache
+      - shopcity_sessions:/var/www/storage/framework/sessions
+
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+    networks:
+      - framework
+
+
+# ==============================================================
+# NETWORK
+# ==============================================================
+
+networks:
+
+  framework:
+    driver: bridge
+
+
+# ==============================================================
+# VOLUMES
+# ==============================================================
+
+volumes:
+
+  mysql_data:
+  redis_data:
+
+  shopcity_logs:
+  shopcity_cache:
+  shopcity_sessions:

@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace App\Cache\Drivers;
 
-use App\Redis\RedisManager;
+use App\Redis\Redis;
 use App\Redis\RedisStore;
 use App\Contracts\CacheInterface;
 
 class RedisDriver extends RedisStore implements CacheInterface 
 {
     public function __construct(
-        RedisManager $redis
+        Redis $redis
     ) {
         parent::__construct(
             $redis->cache()
@@ -70,7 +70,7 @@ class RedisDriver extends RedisStore implements CacheInterface
         int $ttl = 60
     ): mixed {
 
-        $value = $this->get($key);
+        $value = $this->getValue($key);
 
         if ($value !== null) {
             return $value;
@@ -78,7 +78,7 @@ class RedisDriver extends RedisStore implements CacheInterface
 
         $value = $callback();
 
-        $this->set($key, $value, $ttl);
+        $this->setValue($key, $value, $ttl);
 
         return $value;
     }

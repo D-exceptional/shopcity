@@ -424,7 +424,7 @@ class Store extends Model
         $countQuery = "
             SELECT 
                 store_status, COUNT(*) AS total
-            FROM stores
+            FROM {$this->table}
             GROUP BY store_status
         ";
 
@@ -454,7 +454,7 @@ class Store extends Model
         $brandsQuery = "
             SELECT 
                 s.*, COUNT(p.product_id) AS product_count
-            FROM stores s
+            FROM {$this->table} s
             INNER JOIN products p ON p.store_id = s.store_id
             GROUP BY s.store_id
             HAVING COUNT(p.product_id) > 0
@@ -490,7 +490,7 @@ class Store extends Model
             SELECT COUNT(*) FROM (
                 SELECT 
                     s.store_id
-                FROM stores s
+                FROM {$this->table} s
                 INNER JOIN products p ON p.store_id = s.store_id
                 GROUP BY s.store_id
                 HAVING COUNT(p.product_id) > 0
@@ -511,7 +511,7 @@ class Store extends Model
         $countQuery = "
             SELECT 
                 COUNT(*) 
-            FROM stores 
+            FROM {$this->table}
             WHERE 
                 user_id = ? 
                 AND store_status = ?

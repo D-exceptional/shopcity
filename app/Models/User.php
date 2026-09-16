@@ -343,7 +343,7 @@ class User extends Model
         $fetchQuery = "
             SELECT 
                 user_role, COUNT(*) AS total 
-            FROM users 
+            FROM {$this->table}
             GROUP BY user_role
         ";
         

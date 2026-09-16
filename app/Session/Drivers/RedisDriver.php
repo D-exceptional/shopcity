@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Session\Drivers;
 
-use App\Redis\RedisManager;
+use App\Redis\Redis;
 use App\Redis\RedisStore;
 use App\Contracts\SessionInterface;
 use App\Auth\JWT;
@@ -16,7 +16,7 @@ class RedisDriver extends RedisStore implements SessionInterface
     protected int $jwtExpireAt;
 
     public function __construct(
-        RedisManager $redis,
+        Redis $redis,
         protected JWT $jwt
     ) {
         parent::__construct(

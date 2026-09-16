@@ -5,14 +5,16 @@ declare(strict_types=1);
 namespace App\Services\Api;
 
 use App\Core\Result;
-use App\Media\CloudinaryManager;
+use App\Events\Media\SingleMediaDeleted;
+use App\Events\Media\BulkMediaDeleted;
+use App\Events\EventDispatcher;
 use App\Models\ProductMedia;
 
 class ProductMediaService 
 {
     public function __construct(
         protected Result $result,  
-        protected CloudinaryManager $cloudinaryManager, 
+        protected EventDispatcher $eventDispatcher,
         protected ProductMedia $mediaModel
     ) {}
 
@@ -55,8 +57,11 @@ class ProductMediaService
             return $this->result->error('Failed to update media', 500);
         }
 
-        // Implement This Using Events
-        $this->cloudinaryManager->delete($media['media_url']);
+        $this->eventDispatcher->dispatch(
+            new SingleMediaDeleted(
+                url: $media['media_url'],
+            )
+        );
 
         return $this->result->success('Media updated successfully');
     }
@@ -71,35 +76,22 @@ class ProductMediaService
             return $this->result->error('Media not found', 404);
         }
 
-        $pdo = $this->mediaModel->db; 
-        $pdo->beginTransaction();
+        $mediaItems = [];
 
-        $errors = [];
-
-        try {
-            foreach ($mediaList as $item) {
-
-                // Implement This Using Events
-                $this->cloudinaryManager->delete($item['media_url']);
-            }
-
-            if (!empty($errors)) {
-                $pdo->rollBack();
-
-                return $this->result->error('Some media could not be deleted from Cloudinary', 400, $errors);
-            }
-
-            $this->mediaModel->deleteAll($productId);
-
-            $pdo->commit();
-
-            return $this->result->success('All media deleted successfully');
-
-        } catch (\Exception $e) {
-
-            $pdo->rollBack();
-            return $this->result->error('Failed to delete media due to server error: ' . $e->getMessage(), 500);
+        foreach ($mediaList as $item) {
+            // Queue media urls to delete
+            $mediaItems[] = $item['media_url'];
         }
+
+        $this->mediaModel->deleteAll($productId);
+
+        $this->eventDispatcher->dispatch(
+            new BulkMediaDeleted(
+                media: $mediaItems,
+            )
+        );
+
+        return $this->result->success('All media deleted successfully');
     }
 
     public function deleteOne(
@@ -116,8 +108,11 @@ class ProductMediaService
             return $this->result->error('Failed to delete media', 500);
         }
 
-        // Implement This Using Events
-        $this->cloudinaryManager->delete($media['media_url']);
+        $this->eventDispatcher->dispatch(
+            new SingleMediaDeleted(
+                url: $media['media_url'],
+            )
+        );
 
         return $this->result->success('Media deleted successfully');
     }
@@ -126,8 +121,12 @@ class ProductMediaService
         array $urls
     ): Result {
 
-        $this->mediaManager->deleteBulk($urls);
+        $this->eventDispatcher->dispatch(
+            new BulkMediaDeleted(
+                media: $urls,
+            )
+        );
 
-        return $this->result->success('Media deleted successfully', ['result' => $result ]);
+        return $this->result->success('Media items queued for deletion successfully');
     }
 }

@@ -24,7 +24,7 @@ class Push extends Model
                 $stmt = $this->db->prepare("
                     SELECT 
                         token 
-                    FROM {$table}
+                    FROM {$this->table}
                     WHERE 
                         is_active = 1
                 ");
@@ -39,7 +39,7 @@ class Push extends Model
                 $stmt = $this->db->prepare("
                     SELECT 
                         token 
-                    FROM {$table}
+                    FROM {$this->table}
                     WHERE 
                         user_type = ? 
                         AND is_active = 1
@@ -61,7 +61,7 @@ class Push extends Model
                 $stmt = $this->db->prepare("
                     SELECT 
                         token 
-                    FROM {$table}
+                    FROM {$this->table}
                     WHERE 
                         user_type = ? 
                         AND user_id = ? 
@@ -86,7 +86,7 @@ class Push extends Model
     ): bool {
 
         $stmt = $this->db->prepare("
-            INSERT INTO push_tokens (token, device_id, user_id, user_type, is_active, last_seen)
+            INSERT INTO {$this->table} (token, device_id, user_id, user_type, is_active, last_seen)
             VALUES (?, ?, ?, ?, 1, NOW())
             ON DUPLICATE KEY UPDATE
                 token      = VALUES(token),
@@ -103,7 +103,7 @@ class Push extends Model
     ): bool {
 
         $sql = "
-            UPDATE push_tokens
+        UPDATE {$this->table}
             SET 
                 is_active = 0,
                 last_seen = NOW()
@@ -126,7 +126,7 @@ class Push extends Model
     public function deleteToken(string $token): void
     {
         $stmt = $this->db->prepare("
-            DELETE FROM {$table}
+            DELETE FROM {$this->table}
             WHERE 
                 token = ?
         ");

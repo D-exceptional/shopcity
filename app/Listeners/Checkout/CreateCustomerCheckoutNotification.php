@@ -34,7 +34,7 @@ class CreateCustomerCheckoutNotification extends Listener
 
         if ($created === false) {
 
-            $this->logError("Failed to create order received notification for user: {$event->user['email']}");
+            $this->logError("Failed to create order received notification for user: {$event->user['name']}");
         }
     }
 }

@@ -258,14 +258,14 @@ class Order extends Model
         $fetchQuery = "
             SELECT 
                 * 
-            FROM {$table} 
+            FROM {$this->table} 
             ORDER BY created_at DESC
         ";
 
         $countQuery = "
             SELECT 
                 COUNT(*) 
-            FROM {$table}
+            FROM {$this->table}
         ";
 
         $orders = $this->fetchOrders($fetchQuery, [], $page, $limit);
@@ -283,7 +283,7 @@ class Order extends Model
         $fetchQuery = "
             SELECT 
                 * 
-            FROM {$table} 
+            FROM {$this->table} 
             WHERE 
                 order_status = ? 
             ORDER BY order_id DESC
@@ -292,7 +292,7 @@ class Order extends Model
         $countQuery = "
             SELECT 
                 COUNT(*) 
-            FROM {$table}
+            FROM {$this->table}
             WHERE 
                 order_status = ?
         ";
@@ -312,7 +312,7 @@ class Order extends Model
         $fetchQuery = "
             SELECT 
                 * 
-            FROM {$table} 
+            FROM {$this->table} 
             WHERE 
                 user_id = ? 
                 AND order_status != 'Cancelled' 
@@ -322,7 +322,7 @@ class Order extends Model
         $countQuery = "
             SELECT 
                 COUNT(*) 
-            FROM {$table} 
+            FROM {$this->table} 
             WHERE 
                 user_id = ?
         ";

@@ -74,7 +74,7 @@ class Wishlist extends Model
                 p.category,
                 p.product_price, 
                 pm.media_url AS product_image
-            FROM wishlist w
+            FROM {$this->table} w
             JOIN products p ON p.product_id = w.product_id
             LEFT JOIN product_media pm 
                 ON pm.product_id = p.product_id
@@ -90,7 +90,7 @@ class Wishlist extends Model
         $countQuery = "
             SELECT 
                 COUNT(*) 
-            FROM wishlist 
+            FROM {$this->table}
             WHERE 
                 user_id = ?
         ";

@@ -33,13 +33,6 @@ class SessionServiceProvider extends ServiceProvider
                 };
             }
         );
-
-        /*
-        $this->container()->singleton(
-            SessionManager::class,
-            SessionManager::class
-        );
-        */
     }
 
     /**

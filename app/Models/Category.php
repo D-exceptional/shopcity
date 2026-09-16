@@ -15,7 +15,7 @@ class Category extends Model
         $fetchQuery = "
             SELECT 
                 DISTINCT category_name
-            FROM {$table} 
+            FROM {$this->table} 
             WHERE 
                 category_name IS NOT NULL 
                 AND category_name != '' 
@@ -36,7 +36,7 @@ class Category extends Model
                     pc.category_id,
                     pc.category_name,
                     COUNT(p.product_id) AS product_count
-                FROM {$table} pc
+                FROM {$this->table} pc
                 LEFT JOIN products p 
                     ON p.category = pc.category_name
                 GROUP BY pc.category_name
@@ -52,7 +52,7 @@ class Category extends Model
                     pc.category_id,
                     pc.category_name,
                     COUNT(p.product_id) AS product_count
-                FROM {$table} pc
+                FROM {$this->table} pc
                 INNER JOIN products p 
                     ON p.category = pc.category_name
                     AND p.store_id = ?
@@ -101,7 +101,7 @@ class Category extends Model
         $countQuery = "
             SELECT 
                 COUNT(DISTINCT category_name) AS total_categories
-            FROM {$table}
+            FROM {$this->table}
         ";
 
         $result = $this->queryOne($countQuery);

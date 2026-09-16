@@ -1,22 +1,4 @@
 --
--- Table structure for table payment_method
---
-CREATE TABLE IF NOT EXISTS payment_method (
-  method_id INT NOT NULL AUTO_INCREMENT,
-  method_type ENUM('Coin', 'Gateway', 'Manual') DEFAULT 'Coin' NOT NULL,
-  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (method_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Dumping data for table payment_method
---
-INSERT INTO payment_method (method_type, created_at, updated_at) VALUES ('Coin', '2025-09-22 16:47:00', NULL);
-
--- --------------------------------------------------------
-
---
 -- Table structure for table  users
 --
 CREATE TABLE IF NOT EXISTS users (
@@ -106,10 +88,10 @@ CREATE TABLE IF NOT EXISTS billing_details (
 -- --------------------------------------------------------
 
 --
--- Table structure for table wallet_coin
+-- Table structure for table wallet_shopping
 --
 
-CREATE TABLE IF NOT EXISTS wallet_coin (
+CREATE TABLE IF NOT EXISTS wallet_shopping (
   wallet_id INT NOT NULL AUTO_INCREMENT,
   wallet_amount DECIMAL(11,2) NOT NULL,
   user_id INT NOT NULL,
@@ -145,19 +127,6 @@ CREATE TABLE IF NOT EXISTS wallet_payout_backup (
   FOREIGN KEY (user_id) REFERENCES users (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- --------------------------------------------------------
-
---
--- Table structure for table wallet_savings
---
-
-CREATE TABLE IF NOT EXISTS wallet_savings (
-  wallet_id INT NOT NULL AUTO_INCREMENT,
-  wallet_amount DECIMAL(11,2) NOT NULL,
-  user_id INT NOT NULL,
-  PRIMARY KEY (wallet_id),
-  FOREIGN KEY (user_id) REFERENCES users (user_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 

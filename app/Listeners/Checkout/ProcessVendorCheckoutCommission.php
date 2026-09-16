@@ -35,8 +35,8 @@ class ProcessVendorCheckoutCommission extends Listener
                 // Get Vendor ID From Store ID
                 $vendorId = $this->storeModel->findUserByStoreId($storeId);
 
-                // Credit Vendor Savings Wallet
-                $this->walletModel->creditWallet('wallet_savings', $vendorCommission, $vendorId);
+                // Credit Vendor Payout Wallet
+                $this->walletModel->creditWallet('wallet_payout', $vendorCommission, $vendorId);
             }
         }
     }

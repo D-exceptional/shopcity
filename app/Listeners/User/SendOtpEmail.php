@@ -22,8 +22,7 @@ class SendOtpEmail extends Listener
         $message = "
             Hi {$event->name}, 
             
-            <br>
-            Your password reset OTP is <b>{$event->otp}</b> and it expires in 5 minutes
+            <br> Your password reset OTP is <b>{$event->otp}</b> and it expires in 5 minutes
         ";
 
         $this->queue->dispatch(

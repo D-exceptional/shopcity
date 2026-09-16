@@ -2,7 +2,7 @@
 # Git
 # ============================================================
 
-.git
+.git/
 .gitignore
 .gitattributes
 
@@ -14,11 +14,15 @@
 .env.*
 !.env.example
 
+# Firebase credentials
+storage/firebase-key.json
+
 # ============================================================
 # Dependencies
 # ============================================================
 
 vendor/
+node_modules/
 
 # ============================================================
 # Runtime storage
@@ -27,7 +31,6 @@ vendor/
 storage/logs/*
 storage/framework/cache/*
 storage/framework/sessions/*
-storage/framework/views/*
 
 # ============================================================
 # IDE / editors
@@ -46,18 +49,18 @@ storage/framework/views/*
 Thumbs.db
 
 # ============================================================
-# Docker
+# Docker / local orchestration
 # ============================================================
 
-Dockerfile
 compose.yml
+compose.prod.yml
 docker-compose.yml
+docker-compose.override.yml
 
 # ============================================================
-# Node
+# Node logs
 # ============================================================
 
-node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

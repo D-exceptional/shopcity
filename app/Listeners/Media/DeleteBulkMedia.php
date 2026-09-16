@@ -2,26 +2,27 @@
 
 declare(strict_types=1);
 
-namespace App\Listeners\User;
+namespace App\Listeners\Media;
 
-use App\Events\User\ProfileUpdated;
+use App\Events\Media\BulkMediaDeleted;
 use App\Queue\Queue;
 use App\Jobs\CloudinaryJob;
 use App\Listeners\Listener;
 
-class UpdateProfileImage extends Listener
+class DeleteBulkMedia extends Listener
 {
     public function __construct(
         protected Queue $queue
     ) {}
 
     public function handle(
-        ProfileUpdated $event
+        BulkMediaDeleted $event
     ): void {
 
         if (
-            empty($event->oldAvatar) 
-            || $event->oldAvatar === $event->newAvatar
+            !isset($event->media) 
+            || empty($event->media)
+            || is_null($event->media)
         ) {
             return;
         }
@@ -29,7 +30,7 @@ class UpdateProfileImage extends Listener
         $this->queue->dispatch(
             CloudinaryJob::class,
             [
-               $event->oldAvatar
+               $event->media
             ],
             'cloudinary'
         );

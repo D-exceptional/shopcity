@@ -41,8 +41,7 @@ class SendUserStatusEmail extends Listener
 
                 <br> Your account has been <b>deactivated</b>. 
                 <br> This may be due to policy violations, inactivity, or other issues. 
-                <br> Please contact support at <b>support@shopcity.com</b> or visit <b><a href='/contact'>Appeal Page</a></b> 
-                    to resolve this and restore your account. 
+                <br> Please contact support at <b>support@shopcity.com</b> or visit <b><a href='/contact'>Appeal Page</a></b> to resolve this and restore your account. 
                 <br> We value your partnership and hope to have you back soon.
             ",
         ];
@@ -73,7 +72,6 @@ class SendUserStatusEmail extends Listener
         return [
             'name'  => $userData['firstname'] . ' ' . $userData['lastname'],
             'email' => $userData['email'],
-            'role'  => $userData['user_role']
         ];
     }
 }

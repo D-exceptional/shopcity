@@ -21,9 +21,10 @@ class CreateAdminRegistrationNotification extends Listener
     ): void {
 
         $adminNotificationMessage = "
-            A new {$event->role},
-            <b>{$event->name}</b>,
-            just registered on the platform.
+            Hello Admin,
+
+            <br> A new {$event->role}, <b>{$event->name}</b>, just registered on the platform.
+            <br> Kindly review and take necessary actions.
         ";
 
         $admins = $this->userModel->allByRole('Admin');

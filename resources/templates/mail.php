@@ -1,11 +1,3 @@
-<?php
-
-declare(strict_types=1);
-
-$hostUrl = config('app.base_path', '/projects/showcase/jobspot'); 
-
-?>
-
 <!DOCTYPE html>
 <html>
 <head>
@@ -91,7 +83,7 @@ $hostUrl = config('app.base_path', '/projects/showcase/jobspot');
                                                             <th class='column' width='118' style='font-size:0pt; line-height:0pt; padding:0; margin:0; font-weight:normal;'>
                                                                 <table width='100%' border='0' cellspacing='0' cellpadding='0'>
                                                                     <tr>
-                                                                        <!--<td class='img m-center' style='font-size:0pt; line-height:0pt; text-align:left;'><a href='#'><img src='<?= $hostUrl ?>/assets/img/logo.jpg' width='80' height='50' border='0' alt='' /></a></td>-->
+                                                                        <!--<td class='img m-center' style='font-size:0pt; line-height:0pt; text-align:left;'><a href='#'><img src='/assets/img/logo.jpg' width='80' height='50' border='0' alt='' /></a></td>-->
                                                                     </tr>
                                                                 </table>
                                                             </th>
@@ -102,7 +94,7 @@ $hostUrl = config('app.base_path', '/projects/showcase/jobspot');
                                                                         <td align='right'>
                                                                             <table border='0' cellspacing='0' cellpadding='0' class='center' style='text-align:center;'>
                                                                                 <tr>
-                                                                                    <td class='img' width='20' style='font-size:0pt; line-height:0pt; text-align:left;'><img src='<?= $hostUrl ?>/assets/img/bullet.jpg' width='10' height='3' border='0' alt='' /></td>
+                                                                                    <td class='img' width='20' style='font-size:0pt; line-height:0pt; text-align:left;'><img src='/assets/img/bullet.jpg' width='10' height='3' border='0' alt='' /></td>
                                                                                 </tr>
                                                                             </table>
                                                                         </td>
@@ -126,7 +118,7 @@ $hostUrl = config('app.base_path', '/projects/showcase/jobspot');
                                                                 <th class='column' width='260' style='font-size:0pt; line-height:0pt; padding:0; margin:0; font-weight:normal;'>
                                                                     <table width='100%' border='0' cellspacing='0' cellpadding='0'>
                                                                         <tr>
-                                                                            <td class='fluid-img' style='font-size:0pt; line-height:0pt; text-align:left;'><a href='#'><img src='<?= $hostUrl ?>/assets/img/logo.jpg' style='border-radius: 10px;width: 260px;height: 200px !important;' border='0' alt='' /></a></td>
+                                                                            <td class='fluid-img' style='font-size:0pt; line-height:0pt; text-align:left;'><a href='#'><img src='/assets/img/logo.jpg' style='border-radius: 10px;width: 260px;height: 200px !important;' border='0' alt='' /></a></td>
                                                                         </tr>
                                                                     </table>
                                                                 </th>
@@ -158,7 +150,7 @@ $hostUrl = config('app.base_path', '/projects/showcase/jobspot');
                                                                         <th class='column-top' width='110' style='font-size:0pt; line-height:0pt; padding:0; margin:0; font-weight:normal; vertical-align:top;'>
                                                                             <table width='100%' border='0' cellspacing='0' cellpadding='0'>
                                                                                 <tr>
-                                                                                    <td class='img m-center' style='font-size:0pt; line-height:0pt; text-align:left;'><a href='#'><img src='<?= $hostUrl ?>/assets/img/logo.jpg' width='50' height='50' border='0' alt='' /></a></td>
+                                                                                    <td class='img m-center' style='font-size:0pt; line-height:0pt; text-align:left;'><a href='#'><img src='/assets/img/logo.jpg' width='50' height='50' border='0' alt='' /></a></td>
                                                                                 </tr>
                                                                             </table>
                                                                         </th>
@@ -169,9 +161,9 @@ $hostUrl = config('app.base_path', '/projects/showcase/jobspot');
                                                                                     <td align='right'>
                                                                                         <table class='center' border='0' cellspacing='0' cellpadding='0' style='text-align:center;'>
                                                                                             <tr>
-                                                                                                <td class='img' width='55' style='font-size:0pt; line-height:0pt; text-align:left;'><a href='#' target='_blank'><img src='<?= $hostUrl ?>/assets/img/ico_facebook.jpg' width='34' height='34' border='0' alt='' /></a></td>
-                                                                                                <td class='img' width='55' style='font-size:0pt; line-height:0pt; text-align:left;'><a href='#' target='_blank'><img src='<?= $hostUrl ?>/assets/img/ico_twitter.jpg' width='34' height='34' border='0' alt='' /></a></td>
-                                                                                                <td class='img' width='55' style='font-size:0pt; line-height:0pt; text-align:left;'><a href='#' target='_blank'><img src='<?= $hostUrl ?>/assets/img/ico_instagram.jpg' width='34' height='34' border='0' alt='' /></a></td>
+                                                                                                <td class='img' width='55' style='font-size:0pt; line-height:0pt; text-align:left;'><a href='#' target='_blank'><img src='/assets/img/ico_facebook.jpg' width='34' height='34' border='0' alt='' /></a></td>
+                                                                                                <td class='img' width='55' style='font-size:0pt; line-height:0pt; text-align:left;'><a href='#' target='_blank'><img src='/assets/img/ico_twitter.jpg' width='34' height='34' border='0' alt='' /></a></td>
+                                                                                                <td class='img' width='55' style='font-size:0pt; line-height:0pt; text-align:left;'><a href='#' target='_blank'><img src='/assets/img/ico_instagram.jpg' width='34' height='34' border='0' alt='' /></a></td>
                                                                                             </tr>
                                                                                         </table>
                                                                                     </td>

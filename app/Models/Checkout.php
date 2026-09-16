@@ -31,7 +31,7 @@ class CheckoutPayment extends Model
         $reference = $this->generateReference();
 
         $createQuery = "
-            INSERT INTO payments (order_id, user_id, amount, reference, currency) 
+            INSERT INTO {$this->table} (order_id, user_id, amount, reference, currency) 
             VALUES (?, ?, ?, ?, ?)
         ";
 

@@ -175,10 +175,3 @@ if (!function_exists('asset_versioned')) {
         return $url;
     }
 }
-
-/*
-config_path()
-public_path()
-resource_path()
-database_path()
-*/

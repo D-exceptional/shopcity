@@ -9,7 +9,7 @@ services:
       context: .
       dockerfile: Dockerfile
 
-    container_name: ecommerce_app
+    container_name: shopcity_app
 
     working_dir: /var/www
 
@@ -32,7 +32,7 @@ services:
   nginx:
     image: nginx:alpine
 
-    container_name: ecommerce_nginx_server
+    container_name: shopcity_nginx_server
 
     ports:
       - "8080:80"
@@ -54,22 +54,15 @@ services:
   mysql:
     image: mysql:8.4
 
-    container_name: ecommerce_mysql_database
+    container_name: shopcity_mysql_database
 
     restart: unless-stopped
 
     environment:
-      # If you want fallback, use: ${DB_DATABASE:-__fallback name__}
       MYSQL_DATABASE: ${DB_DATABASE}  
-      # If you want fallback, use: ${DB_USERNAME:-__fallback user__}         
       MYSQL_USER: ${DB_USERNAME}   
-      # If you want fallback, use: ${DB_PASSWORD:-__fallback password__}            
       MYSQL_PASSWORD: ${DB_PASSWORD}  
-      # If you want fallback, use: ${DB_ROOT_PASSWORD:-__fallback root password__}         
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD} 
-
-    ports:
-      - "3306:3306"
 
     volumes:
       - mysql_data:/var/lib/mysql
@@ -84,7 +77,7 @@ services:
           "localhost",
           "-u",
           "root",
-          "-p${DB_ROOT_PASSWORD:-root}"
+          "-p${DB_ROOT_PASSWORD}"
         ]
       interval: 10s
       timeout: 5s
@@ -101,14 +94,11 @@ services:
   redis:
     image: redis:7-alpine
 
-    container_name: ecommerce_redis_server
+    container_name: shopcity_redis_server
 
     restart: unless-stopped
 
     command: redis-server --appendonly yes
-
-    ports:
-      - "6379:6379"
 
     volumes:
       - redis_data:/data
@@ -134,7 +124,7 @@ services:
   phpmyadmin:
     image: phpmyadmin:latest
 
-    container_name: ecommerce_phpmyadmin_client
+    container_name: shopcity_phpmyadmin_client
 
     restart: unless-stopped
 
@@ -146,7 +136,7 @@ services:
       # By disabling these options, you'll manually go to the browser to login to MySQL server.
 
       # If you want to access it as administrator,    
-        # set PMA_USER: and PMA_PASSWORD: to `root` and  `${DB_ROOT_PASSWORD}` respectively
+        # set PMA_USER: and PMA_PASSWORD: to `root` and `${DB_ROOT_PASSWORD}` respectively
 
       # If you want to access it as a client instead, 
         # set PMA_USER: and PMA_PASSWORD: to `${DB_USERNAME}` and  `${DB_PASSWORD}` respectively
@@ -173,11 +163,11 @@ services:
       context: .
       dockerfile: Dockerfile
 
-    container_name: ecommerce_email_worker
+    container_name: shopcity_email_worker
 
     working_dir: /var/www
 
-    command: php queue-work.php email
+    command: php app/Console/queue-work.php email
 
     volumes:
       - .:/var/www
@@ -203,11 +193,11 @@ services:
       context: .
       dockerfile: Dockerfile
 
-    container_name: ecommerce_push_worker
+    container_name: shopcity_push_worker
 
     working_dir: /var/www
 
-    command: php queue-work.php push
+    command: php app/Console/queue-work.php push
 
     volumes:
       - .:/var/www
@@ -233,11 +223,11 @@ services:
       context: .
       dockerfile: Dockerfile
 
-    container_name: ecommerce_otp_worker
+    container_name: shopcity_otp_worker
 
     working_dir: /var/www
 
-    command: php queue-work.php otp
+    command: php app/Console/queue-work.php otp
 
     volumes:
       - .:/var/www
@@ -263,11 +253,41 @@ services:
       context: .
       dockerfile: Dockerfile
 
-    container_name: ecommerce_broadcast_worker
+    container_name: shopcity_broadcast_worker
 
     working_dir: /var/www
 
-    command: php queue-work.php broadcast
+    command: php app/Console/queue-work.php broadcast
+
+    volumes:
+      - .:/var/www
+
+    depends_on:
+      redis:
+        condition: service_healthy
+
+      mysql:
+        condition: service_healthy
+
+    restart: unless-stopped
+
+    networks:
+      - framework
+
+  # ==========================================================
+  # BROADCAST WORKER
+  # ==========================================================
+
+  cloudinary-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    container_name: shopcity_cloudinary_worker
+
+    working_dir: /var/www
+
+    command: php app/Console/queue-work.php cloudinary
 
     volumes:
       - .:/var/www

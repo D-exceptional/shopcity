@@ -47,7 +47,7 @@ class SendAdminItemStatusUpdatedEmail extends Listener
                 Status:          <b>{$event->status}</b><br>
             </center>
 
-            <br> Kindly review and credit the vendor's wallet accordingly
+            <br> Kindly review and take necessary actions accordingly
         ";
 
         $admins = $this->userModel->allByRole('Admin');

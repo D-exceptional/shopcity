@@ -88,8 +88,8 @@ class Wallet extends Model
     ): void {
 
         $tables = ($type === 'Customer') 
-            ? ['wallet_coin'] 
-            : ['wallet_savings', 'wallet_payout', 'wallet_payout_backup'];
+            ? ['wallet_shopping'] 
+            : ['wallet_payout', 'wallet_payout_backup'];
 
         foreach ($tables as $table) {
 

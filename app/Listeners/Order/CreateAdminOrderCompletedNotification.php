@@ -39,7 +39,7 @@ class CreateAdminOrderCompletedNotification extends Listener
 
             if ($created === false) {
 
-                $this->logError("Failed to create order completed notification for admin: {$admin['email']}");
+                $this->logError("Failed to create order completion notification for admin: {$admin['email']}");
             }
         }
     }

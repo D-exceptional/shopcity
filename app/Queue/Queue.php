@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace App\Queue;
 
-use App\Redis\RedisManager;
+use App\Redis\Redis;
 use App\Redis\RedisQueue;
 use App\Models\Jobs;
 
 class Queue extends RedisQueue
 {
     public function __construct(
-        RedisManager $redis, 
+        Redis $redis, 
         protected Jobs $jobModel
     ) {
         parent::__construct(

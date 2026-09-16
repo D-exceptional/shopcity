@@ -34,7 +34,7 @@ class CreateVendorCheckoutNotification extends Listener
                 $storeTotal = $store['total'];
 
                 // Commission (90%)
-                $vendorCommission = round($storeTotal * 0.90, 2);
+                $vendorCommission    = round($storeTotal * 0.90, 2);
                 $processedCommission = $this->currencyManager->format((float) $vendorCommission); 
 
                 // Get Vendor Details
@@ -47,7 +47,7 @@ class CreateVendorCheckoutNotification extends Listener
                     Hi <b>{$vendorName}</b>,
 
                     <br> You have a new order on your store with an ID: <b>{$event->orderCode}</b>!
-                    <br> Your savings wallet has been credited with <b>{$processedCommission}</b> for this order and will be redeemed to your withdrawal wallet at order completion</b>. 
+                    <br> Your payout wallet has been credited with <b>{$processedCommission}</b> for this order</b>. 
                     <br> Thank you for selling on our platform. Keep up the great work!
                     <br> We hope to see more sales from your shop.
                     <br> Have a great day ahead.

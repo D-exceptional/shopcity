@@ -28,7 +28,7 @@ class SendVendorStoreStatusUpdatedPush extends Listener
         $vendorName  = $vendorData['name'];
 
         // Build Venor Message Based On Status
-        $statusMessages = [
+        $statusMessage = [
             'Active' => "
                 Hi <b>{$vendorName}</b>, 
 
@@ -43,13 +43,13 @@ class SendVendorStoreStatusUpdatedPush extends Listener
 
                 <br> Your store has been <b>deactivated</b>. 
                 <br> This may be due to policy violations, inactivity, or other issues. 
-                <br> Please contact support at <b>support@shopcity.com</b> or visit <b><a href='{$this->baseUrl}/contact'>Appeal Page</a></b> to resolve this and restore your store. 
+                <br> Please contact support at <b>support@shopcity.com</b> or visit <b><a href='/contact'>Appeal Page</a></b> to resolve this and restore your store. 
                 <br> We value your partnership and hope to have you back soon.
             ",
         ];
 
         // Fallback In Case Of Unknown Status
-        $message = $statusMessages[$event->status] ?? "
+        $message = $statusMessage[$event->status] ?? "
             Hi <b>{$vendorName}</b>,
 
             <br> There has been an update to your store status. 

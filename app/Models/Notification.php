@@ -47,17 +47,6 @@ class Notification extends Model
             ->count();
     }
 
-    public function countUnreadGroupedById(
-        int $userId
-    ): int {
-
-        return $this->query()
-            ->where('notification_receiver', '=', $userId)
-            ->where('notification_status', '=', 'Unread')
-            ->groupBy('notification_type')
-            ->count();
-    }
-
     public function countUnreadByType(
         int $userId
     ): ?array {
@@ -75,34 +64,6 @@ class Notification extends Model
         ";
 
         return $this->queryAll($fetchQuery, [$userId]);
-    }
-
-    public function countByTypeWithLastDate(
-        string $type, 
-        int $userId
-    ): array {
-
-        // First query: count unread notifications by type 
-        $count = $this->query()
-            ->where('notification_type', '=', $type)
-            ->where('notification_receiver', '=', $userId)
-            ->where('notification_status', '=', 'Unread')
-            ->count();
-
-        // Second query: latest unseen incoming_mail date 
-        $lastDate = $this->query()
-            ->select(['notification_date']) // Change to `created_at` for a cleaner design
-            ->where('notification_type', '=', $type)
-            ->where('notification_receiver', '=', $userId)
-            ->where('notification_status', '=', 'Unread')
-            ->orderBy('notification_id', 'DESC')
-            ->first();
-
-        // Return both in one response
-        return [
-            'count'     => $count,
-            'last_date' => $lastDate ?: null
-        ];
     }
 
     public function getUnreadById(

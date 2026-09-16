@@ -26,20 +26,20 @@ class RateManager
         $halfStar   = ($rating - $fullStars) >= 0.5; // whether to show a half star
         $emptyStars = $maxStars - $fullStars - ($halfStar ? 1 : 0);
 
-        // Add full stars
-        for ($i = 0; $i < $fullStars; $i++) {
-            $html .= '<i class="fas fa-star text-primary"></i>';
-        }
+            // Add full stars
+            for ($i = 0; $i < $fullStars; $i++) {
+                $html .= '<i class="fas fa-star text-primary"></i>';
+            }
 
-        // Add half star (if applicable)
-        if ($halfStar) {
-            $html .= '<i class="fas fa-star-half text-primary"></i>';
-        }
+            // Add half star (if applicable)
+            if ($halfStar) {
+                $html .= '<i class="fas fa-star-half text-primary"></i>';
+            }
 
-        // Add empty stars
-        for ($i = 0; $i < $emptyStars; $i++) {
-            $html .= '<i class="far fa-star"></i>'; // Change to `fas` if you want gray stars for 0.0 ratings
-        }
+            // Add empty stars
+            for ($i = 0; $i < $emptyStars; $i++) {
+                $html .= '<i class="far fa-star"></i>'; // Change to `fas` if you want gray stars for 0.0 ratings
+            }
 
         $html .= '</div>';
 

@@ -39,7 +39,7 @@ class CreateAdminCheckoutNotification extends Listener
 
             if ($created === false) {
 
-                $this->logError("Failed to create registration notification for admin: {$admin['email']}");
+                $this->logError("Failed to create checkout notification for admin: {$admin['email']}");
             }
         }
     }

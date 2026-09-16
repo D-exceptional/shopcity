@@ -225,7 +225,7 @@ class Product extends Model
         $productsQuery = "
             SELECT 
                 * 
-            FROM {$table} 
+            FROM {$this->table} 
             {$condition} 
             ORDER BY created_at DESC
         ";
@@ -233,7 +233,7 @@ class Product extends Model
         $countQuery = "
             SELECT 
                 COUNT(*) 
-            FROM {$table} 
+            FROM {$this->table} 
             {$condition}
         ";
 
@@ -256,7 +256,7 @@ class Product extends Model
         $productsQuery = "
             SELECT 
                 * 
-            FROM {$table} 
+            FROM {$this->table} 
             WHERE 
                 category = ? 
                 {$condition} 
@@ -266,7 +266,7 @@ class Product extends Model
         $countQuery = "
             SELECT 
                 COUNT(*) 
-            FROM {$table} 
+            FROM {$this->table} 
             WHERE 
                 category = ? 
                 {$condition}
@@ -291,7 +291,7 @@ class Product extends Model
         $productsQuery = "
             SELECT 
                 * 
-            FROM {$table}
+            FROM {$this->table}
             WHERE 
                 store_id = ? 
                 {$condition} 
@@ -301,7 +301,7 @@ class Product extends Model
         $countQuery = "
             SELECT 
                 COUNT(*) 
-            FROM {$table} 
+            FROM {$this->table} 
             WHERE 
                 store_id = ? 
                 {$condition}
@@ -327,7 +327,7 @@ class Product extends Model
         $productsQuery = "
             SELECT 
                 * 
-            FROM {$table} 
+            FROM {$this->table} 
             WHERE 
                 store_id = ? 
                 AND category = ? 
@@ -338,7 +338,7 @@ class Product extends Model
         $countQuery = "
             SELECT 
                 COUNT(*) 
-            FROM {$table} 
+            FROM {$this->table} 
             WHERE 
                 store_id = ? 
                 AND category = ? 
@@ -363,7 +363,7 @@ class Product extends Model
         $productsQuery = "
             SELECT 
                 * 
-            FROM {$table} 
+            FROM {$this->table} 
             WHERE 
                 created_at >= NOW() - INTERVAL 7 DAY 
                 {$condition} 
@@ -373,7 +373,7 @@ class Product extends Model
         $countQuery = "
             SELECT 
                 COUNT(*) 
-            FROM {$table} 
+            FROM {$this->table} 
             WHERE 
                 created_at >= NOW() - INTERVAL 7 DAY 
                 {$condition}
@@ -398,7 +398,7 @@ class Product extends Model
         $productsQuery = "
             SELECT 
                 * 
-            FROM {$table} 
+            FROM {$this->table} 
             WHERE 
                 is_featured = TRUE 
                 {$condition} 
@@ -408,7 +408,7 @@ class Product extends Model
         $countQuery = "
             SELECT 
                 COUNT(*) 
-            FROM {$table} 
+            FROM {$this->table} 
             WHERE 
                 is_featured = TRUE 
                 {$condition}
@@ -467,7 +467,7 @@ class Product extends Model
         $productsQuery = "
             SELECT 
                 * 
-            FROM {$table} 
+            FROM {$this->table} 
             WHERE 
                 product_price BETWEEN ? AND ? 
                 {$condition} 
@@ -477,7 +477,7 @@ class Product extends Model
         $countQuery = "
             SELECT 
                 COUNT(*) 
-            FROM {$table} 
+            FROM {$this->table} 
             WHERE 
                 product_price BETWEEN ? AND ? 
                 {$condition}
@@ -502,7 +502,7 @@ class Product extends Model
         $productsQuery = "
             SELECT 
                 * 
-            FROM {$table} 
+            FROM {$this->table} 
             WHERE 
                 product_price >= ? 
                 {$condition} 
@@ -512,7 +512,7 @@ class Product extends Model
         $countQuery = "
             SELECT 
                 COUNT(*) 
-            FROM {$table} 
+            FROM {$this->table} 
             WHERE 
                 product_price >= ? 
                 {$condition}
@@ -537,7 +537,7 @@ class Product extends Model
         $productsQuery = "
             SELECT 
                 * 
-            FROM {$table} 
+            FROM {$this->table} 
             WHERE 
                 product_price <= ? 
                 {$condition} 
@@ -547,7 +547,7 @@ class Product extends Model
         $countQuery = "
             SELECT 
                 COUNT(*) 
-            FROM {$table} 
+            FROM {$this->table} 
             WHERE 
                 product_price <= ? 
                 {$condition}
@@ -571,7 +571,7 @@ class Product extends Model
         $productsQuery = "
             SELECT 
                 * 
-            FROM {$table} 
+            FROM {$this->table} 
             {$condition} 
             ORDER BY category ASC, created_at DESC 
             LIMIT 1000
@@ -666,7 +666,7 @@ class Product extends Model
     ): ?array {
 
         $productQuery = "
-            SELECT * FROM {$table} 
+            SELECT * FROM {$this->table} 
             WHERE 
                 product_id = ?
         ";
@@ -752,7 +752,7 @@ class Product extends Model
         $productsQuery = "
             SELECT 
                 * 
-            FROM {$table} 
+            FROM {$this->table} 
             WHERE 
                 product_name LIKE ? 
                 OR product_description LIKE ? 
@@ -763,7 +763,7 @@ class Product extends Model
         $countQuery = "
             SELECT 
                 COUNT(*) 
-            FROM {$table} 
+            FROM {$this->table} 
             WHERE 
                 product_name LIKE ? 
                 OR product_description LIKE ? 
@@ -789,7 +789,7 @@ class Product extends Model
         $productsQuery = "
             SELECT 
                 * 
-            FROM {$table} 
+            FROM {$this->table} 
             WHERE 
                 color = ? 
                 {$condition} 
@@ -799,7 +799,7 @@ class Product extends Model
         $countQuery = "
             SELECT 
                 COUNT(*) 
-            FROM {$table}
+            FROM {$this->table}
             WHERE 
                 color = ? 
                 {$condition}
@@ -825,7 +825,7 @@ class Product extends Model
         $productsQuery = "
             SELECT 
                 * 
-            FROM {$table} 
+            FROM {$this->table} 
             WHERE 
                 store_id = ? 
                 AND color = ? 
@@ -836,7 +836,7 @@ class Product extends Model
         $countQuery = "
             SELECT 
                 COUNT(*) 
-            FROM {$table} 
+            FROM {$this->table} 
             WHERE 
                 store_id = ? 
                 AND color = ? 
@@ -863,7 +863,7 @@ class Product extends Model
         $productsQuery = "
             SELECT 
                 * 
-            FROM {$table} 
+            FROM {$this->table} 
             WHERE 
                 category = ? 
                 AND product_id != ? 
@@ -874,7 +874,7 @@ class Product extends Model
         $countQuery = "
             SELECT 
                 COUNT(*) 
-            FROM {$table} 
+            FROM {$this->table} 
             WHERE 
                 category = ? 
                 AND product_id != ? 
@@ -892,7 +892,7 @@ class Product extends Model
         $sql = "
             SELECT DISTINCT 
                 color 
-            FROM {$table} 
+            FROM {$this->table} 
             WHERE 
                 color IS NOT NULL 
                 AND color != '' 
@@ -913,7 +913,7 @@ class Product extends Model
                 SELECT 
                     p.color,
                     COUNT(p.product_id) AS product_count
-                FROM {$table} p
+                FROM {$this->table} p
                 WHERE 
                     p.color IS NOT NULL 
                     AND p.color != ''
@@ -930,7 +930,7 @@ class Product extends Model
                 SELECT 
                     p.color,
                     COUNT(p.product_id) AS product_count
-                FROM {$table} p
+                FROM {$this->table} p
                 WHERE 
                     p.color IS NOT NULL 
                     AND p.color != ''
@@ -994,7 +994,7 @@ class Product extends Model
         $sql = "
             SELECT 
                 COUNT(*)
-            FROM {$table} 
+            FROM {$this->table} 
             WHERE 
                 1
         ";

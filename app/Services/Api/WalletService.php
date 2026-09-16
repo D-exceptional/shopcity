@@ -292,7 +292,7 @@ class WalletService
         }
 
         return [
-            'type' => strtoupper($parts[1]),  // WAL or WIT
+            'type' => strtoupper($parts[1]),  // TOP or WIT
             'date' => $parts[2]               // optional use
         ];
     }
@@ -307,7 +307,7 @@ class WalletService
         $decoded = $this->decodeReference($reference);
         $type    = $decoded['type'];
 
-        if ($type === 'WAL') {
+        if ($type === 'TOP') {
             return $this->finalizeWalletTopup($reference, $status, $amount);
         }
 
@@ -336,13 +336,13 @@ class WalletService
             $amount = $amount ?: $record['amount'];
 
             // Credit Wallet
-            $this->walletModel->creditWallet('wallet_coin', $amount, $customerId);
+            $this->walletModel->creditWallet('wallet_shopping', $amount, $customerId);
 
             // Update DB status
             $this->walletModel->updateStatus('topups', 'reference', $reference, 'Completed');
 
             // Fetch New Balance
-            $newBalance = $this->walletModel->getBalance('wallet_coin', $customerId);
+            $newBalance = $this->walletModel->getBalance('wallet_shopping', $customerId);
 
             $this->eventDispatcher->dispatch(
                 new TopupProcessed(
