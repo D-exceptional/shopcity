@@ -19,6 +19,11 @@ class Application
     protected Config $config;
 
     /**
+     * Application instance variable
+     */
+    protected static ?Application $instance = null;
+
+    /**
      * Registered service providers.
      */
     protected array $providers = [];
@@ -28,6 +33,8 @@ class Application
      */
     public function __construct()
     {
+        self::$instance = $this;
+
         $this->container = new Container();
 
         /*
@@ -61,6 +68,14 @@ class Application
     public function config(): Config
     {
         return $this->config;
+    }
+
+    /**
+     * Get application instance
+     */
+    public static function getInstance(): self
+    {
+        return self::$instance;
     }
 
     /*

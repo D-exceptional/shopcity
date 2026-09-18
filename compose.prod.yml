@@ -5,7 +5,7 @@ services:
   # ============================================================
 
   app:
-    image: d-exceptional/shopcity-php:1.0.0
+    image: iamaustin001/shopcity-php:1.0.0
 
     restart: unless-stopped
 
@@ -32,7 +32,7 @@ services:
   # ============================================================
 
   nginx:
-    image: d-exceptional/shopcity-nginx:1.0.0
+    image: iamaustin001/shopcity-nginx:1.0.0
 
     restart: unless-stopped
 
@@ -113,13 +113,30 @@ services:
     networks:
       - framework
 
+  # ============================================================
+  # PHPMYADMIN
+  # ============================================================
+  phpmyadmin:
+    image: phpmyadmin:latest
+    restart: unless-stopped
+
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+    networks:
+      - framework
 
   # ============================================================
   # EMAIL WORKER
   # ============================================================
 
   email-worker:
-    image: d-exceptional/shopcity-php:1.0.0
+    image: iamaustin001/shopcity-php:1.0.0
 
     restart: unless-stopped
 
@@ -148,7 +165,7 @@ services:
   # ============================================================
 
   push-worker:
-    image: d-exceptional/shopcity-php:1.0.0
+    image: iamaustin001/shopcity-php:1.0.0
 
     restart: unless-stopped
 
@@ -177,7 +194,7 @@ services:
   # ============================================================
 
   otp-worker:
-    image: d-exceptional/shopcity-php:1.0.0
+    image: iamaustin001/shopcity-php:1.0.0
 
     restart: unless-stopped
 
@@ -206,7 +223,7 @@ services:
   # ============================================================
 
   broadcast-worker:
-    image: d-exceptional/shopcity-php:1.0.0
+    image: iamaustin001/shopcity-php:1.0.0
 
     restart: unless-stopped
 
@@ -235,7 +252,7 @@ services:
   # ============================================================
 
   cloudinary-worker:
-    image: d-exceptional/shopcity-php:1.0.0
+    image: iamaustin001/shopcity-php:1.0.0
 
     restart: unless-stopped
 
