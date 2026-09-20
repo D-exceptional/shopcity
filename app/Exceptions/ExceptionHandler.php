@@ -288,7 +288,7 @@ class ExceptionHandler
          * Default error page. 
          * Could be changed to 500.php or any other error page as needed.
          */
-        $errorFile = ROOT_PATH . '/resources/errors/template.php'; 
+        $errorFile = ROOT_PATH . '/resources/views/errors/template.php'; 
 
         if (!is_file($errorFile)) {
 

@@ -25,8 +25,8 @@ class Connection
     protected function connect(): PDO
     {
         $host = config('database.mysql.host', 'mysql');
-        $db   = config('database.mysql.name', '');
-        $user = config('database.mysql.user', '');
+        $db   = config('database.mysql.name', 'shopcity');
+        $user = config('database.mysql.user', 'shopcity_user');
         $pass = config('database.mysql.pass', '');
 
         if (!$db || !$user) {

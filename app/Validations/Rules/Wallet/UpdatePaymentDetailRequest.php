@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Validations\Rules\Wallet;
 
-class UpdatePaymentDetailsRequest
+class UpdatePaymentDetailRequest
 {
     public static function rules(): array
     {

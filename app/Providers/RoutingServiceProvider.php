@@ -21,9 +21,10 @@ class RoutingServiceProvider extends ServiceProvider
         |--------------------------------------------------------------------------
         */
 
-        $this->container()->singleton(
-            Router::class
-        );
+        container()
+            ->singleton(
+                Router::class
+            );
 
         /*
         |--------------------------------------------------------------------------
@@ -31,9 +32,10 @@ class RoutingServiceProvider extends ServiceProvider
         |--------------------------------------------------------------------------
         */
 
-        $this->container()->singleton(
-            RouteLoader::class
-        );
+        container()
+            ->singleton(
+                RouteLoader::class
+            );
 
         /*
         |--------------------------------------------------------------------------
@@ -41,13 +43,14 @@ class RoutingServiceProvider extends ServiceProvider
         |--------------------------------------------------------------------------
         */
 
-        $this->container()->singleton(
-            UrlGenerator::class,
-            fn ($container) =>
-                new UrlGenerator(
-                    $container->get(Router::class)
-                )
-        );
+        container()
+            ->singleton(
+                UrlGenerator::class,
+                fn ($container) =>
+                    new UrlGenerator(
+                        $container->get(Router::class)
+                    )
+            );
     }
 
     /**
@@ -55,7 +58,7 @@ class RoutingServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        $this->container()
+        container()
             ->get(RouteLoader::class)
             ->load();
     }

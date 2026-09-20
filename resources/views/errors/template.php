@@ -4,7 +4,7 @@
     // Define Base Directory
     define(
         'ROOT_DIR_PATH', 
-        dirname(__DIR__)
+        dirname(__DIR__, 2)
     );
 ?>
 

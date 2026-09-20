@@ -18,7 +18,7 @@ return [
 
         'use_views' => env('APP_USE_VIEWS', true),
 
-        'view_path' => env('APP_VIEW_PATH', ''), // Change to /views or the actual folder name where view files are stored 
+        'view_path' => env('APP_VIEW_PATH', 'resources/views'), // Change to /views or the actual folder name where view files are stored 
 
     ],
     

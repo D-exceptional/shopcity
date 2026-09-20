@@ -4,13 +4,19 @@ declare(strict_types=1);
 
 namespace App\Routing;
 
+use App\Core\Application;
+
 class RouteLoader
 {
+    public function __construct(
+        protected Application $app
+    ) {}
+
     public function load(): void
     {
-        $router = app()->container()->get(
-            Router::class
-        );
+        $router = $this->app
+            ->container()
+            ->get(Router::class);
 
         $basePath = dirname( __DIR__, 2);
 
@@ -39,10 +45,9 @@ class RouteLoader
         |--------------------------------------------------------------------------
         */
 
-        $routeCollections = config(
-            'router.collections',
-            ['api', 'web']
-        );
+        $routeCollections = $this->app
+            ->config()
+            ->get('router.collections', ['api', 'web']);
 
         foreach ($routeCollections as $collection) {
 

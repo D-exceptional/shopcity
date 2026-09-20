@@ -114,10 +114,10 @@
 <script src="<?= asset('lib/owlcarousel/owl.carousel.min.js') ?>"></script>
 
 <!-- Template Javascript -->
-<script src="<?= asset_versioned('js/customer/main.js') ?>" type="module"></script>                                                                                 
+<script src="<?= asset_versioned('js/public/main.js') ?>" type="module"></script>                                                                                 
 
 <!-- Sweetalert 2.0.0 Script -->
 <script src="<?= asset('js/shared/sweetalert-2.6.0.min.js') ?>"></script>
 
 <!-- Functions Javascript -->
-<script src="<?= asset_versioned('js/customer/functions.js') ?>" type="module"></script>
+<script src="<?= asset_versioned('js/public/functions.js') ?>" type="module"></script>

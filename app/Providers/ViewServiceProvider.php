@@ -15,46 +15,54 @@ use App\Support\TimeManager;
 use App\Models\Category;
 use App\Models\Cart;
 use App\Models\User;
-use App\Services\Web\NotificationService; 
+use App\Services\Web\NotificationService;
 
 class ViewServiceProvider extends ServiceProvider
 {
+    public function register(): void
+    {
+        container()
+            ->singleton(
+                View::class
+            );
+    }
+
     public function boot(): void
     {
-        $view = $this->container()
+        $view = container()
             ->get(View::class);
 
-        $session = $this->container()
+        $session = container()
             ->get(SessionInterface::class);
 
-        $cache = $this->container()
+        $cache = container()
             ->get(CacheInterface::class);
 
-        $currencyManager = $this->container()
+        $currencyManager = container()
             ->get(CurrencyManager::class);
 
-        $rateManager = $this->container()
+        $rateManager = container()
             ->get(RateManager::class);
 
-        $bankManager = $this->container()
+        $bankManager = container()
             ->get(BankManager::class);
 
-        $numberManager = $this->container()
+        $numberManager = container()
             ->get(NumberManager::class);
 
-        $timeManager = $this->container()
+        $timeManager = container()
             ->get(TimeManager::class);
 
-        $categoryModel = $this->container()
+        $categoryModel = container()
             ->get(Category::class);
 
-        $cartModel = $this->container()
+        $cartModel = container()
             ->get(Cart::class);
 
-        $userModel = $this->container()
+        $userModel = container()
             ->get(User::class);
 
-        $notificationService = $this->container()
+        $notificationService = container()
             ->get(NotificationService::class);
 
         // CSRF Token
@@ -81,19 +89,21 @@ class ViewServiceProvider extends ServiceProvider
         $userId = null;
 
         if ($isLoggedIn) {
-            $user   = $session->user();
+            $user = $session->user();
             $userId = $user['id'] ?? null;
-            $email  = $user['email'];
+            $email = $user['email'];
 
             // Get name
-            $fullName  = $user['name'];
+            $fullName = $user['name'];
             $nameParts = explode(' ', $fullName);
             $firstName = $nameParts[0];
-            $lastName  = $nameParts[1];
+            $lastName = $nameParts[1];
 
             // Get profile
-            $avatar  = $userModel->getProfile($userId);
-            $profile = ($avatar === 'None') ? asset('img/avatar.jpg') : $avatar;
+            $avatar = $userModel->getProfile($userId);
+            $profile = ($avatar === 'None')
+                ? asset('img/avatar.jpg')
+                : $avatar;
         }
 
         // Public Pages Cart
@@ -105,16 +115,20 @@ class ViewServiceProvider extends ServiceProvider
         $notifications = [];
 
         if ($isLoggedIn && $userId !== null) {
-            $notifications = $notificationService->summary($userId);
+            $notifications =
+                $notificationService->summary($userId);
         }
+
+        // Get App Data
+        $appName = config('app.name');
+        $appUrl = config('app.url');
 
         // -----------------------------------------
         // SHARE VIEW DATA GLOBALLY ACROSS APP
-        // ----------------------------------------
+        // -----------------------------------------
 
-        // Global Shared Data
-        $view->share('appName', config('app.name'));
-        $view->share('appUrl', config('app.url'));
+        $view->share('appName', $appName);
+        $view->share('appUrl', $appUrl);
         $view->share('csrfToken', $csrfToken);
         $view->share('currencyManager', $currencyManager);
         $view->share('rateManager', $rateManager);
@@ -123,7 +137,6 @@ class ViewServiceProvider extends ServiceProvider
         $view->share('timeManager', $timeManager);
         $view->share('notifications', $notifications);
         $view->share('isLoggedIn', $isLoggedIn);
-        // $view->share('user', $user);
         $view->share('userId', $userId);
         $view->share('email', $email ?? null);
         $view->share('fullName', $fullName ?? null);
@@ -131,9 +144,17 @@ class ViewServiceProvider extends ServiceProvider
         $view->share('lastName', $lastName ?? null);
         $view->share('avatar', $avatar ?? null);
         $view->share('profile', $profile ?? null);
-        // Public Pages Shared Data
-        $view->share('allCategories', $allCategories);
-        $view->share('groupedCategories', $groupedCategories);
-        $view->share('cartCount', $cartCount);
+        $view->share(
+            'allCategories',
+            $allCategories ?? []
+        );
+        $view->share(
+            'groupedCategories',
+            $groupedCategories ?? []
+        );
+        $view->share(
+            'cartCount',
+            $cartCount ?? 0
+        );
     }
 }

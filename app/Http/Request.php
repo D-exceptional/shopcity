@@ -221,7 +221,7 @@ class Request
             PHP_URL_PATH
         );
 
-        $basePath = rtrim(config('app.base_path', ''), '/');
+        $basePath = rtrim(config('app.url', ''), '/');
 
         if (
             $basePath !== '' &&

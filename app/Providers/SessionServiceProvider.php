@@ -16,23 +16,24 @@ class SessionServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->container()->singleton(
-            SessionInterface::class,
-            function ($container) {
-                $driver = config('session.driver', 'file');
+        container()
+            ->singleton(
+                SessionInterface::class,
+                function ($container) {
+                    $driver = config('session.driver', 'file');
 
-                return match ($driver) {
+                    return match ($driver) {
 
-                    'file' => $container->get(FileDriver::class),
+                        'file' => $container->get(FileDriver::class),
 
-                    'redis' => $container->get(RedisDriver::class),
+                        'redis' => $container->get(RedisDriver::class),
 
-                    default => throw new \RuntimeException(
-                        "Unsupported session driver [{$driver}]."
-                    ),
-                };
-            }
-        );
+                        default => throw new \RuntimeException(
+                            "Unsupported session driver [{$driver}]."
+                        ),
+                    };
+                }
+            );
     }
 
     /**
@@ -40,7 +41,7 @@ class SessionServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        $this->container()
+        container()
             ->get(SessionInterface::class)
             ->start();
     }

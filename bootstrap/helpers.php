@@ -12,6 +12,7 @@ if (!function_exists('app')) {
     function app(): Application
     {
         return Application::getInstance();
+
     }
 }
 
@@ -34,6 +35,32 @@ if (!function_exists('config')) {
             ->container()
             ->get(Config::class)
             ->get($key, $default);
+    }
+}
+
+
+/**
+ * -----------------------------------------
+ * Route url helper
+ * -----------------------------------------
+ */
+if (!function_exists('route')) {
+
+    /**
+     * Generate a URL from a named route.
+     */
+    function route(
+        string $name,
+        array $parameters = []
+    ): string {
+
+        return app()
+            ->container()
+            ->get(UrlGenerator::class)
+            ->route(
+                $name,
+                $parameters
+            );
     }
 }
 
@@ -69,30 +96,6 @@ if (!function_exists('storage_path')) {
     }
 }
 
-/**
- * -----------------------------------------
- * Route url helper
- * -----------------------------------------
- */
-if (!function_exists('route')) {
-
-    /**
-     * Generate a URL from a named route.
-     */
-    function route(
-        string $name,
-        array $parameters = []
-    ): string {
-
-        return app()
-            ->container()
-            ->get(UrlGenerator::class)
-            ->route(
-                $name,
-                $parameters
-            );
-    }
-}
 
 /**
  * -----------------------------------------

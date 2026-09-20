@@ -4,35 +4,31 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
-use App\Core\Container;
 use App\Events\EventDispatcher;
 
-class EventServiceProvider
+class EventServiceProvider extends ServiceProvider
 {
-    public function __construct(
-        protected Container $container
-    ) {}
+    public function __construct() {}
 
     public function register(): void
     {
-        $this->container->singleton(
-            EventDispatcher::class,
-            fn () => new EventDispatcher(
-                $this->container
-            )
-        );
+        container()
+            ->singleton(
+                EventDispatcher::class,
+                fn () => new EventDispatcher(
+                    //$this->container
+                    container()
+                )
+            );
     }
 
     public function boot(): void
     {
-        $dispatcher = $this->container->get(
-            EventDispatcher::class
-        );
+        $dispatcher = container()
+            ->get(EventDispatcher::class);
 
-        $events = config(
-            'events',
-            []
-        );
+        $events = config()
+            ->get('events', []);
 
         foreach ($events as $event => $listeners) {
 

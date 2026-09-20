@@ -70,17 +70,16 @@ class UserService
         // 3. Normalize Inputs
         $firstname = $this->textManager->formatUserName($firstname);
         $lastname  = $this->textManager->formatUserName($lastname);
-        
-        // Handle Contact: Strip Leading 0 Only If It Exists
-        $cleanContact = ltrim($contact, '0');
-        $contact      = $code . $cleanContact;
-
-        // Hash Password (Argon2id Preferred If Supported)
-        $password = password_hash($password, PASSWORD_BCRYPT ?? PASSWORD_ARGON2ID);
 
         // Format Name And Status
         $fullName = $firstname . ' ' . $lastname;
         $status   = in_array($role, $rolesConfig['active'], true) ? 'Active' : 'Pending';
+        
+        // Handle Contact: Strip Leading 0 Only If It Exists
+        $contact = $code . ltrim($contact, '0');
+
+        // Hash Password (Argon2id Preferred If Supported)
+        $password = password_hash($password, PASSWORD_BCRYPT ?? PASSWORD_ARGON2ID);
 
         // Prepare Mail Data
         $isActiveRole = in_array($role, $rolesConfig['active'], true);

@@ -13,7 +13,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-messaging.js";
 
 // ----- Core Config ----- //
-import { firebaseConfig } from "../../../assets/js/core/index.js";
+import { firebaseConfig } from "../core/index.js";
 import { makeRequest } from "../core/index.js";
 
 // ----- UI Alerts ----- //

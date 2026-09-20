@@ -7,37 +7,20 @@ define(
     dirname(__DIR__)
 );
 
-// ------------------------------------
-// LOAD VENDOR AUTOLOADER
-// ------------------------------------
-
 require_once ROOT_PATH . '/vendor/autoload.php';
 
-// ------------------------------------
 // LOAD BOOTSTRAP ENV HELPER
-// ------------------------------------
-
 require_once ROOT_PATH . '/bootstrap/env.php';
-
-// ------------------------------------
-// IMPORT APPLICATION CLASS
-// ------------------------------------
 
 use App\Core\Application;
 
-// ------------------------------------
-// BOOT APPLICATION
-// ------------------------------------
-
+// CREATE APPLICATION
 $app = new Application();
 
-$app->boot();
-
-// ------------------------------------
 // LOAD APPLICATION HELPERS
-// ------------------------------------
-
 require_once ROOT_PATH . '/bootstrap/helpers.php';
 
-// return app instance
+// BOOT APPLICATION
+$app->boot();
+
 return $app;

@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 $options = [
 
-    'scheme'   => env('REDIS_SCHEME') ?? 'tcp',
+    //'scheme'   => env('REDIS_SCHEME') ?? 'tcp',
 
     'host'     => env('REDIS_HOST') ?? 'redis',
 
-    'port'     => env('REDIS_PORT') ?? 6379,
+    'port'     => env('REDIS_PORT') ?? '',
 
-    'username' => env('REDIS_USERNAME') ?? 'default',
+    'username' => env('REDIS_USERNAME') ?? '',
 
     'password' => env('REDIS_PASSWORD') ?? null,
 
