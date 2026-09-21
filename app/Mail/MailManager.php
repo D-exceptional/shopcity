@@ -392,7 +392,7 @@ class MailManager
             : (string) $data;
 
         $logFile = dirname(__DIR__, 2)
-            . '/storage/logs/mail-manager.log';
+            . '/storage/logs/mail.log';
 
         $directory = dirname($logFile);
 

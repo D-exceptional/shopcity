@@ -39,7 +39,7 @@ class Category extends Model
                 FROM {$this->table} pc
                 LEFT JOIN products p 
                     ON p.category = pc.category_name
-                GROUP BY pc.category_name
+                GROUP BY pc.category_id, pc.category_name
                 ORDER BY pc.category_name ASC
             ";
 

@@ -7,7 +7,6 @@ vendor/
 node_modules/
 storage/*
 !storage/framework/
-!storage/logs/
 /database/backups/*
 
 # ================================

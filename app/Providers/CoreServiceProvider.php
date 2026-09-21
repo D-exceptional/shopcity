@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
-//use App\Core\Container;
+use App\Core\Container;
 use App\Core\Kernel;
 use App\Core\View;
 use App\Http\Request;
@@ -38,8 +38,8 @@ class CoreServiceProvider extends ServiceProvider
         container()
             ->bind(
                 Response::class,
-                fn ($container) => new Response(
-                    $container->make(View::class)
+                fn (Container $container) => new Response(
+                    $container->get(View::class)
                 )
             );
 
@@ -51,7 +51,7 @@ class CoreServiceProvider extends ServiceProvider
 
         container() 
             ->singleton(
-                 ResponseEmitter::class
+                ResponseEmitter::class
             );
 
         /*
@@ -64,6 +64,14 @@ class CoreServiceProvider extends ServiceProvider
             ->singleton(
                 Kernel::class
             );
+    }
+
+    /**
+     * Boot the core service.
+     */
+    public function boot(): void
+    {
+        // No core boot process is currently required.
     }
 }
 

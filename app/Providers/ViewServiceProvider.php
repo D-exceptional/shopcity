@@ -32,6 +32,9 @@ class ViewServiceProvider extends ServiceProvider
         $view = container()
             ->get(View::class);
 
+        $this->log('VIEW PROVIDER BOOTED');
+        $this->log('VIEW OBJECT: ' . spl_object_id($view));
+
         $session = container()
             ->get(SessionInterface::class);
 
@@ -123,6 +126,8 @@ class ViewServiceProvider extends ServiceProvider
         $appName = config('app.name');
         $appUrl = config('app.url');
 
+        $this->log('APP NAME SHARED: ' . ($appName ?? 'NULL'));
+
         // -----------------------------------------
         // SHARE VIEW DATA GLOBALLY ACROSS APP
         // -----------------------------------------
@@ -156,5 +161,7 @@ class ViewServiceProvider extends ServiceProvider
             'cartCount',
             $cartCount ?? 0
         );
+
+        $this->log('VIEW SHARED DATA: ' . json_encode($view, true));
     }
 }

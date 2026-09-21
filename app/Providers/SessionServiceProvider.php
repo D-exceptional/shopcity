@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Core\Container;
 use App\Contracts\SessionInterface;
 use App\Session\Drivers\FileDriver;
 use App\Session\Drivers\RedisDriver;
@@ -19,7 +20,7 @@ class SessionServiceProvider extends ServiceProvider
         container()
             ->singleton(
                 SessionInterface::class,
-                function ($container) {
+                function (Container $container) {
                     $driver = config('session.driver', 'file');
 
                     return match ($driver) {

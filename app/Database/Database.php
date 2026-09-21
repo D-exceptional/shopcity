@@ -11,9 +11,10 @@ use App\Database\Connection;
 
 class Database
 {
+    protected PDO $db;
+
     public function __construct(
         protected Connection $connection,
-        protected PDO $db
     ) {
         $this->db = $connection->getConnection();
     }

@@ -127,6 +127,8 @@ class Application
         string $provider
     ): void {
 
+        $this->log('REGISTERING PROVIDER: ' . $provider);
+
         $instance = $this->container->make(
             $provider
         );
@@ -156,7 +158,13 @@ class Application
     {
         foreach ($this->providers as $provider) {
 
+            $name = get_class($provider);
+
+            $this->log('BOOTING PROVIDER: ' . $name);
+
             $provider->boot();
+
+            $this->log('BOOTING COMPLETED FOR ' .$name);
         }
     }
 
@@ -178,5 +186,35 @@ class Application
         $this->registerProviders($providers);
 
         $this->bootProviders();
+    }
+
+        // =========================================
+    // WRITE MEDIA LOG
+    // =========================================
+    private function log(
+        mixed $data
+    ): void {
+
+        $timestamp = date('Y-m-d H:i:s');
+
+        $message = is_array($data)
+            ? json_encode($data, JSON_PRETTY_PRINT)
+            : (string) $data;
+
+        $logFile =
+            dirname(__DIR__, 2) .
+            '/storage/logs/php-error.log';
+
+        $result = file_put_contents(
+            $logFile,
+            "[{$timestamp}] {$message}" . PHP_EOL,
+            FILE_APPEND | LOCK_EX
+        );
+
+        if ($result === false) {
+            throw new \RuntimeException(
+                "Unable to write application class log: {$logFile}"
+            );
+        }
     }
 }

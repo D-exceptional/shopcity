@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Core\Container;
 use App\Contracts\CacheInterface;
 use App\Cache\Drivers\ApcuDriver;
 use App\Cache\Drivers\FileDriver;
@@ -20,7 +21,7 @@ class CacheServiceProvider extends ServiceProvider
         container()
             ->singleton(
                 CacheInterface::class,
-                function ($container) {
+                function (Container $container) {
 
                     $driver = config('cache.driver', 'file');
 

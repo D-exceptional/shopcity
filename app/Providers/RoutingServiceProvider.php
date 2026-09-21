@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Core\Container;
 use App\Routing\Router;
 use App\Routing\RouteLoader;
 use App\Routing\UrlGenerator;
@@ -46,7 +47,7 @@ class RoutingServiceProvider extends ServiceProvider
         container()
             ->singleton(
                 UrlGenerator::class,
-                fn ($container) =>
+                fn (Container $container) =>
                     new UrlGenerator(
                         $container->get(Router::class)
                     )

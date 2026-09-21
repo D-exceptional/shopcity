@@ -22,7 +22,7 @@ use App\Http\Request;
 // ------------------------------------
 // BOOT APPLICATION 
 // ------------------------------------
-$app = require BASE_PATH . '/bootstrap/bootstrap.php';
+$app = require BASE_PATH . '/bootstrap/app.php';
 
 // ------------------------------------
 // LOAD REQUEST CLASS
