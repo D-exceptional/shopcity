@@ -4,21 +4,14 @@ declare(strict_types=1);
 
 namespace App\Routing;
 
-use App\Core\Application;
-
 class RouteLoader
 {
-    public function __construct(
-        protected Application $app
-    ) {}
-
     public function load(): void
     {
-        $router = $this->app
-            ->container()
+        $router = container()
             ->get(Router::class);
 
-        $basePath = dirname( __DIR__, 2);
+        $basePath = dirname(__DIR__, 2);
 
         $routeCache =
             $basePath .
@@ -32,7 +25,7 @@ class RouteLoader
 
         if (file_exists($routeCache)) {
 
-            $router->setRoutes(
+            $router->hydrateRoutes(
                 require $routeCache
             );
 
@@ -45,9 +38,7 @@ class RouteLoader
         |--------------------------------------------------------------------------
         */
 
-        $routeCollections = $this->app
-            ->config()
-            ->get('router.collections', ['api', 'web']);
+        $routeCollections = config('router.collections', ['api', 'web']);
 
         foreach ($routeCollections as $collection) {
 

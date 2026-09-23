@@ -145,7 +145,7 @@ class UrlGenerator
         */
 
         $basePath = rtrim(
-            config('app.base_path', ''),
+            config('app.url', ''),
             '/'
         );
 

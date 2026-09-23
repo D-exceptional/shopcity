@@ -66,15 +66,6 @@ class View
             );
         }
 
-        $this->log(
-            'VIEW RENDER OBJECT: ' . spl_object_id($this)
-        );
-
-        $this->log(
-            'VIEW SHARED BEFORE RENDER: ' .
-            json_encode($this->shared)
-        );
-
         // Merge shared data with view-specific data.
         $data = array_merge(
             $this->shared,
@@ -89,35 +80,5 @@ class View
         require $file;
 
         return ob_get_clean() ?: '';
-    }
-
-    // =========================================
-    // WRITE MEDIA LOG
-    // =========================================
-    private function log(
-        mixed $data
-    ): void {
-
-        $timestamp = date('Y-m-d H:i:s');
-
-        $message = is_array($data)
-            ? json_encode($data, JSON_PRETTY_PRINT)
-            : (string) $data;
-
-        $logFile =
-            dirname(__DIR__, 2) .
-            '/storage/logs/php-error.log';
-
-        $result = file_put_contents(
-            $logFile,
-            "[{$timestamp}] {$message}" . PHP_EOL,
-            FILE_APPEND | LOCK_EX
-        );
-
-        if ($result === false) {
-            throw new \RuntimeException(
-                "Unable to write service provider log: {$logFile}"
-            );
-        }
     }
 }

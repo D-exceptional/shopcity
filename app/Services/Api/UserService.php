@@ -527,6 +527,7 @@ class UserService
             'affiliate' => $action === 'login' ? '/affiliate/dashboard' : $publicLoginLink,
         ];
 
-        return $baseUrl . $pathConfig[$userRole];
+        // return $baseUrl . $pathConfig[$userRole];
+        return $pathConfig[$userRole];
     }
 }

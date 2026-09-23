@@ -36,7 +36,7 @@ class VendorController extends Controller
 
     public function mailRead(Request $request): Response
     {
-        $mailId = $request->route('id'); 
+        $mailId = (int)$request->route('id'); 
         $email  = $request->user()['email']; 
         $name   = $request->user()['name']; 
         $viewData = $this->service->mailRead($mailId, $email, $name);
@@ -46,7 +46,7 @@ class VendorController extends Controller
 
     public function mailSent(Request $request): Response
     {
-        $page   = $request->route('page') ?? 1; 
+        $page   = (int)$request->route('page') ?? 1; 
         $email  = $request->user()['email']; 
         $name   = $request->user()['name']; 
         $viewData = $this->service->mailSent($page, $email, $name);
@@ -56,7 +56,7 @@ class VendorController extends Controller
 
     public function mailBox(Request $request): Response
     {
-        $page   = $request->route('page') ?? 1; 
+        $page   = (int)$request->route('page') ?? 1; 
         $email  = $request->user()['email']; 
         $name   = $request->user()['name']; 
         $viewData = $this->service->mailBox($page, $email, $name);

@@ -229,16 +229,6 @@ import {
     const productImage = parentContainer.hasClass("product-details")
       ? $(".single-carousel .single-inner").first().find("img").attr("src")
       : parentContainer.find(".product-image").attr("src");
-    /*const productCategory = parentContainer
-      .find(".product-category")
-      .text()
-      .trim();
-    const productPrice = parentContainer.find(".price-tag").text().trim();
-    const slashPrice = parentContainer.find(".price-slash").text().trim();
-    const productImage = parentContainer.hasClass("product-details")
-      ? $(".single-carousel .single-inner").first().find("img").attr("src")
-      : parentContainer.find(".product-image").attr("src");
-    */
 
     shareContent({
       title: productName,
@@ -264,7 +254,7 @@ import {
     const linkText = $(this).text().trim();
 
     if (["Login", "Log In"].includes(linkText)) {
-      redirect(`/login`);
+      redirect('/auth/user/login');
     } else {
       await rateProduct();
     }
@@ -279,8 +269,9 @@ import {
 
     if (["Logout", "Log Out"].includes(linkText)) {
       logout();
-    } else {
-      redirect(`/login`);
+    }
+    else {
+      redirect("/auth/user/login");
     }
   });
 })(jQuery);

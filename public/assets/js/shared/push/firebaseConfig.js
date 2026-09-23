@@ -10,7 +10,7 @@ import {
 import { getMessaging } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-messaging.js";
 
 // ----- Import Configs ----- //
-import { firebaseConfig } from "../../../assets/js/core/index.js";
+import { firebaseConfig } from "../core/index.js";
 
 // ----- Initialize Firebase Only Once ----- //
 export function initFirebase() {

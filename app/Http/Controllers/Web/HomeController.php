@@ -32,7 +32,7 @@ class HomeController extends Controller
     // The url for accessing this is: /brands/page/{page}
     public function brandsPaginated(Request $request): Response
     {
-        $page = $request->route('page') ?? 1; 
+        $page = (int)$request->route('page') ?? 1; 
         $viewData = $this->service->brands($page);
 
         return $this->response->view('public.brands', $viewData);
@@ -81,7 +81,7 @@ class HomeController extends Controller
     // The url for accessing this is: /page/{page}
     public function homePaginated(Request $request): Response
     {
-        $page = $request->route('page') ?? 1; 
+        $page = (int)$request->route('page') ?? 1; 
         $viewData = $this->service->home($page);
 
         return $this->response->view('public.home', $viewData);
@@ -89,7 +89,7 @@ class HomeController extends Controller
 
     public function orderView(Request $request): Response
     {
-        $orderId = $request->route('id'); 
+        $orderId = (int)$request->route('id'); 
         $viewData = $this->service->orderView($orderId);
 
         return $this->response->view('public.order_details', $viewData);
@@ -109,7 +109,7 @@ class HomeController extends Controller
     public function ordersPaginated(Request $request): Response
     {
         $userId = $request->user()['id'] ?? null; 
-        $page   = $request->route('page') ?? 1; 
+        $page   = (int)$request->route('page') ?? 1; 
         $viewData = $this->service->orders($userId, $page);
 
         return $this->response->view('public.orders', $viewData);
@@ -117,12 +117,12 @@ class HomeController extends Controller
 
     public function privacy(Request $request): Response
     {
-        return $this->response->view('public.privacy_policy', $viewData);
+        return $this->response->view('public.privacy_policy');
     }
 
     public function productView(Request $request): Response
     {
-        $productId = $request->route('id') ?? null; 
+        $productId = (int)$request->route('id') ?? null; 
         $viewData = $this->service->productView($productId);
 
         return $this->response->view('public.product_details', $viewData);
@@ -133,7 +133,7 @@ class HomeController extends Controller
     {
         $filter  = $request->route('filter') ?? null; 
         $value   = $request->route('value') ?? null; 
-        $page    = $request->route('page') ?? null; 
+        $page    = (int)$request->route('page') ?? null; 
         $viewData = $this->service->productList($filter, $value, $page);
 
         return $this->response->view('public.product_list', $viewData);
@@ -153,7 +153,7 @@ class HomeController extends Controller
     public function productSearchPaginated(Request $request): Response
     {
         $search  = $request->route('search') ?? null; 
-        $page    = $request->route('page') ?? 1; 
+        $page    = (int)$request->route('page') ?? 1; 
         $viewData = $this->service->productSearch($search, $page);
 
         return $this->response->view('public.product_search', $viewData);
@@ -162,10 +162,10 @@ class HomeController extends Controller
     // The url for accessing this is: /store/{id}/{filter}/{value}/page/{page}
     public function productStore(Request $request): Response
     {
-        $storeId = $request->route('id') ?? null; 
+        $storeId = (int)$request->route('id') ?? null; 
         $filter  = $request->route('filter') ?? null; 
         $value   = $request->route('value') ?? null; 
-        $page    = $request->route('page') ?? null; 
+        $page    = (int)$request->route('page') ?? null; 
         $viewData = $this->service->productStore($storeId, $filter, $value, $page);
 
         return $this->response->view('public.product_store', $viewData);
@@ -187,8 +187,8 @@ class HomeController extends Controller
     // The url for accessing this is: /store/{id}
     public function store(Request $request): Response
     {
-        $storeId = $request->route('id') ?? null; 
-        $page    = $request->input('page') ?? 1; 
+        $storeId = (int)$request->route('id') ?? null; 
+        $page    = (int)$request->input('page') ?? 1; 
         $viewData = $this->service->store($storeId, $page);
 
         return $this->response->view('public.store', $viewData);
@@ -197,8 +197,8 @@ class HomeController extends Controller
     // The url for accessing this is: /store/{id}/page/{page}
     public function storePaginated(Request $request): Response
     {
-        $storeId = $request->route('id') ?? null; 
-        $page    = $request->route('page') ?? 1; 
+        $storeId = (int)$request->route('id') ?? null; 
+        $page    = (int)$request->route('page') ?? 1; 
         $viewData = $this->service->store($storeId, $page);
 
         return $this->response->view('public.store', $viewData);
@@ -251,7 +251,7 @@ class HomeController extends Controller
     public function wishlistPaginated(Request $request): Response
     {
         $userId = $request->user()['id'] ?? null; 
-        $page   = $request->route('page') ?? 1; 
+        $page   = (int)$request->route('page') ?? 1; 
         $viewData = $this->service->wishlist($userId, $page);
 
         return $this->response->view('public.wishlist', $viewData);

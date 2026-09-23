@@ -36,7 +36,7 @@ class AdminController extends Controller
 
     public function mailRead(Request $request): Response
     {
-        $mailId = $request->route('id'); 
+        $mailId = (int)$request->route('id'); 
         $email  = $request->user()['email']; 
         $name   = $request->user()['name']; 
         $viewData = $this->service->mailRead($mailId, $email, $name);
@@ -46,7 +46,7 @@ class AdminController extends Controller
 
     public function mailSent(Request $request): Response
     {
-        $page   = $request->route('page') ?? 1; 
+        $page   = (int)$request->route('page') ?? 1; 
         $email  = $request->user()['email']; 
         $name   = $request->user()['name']; 
         $viewData = $this->service->mailSent($page, $email, $name);
@@ -56,7 +56,7 @@ class AdminController extends Controller
 
     public function mailBox(Request $request): Response
     {
-        $page   = $request->route('page') ?? 1; 
+        $page   = (int)$request->route('page') ?? 1; 
         $email  = $request->user()['email']; 
         $name   = $request->user()['name']; 
         $viewData = $this->service->mailBox($page, $email, $name);
@@ -75,7 +75,7 @@ class AdminController extends Controller
     public function orderList(Request $request): Response
     {
         $status = $request->route('status') ?? 'Pending'; 
-        $page   = $request->route('page') ?? 1; 
+        $page   = (int)$request->route('page') ?? 1; 
         $viewData = $this->service->orderList($status, $page);
 
         return $this->response->view('admin.order_list', $viewData);
@@ -83,7 +83,7 @@ class AdminController extends Controller
 
     public function orderView(Request $request): Response
     {
-        $orderId = $request->route('id') ?? null; 
+        $orderId = (int)$request->route('id') ?? null; 
         $viewData = $this->service->orderView($orderId);
 
         return $this->response->view('admin.order_view', $viewData);
@@ -92,7 +92,7 @@ class AdminController extends Controller
     public function payouts(Request $request): Response
     {
         $status = $request->route('status') ?? 'Pending'; 
-        $page   = $request->route('page') ?? 1; 
+        $page   = (int)$request->route('page') ?? 1; 
         $viewData = $this->service->payouts($status, $page);
 
         return $this->response->view('admin.payouts', $viewData);
@@ -100,7 +100,7 @@ class AdminController extends Controller
 
     public function productList(Request $request): Response
     {
-        $page   = $request->route('page') ?? 1; 
+        $page   = (int)$request->route('page') ?? 1; 
         $viewData = $this->service->productList($page);
 
         return $this->response->view('admin.product_list', $viewData);
@@ -108,7 +108,7 @@ class AdminController extends Controller
 
     public function productView(Request $request): Response
     {
-        $productId = $request->route('id') ?? null; 
+        $productId = (int)$request->route('id') ?? null; 
         $viewData = $this->service->productView($productId);
 
         return $this->response->view('admin.product_view', $viewData);
@@ -124,7 +124,7 @@ class AdminController extends Controller
 
     public function storeList(Request $request): Response
     {
-        $page   = $request->route('page') ?? 1; 
+        $page   = (int)$request->route('page') ?? 1; 
         $viewData = $this->service->storeList($page);
 
         return $this->response->view('admin.store_list', $viewData);
@@ -133,7 +133,7 @@ class AdminController extends Controller
     public function users(Request $request): Response
     {
         $role   = $request->route('role') ?? 'Customer'; 
-        $page   = $request->route('page') ?? 1; 
+        $page   = (int)$request->route('page') ?? 1; 
         $viewData = $this->service->users($role, $page);
 
         return $this->response->view('admin.users', $viewData);

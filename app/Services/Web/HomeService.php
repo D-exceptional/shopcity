@@ -38,10 +38,10 @@ class HomeService
     }
 
     public function cart(
-        int $userId
+        ?int $userId
     ): array {
 
-        $cartItems = $isLoggedIn ? $this->cartModel->view($userId) : [];
+        $cartItems = $userId ? $this->cartModel->view($userId) : [];
 
         $totalAmount = 0;
 
@@ -62,10 +62,10 @@ class HomeService
     }
 
     public function checkout(
-       int $userId
+       ?int $userId
     ): array {
 
-        $cartItems = $isLoggedIn ? $this->cartModel->view($userId) : [];
+        $cartItems = $userId ? $this->cartModel->view($userId) : [];
 
         $totalAmount = 0;
 
@@ -78,9 +78,9 @@ class HomeService
         }
 
         // Get Page Data
-        $userDetails    = $isLoggedIn ? $this->userModel->findById($userId) : null;
-        $walletBalance  = $isLoggedIn ? $this->walletModel->getBalance(env('PAYMENT_TABLE'), $userId) : 0;
-        $billingDetails = $isLoggedIn ? $this->userModel->getBillingDetails($userId) : [];
+        $userDetails    = $userId ? $this->userModel->findById($userId) : null;
+        $walletBalance  = $userId ? $this->walletModel->getBalance(env('PAYMENT_TABLE'), $userId) : 0;
+        $billingDetails = $userId ? $this->userModel->getBillingDetails($userId) : [];
 
         $data = [
             'cartItems'      => $cartItems,
@@ -114,11 +114,11 @@ class HomeService
         return $data;
     }
 
-        public function orderView(
-        int $orderId
+    public function orderView(
+        ?int $orderId
     ): array {
 
-        $orderDetails = $isLoggedIn ? $this->orderModel->getOrder($orderId) : [];
+        $orderDetails = $orderId ? $this->orderModel->getOrder($orderId) : [];
 
         $statusMap = [
 
@@ -153,11 +153,11 @@ class HomeService
     }
 
     public function orders(
-        int $userId,
+        ?int $userId,
         int $page
     ): array {
 
-        $orderList = $isLoggedIn ? $this->orderModel->getUserOrders($userId, $page) : [];
+        $orderList = $userId ? $this->orderModel->getUserOrders($userId, $page) : [];
 
         $data = [
             'orderList' => $orderList,
@@ -257,11 +257,11 @@ class HomeService
     }
 
     public function profile(
-        int $userId
+        ?int $userId
     ): array {
 
-        $userDetails    = $isLoggedIn ? $this->userModel->findById($userId) : null;
-        $billingDetails = $isLoggedIn ? $this->userModel->getBillingDetails($userId) : [];
+        $userDetails    = $userId ? $this->userModel->findById($userId) : null;
+        $billingDetails = $userId ? $this->userModel->getBillingDetails($userId) : [];
 
         $data = [
             'userDetails'    => $userDetails,
@@ -295,11 +295,11 @@ class HomeService
     }
 
     public function wallet(
-        int $userId
+        ?int $userId
     ): array {
 
-        $walletBalance = $isLoggedIn ? $this->walletModel->getBalance(env('PAYMENT_TABLE'), $userId) : 0;
-        $userDetails   = $isLoggedIn ? $this->userModel->findById($userId) : null;
+        $walletBalance = $userId ? $this->walletModel->getBalance(env('PAYMENT_TABLE'), $userId) : 0;
+        $userDetails   = $userId ? $this->userModel->findById($userId) : null;
 
         $data = [
             'walletBalance' => $walletBalance,
@@ -310,11 +310,11 @@ class HomeService
     }
 
     public function wishlist(
-        int $userId,
+        ?int $userId,
         int $page
     ): array {
 
-        $wishlistItems = $isLoggedIn ? $this->wishlistModel->view($userId, $page) : [];
+        $wishlistItems = $userId ? $this->wishlistModel->view($userId, $page) : [];
 
         $data = [
             'wishlistItems' => $wishlistItems,

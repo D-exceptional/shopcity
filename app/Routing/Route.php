@@ -59,13 +59,17 @@ class Route
     // SETTERS
     // =========================================
 
-    public function setPattern(string $pattern): void
-    {
+    public function setPattern(
+        string $pattern
+    ): void {
+
         $this->pattern = $pattern;
     }
 
-    public function setName(string $name): void
-    {
+    public function setName(
+        string $name
+    ): void {
+
         $this->name = $name;
     }
 
@@ -118,8 +122,10 @@ class Route
     // =========================================
     // CONVERT ROUTE ARRAY TO OBJECT
     // =========================================
-    public static function toObject(array $data): self
-    {
+    public static function toObject(
+        array $data
+    ): self {
+
         return new self(
             method: $data['method'],
             path: $data['path'],

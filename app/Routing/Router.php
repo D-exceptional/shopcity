@@ -94,7 +94,7 @@ class Router
     // =========================================
     // RESTORE CACHED ROUTES INTO ROUTE OBJECTS
     // =========================================
-    public function setRoutes(
+    public function hydrateRoutes(
         array $routes
     ): void {
 
@@ -143,7 +143,7 @@ class Router
     /**
      * Convert registered Route objects into cacheable arrays.
      */
-    public function toCacheArray(): array
+    public function cacheRoutes(): array
     {
         $cached = [];
 
@@ -249,7 +249,7 @@ class Router
         $segments = explode('/', trim($path, '/'));
 
         if (isset($segments[0]) &&
-            in_array($segments[0], ['api', 'admin'])) {
+            in_array($segments[0], ['api'])) {
 
             return $segments[1] ?? 'root';
         }

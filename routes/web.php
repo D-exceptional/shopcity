@@ -137,6 +137,7 @@ $router->group('', function ($router) {
     $router->get('/brands', [HomeController::class, 'brands'], [], 'web.public.brands');
     $router->get('/brands/page/{page}', [HomeController::class, 'brandsPaginated'], [], 'web.public.brands');
     $router->get('/cart', [HomeController::class, 'cart'], [], 'web.public.cart');
+    $router->get('/contact', [HomeController::class, 'contact'], [], 'web.public.contact');
     $router->get('/delivery', [HomeController::class, 'delivery'], [], 'web.public.delivery');
     $router->get('/faq', [HomeController::class, 'faq'], [], 'web.public.faq');
     $router->get('/order/{id}', [HomeController::class, 'orderView'], [], 'web.public.order.view');
@@ -144,7 +145,7 @@ $router->group('', function ($router) {
     $router->get('/orders/page/{page}', [HomeController::class, 'ordersPaginated'], [], 'web.public.orders');
     $router->get('/privacy', [HomeController::class, 'privacy'], [], 'web.public.privacy');
     $router->get('/product/{id}', [HomeController::class, 'productView'], [], 'web.public.product.view');
-    $router->get('/product/{filter}/{value}/page/{page}', [HomeController::class, 'productList'], [], 'web.public.product.list');
+    $router->get('/products/{filter}/{value}/page/{page}', [HomeController::class, 'productList'], [], 'web.public.product.list');
     $router->get('/store/{id}', [HomeController::class, 'store'], [], 'web.public.store.view');
     $router->get('/store/{id}/page/{page}', [HomeController::class, 'storePaginated'], [], 'web.public.store.view');
     $router->get('/store/{id}/{filter}/{value}/page/{page}', [HomeController::class, 'productStore'], [], 'web.public.product.store');

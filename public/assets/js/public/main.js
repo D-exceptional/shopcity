@@ -27,8 +27,8 @@ import PushClient from "../../js/shared/push/PushClient.js";
   // Get current page
   // -------------------------------------------------
   const urlPath = window.location.pathname;
-  const urlContent = urlPath.split("/")[4].toLowerCase();
-  const isHome = ["", null].includes(urlContent);
+  const urlContent = urlPath.split("/")[1].toLowerCase();
+  const isHome = ["", "/"].includes(urlContent);
   const activePage = isHome ? $(".nav-home") : $(`.nav-${urlContent}`);
   // ----- Update pointer ----- //
   $(".nav-item").removeClass("active");

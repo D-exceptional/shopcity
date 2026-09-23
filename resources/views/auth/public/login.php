@@ -5,9 +5,6 @@
   // Base Directory 
   // -------------------------------------------------
   define('ROOT_DIR_PATH', dirname(__DIR__, 3));
-
-  // Import Initializer File
-  require_once ROOT_DIR_PATH . '/includes/public/init.php';
 ?>
 
 <!DOCTYPE html>
@@ -81,7 +78,7 @@
                                 <br>
                                 <div class="col-12">
                                     <p class="info-p">Forgot password?  Reset it <a href="#" class="reset">here</a></p>
-                                    <p>Don't have an account? Sign up <a href="register?type=public">here</a></p>
+                                    <p>Don't have an account? Sign up <a href="/auth/user/register?type=customer">here</a></p>
                                 </div>
                             </div>
                         </form>

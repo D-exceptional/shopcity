@@ -22,7 +22,7 @@ $app = new Application();
 // LOAD APPLICATION HELPERS
 require_once ROOT_PATH . '/bootstrap/helpers.php';
 
-// BOOT APPLICATION IN HTTP MODE
-$app->boot();
+// BOOT APPLICATION IN CLI MODE
+$app->boot(false);
 
 return $app;

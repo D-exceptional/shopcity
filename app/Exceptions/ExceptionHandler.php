@@ -164,6 +164,7 @@ class ExceptionHandler
          * Middleware may explicitly request
          * a redirect response.
          */
+        /*
         if (
             $exception instanceof MiddlewareException
             && $exception->action === 'redirect'
@@ -174,6 +175,7 @@ class ExceptionHandler
                 $exception->status
             );
         }
+        */
 
         /*
          * JSON / API response.

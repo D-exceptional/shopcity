@@ -51,7 +51,7 @@ export function togglePasswordVisibility($icon, type) {
 // Load Countries
 // ---------------------------------------------------------------
 export async function loadCountries() {
-  const response = await fetch("./countries.json");
+  const response = await fetch("../../../../library/countries.json");
   const data = await response.json();
   const array = [];
 

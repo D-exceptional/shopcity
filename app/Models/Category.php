@@ -18,8 +18,8 @@ class Category extends Model
             FROM {$this->table} 
             WHERE 
                 category_name IS NOT NULL 
-                AND category_name != '' 
-            ORDER BY category_name ASC
+            ORDER BY 
+                category_name ASC
         ";
 
         return $this->queryAll($fetchQuery);
@@ -38,9 +38,12 @@ class Category extends Model
                     COUNT(p.product_id) AS product_count
                 FROM {$this->table} pc
                 LEFT JOIN products p 
-                    ON p.category = pc.category_name
-                GROUP BY pc.category_id, pc.category_name
-                ORDER BY pc.category_name ASC
+                ON 
+                    p.category = pc.category_name
+                GROUP BY 
+                    pc.category_id, pc.category_name
+                ORDER BY 
+                    pc.category_name ASC
             ";
 
             return $this->queryAll($allQuery);
@@ -54,11 +57,15 @@ class Category extends Model
                     COUNT(p.product_id) AS product_count
                 FROM {$this->table} pc
                 INNER JOIN products p 
-                    ON p.category = pc.category_name
+                ON 
+                    p.category = pc.category_name
                     AND p.store_id = ?
-                GROUP BY pc.category_id, pc.category_name
-                HAVING product_count > 0
-                ORDER BY pc.category_name ASC
+                GROUP BY 
+                    pc.category_id, pc.category_name
+                HAVING 
+                    product_count > 0
+                ORDER BY 
+                    pc.category_name ASC
             ";
 
             return $this->queryAll($storeQuery, [$storeId]);

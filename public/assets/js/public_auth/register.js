@@ -24,7 +24,7 @@ import {
 // ----------------------------------------------------
 // Import Cart And Wishlist Syncer
 // ----------------------------------------------------
-import { redirect } from "./modules/index.js";
+import { redirect } from "../../js/shared/modules/index.js";
 
 (async function ($) {
   "use strict";

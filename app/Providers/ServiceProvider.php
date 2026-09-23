@@ -18,34 +18,4 @@ abstract class ServiceProvider
      */
     public function boot(): void
     {}
-
-    // =========================================
-    // WRITE PROVIDER LOG
-    // =========================================
-    protected function log(
-        mixed $data
-    ): void {
-
-        $timestamp = date('Y-m-d H:i:s');
-
-        $message = is_array($data)
-            ? json_encode($data, JSON_PRETTY_PRINT)
-            : (string) $data;
-
-        $logFile =
-            dirname(__DIR__, 2) .
-            '/storage/logs/provider.log';
-
-        $result = file_put_contents(
-            $logFile,
-            "[{$timestamp}] {$message}" . PHP_EOL,
-            FILE_APPEND | LOCK_EX
-        );
-
-        if ($result === false) {
-            throw new \RuntimeException(
-                "Unable to write service provider log: {$logFile}"
-            );
-        }
-    }
 }

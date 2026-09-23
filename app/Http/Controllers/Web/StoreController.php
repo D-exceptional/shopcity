@@ -17,7 +17,7 @@ class StoreController extends Controller
 
     public function couponCreate(Request $request): Response
     {
-        $storeId = $request->route('id');  
+        $storeId = (int)$request->route('id');  
         $viewData = $this->service->couponCreate($storeId);
 
         return $this->response->view('store.coupon_create', $viewData);
@@ -25,8 +25,8 @@ class StoreController extends Controller
 
     public function couponList(Request $request): Response
     {
-        $storeId = $request->route('id'); 
-        $page    = $request->route('page') ?? 1; 
+        $storeId = (int)$request->route('id'); 
+        $page    = (int)$request->route('page') ?? 1; 
         $viewData = $this->service->couponList($storeId, $page);
 
         return $this->response->view('store.coupon_list', $viewData);
@@ -34,9 +34,9 @@ class StoreController extends Controller
 
     public function customers(Request $request): Response
     {
-        $storeId = $request->route('id'); 
+        $storeId = (int)$request->route('id'); 
         $type    = $request->route('type') ?? null; 
-        $page    = $request->route('page') ?? 1; 
+        $page    = (int)$request->route('page') ?? 1; 
         $viewData = $this->service->customers($storeId, $type, $page);
 
         return $this->response->view('store.customers', $viewData);
@@ -45,7 +45,7 @@ class StoreController extends Controller
     public function dashboard(Request $request): Response
     {
         $userId  = $request->user()['id']; 
-        $storeId = $request->route('id');  
+        $storeId = (int)$request->route('id');  
         $viewData = $this->service->dashboard($userId, $storeId);
             
         return $this->response->view('store.dashboard', $viewData);
@@ -53,9 +53,9 @@ class StoreController extends Controller
 
     public function orderList(Request $request): Response
     {
-        $storeId = $request->route('id');
+        $storeId = (int)$request->route('id');
         $status  = $request->route('status') ?? null; 
-        $page    = $request->route('page') ?? 1;
+        $page    = (int)$request->route('page') ?? 1;
         $viewData = $this->service->orderList($storeId, $status, $page);
 
         return $this->response->view('store.order_list', $viewData);
@@ -63,7 +63,7 @@ class StoreController extends Controller
 
     public function productCreate(Request $request): Response
     {
-        $storeId = $request->route('id');
+        $storeId = (int)$request->route('id');
         $viewData = $this->service->productCreate($storeId);
 
         return $this->response->view('store.product_create', $viewData);
@@ -71,8 +71,8 @@ class StoreController extends Controller
 
     public function productList(Request $request): Response
     {
-        $storeId = $request->route('id');
-        $page    = $request->route('page') ?? 1;
+        $storeId = (int)$request->route('id');
+        $page    = (int)$request->route('page') ?? 1;
         $viewData = $this->service->productList($storeId, $page);
 
         return $this->response->view('store.product_list', $viewData);
@@ -80,8 +80,8 @@ class StoreController extends Controller
 
     public function productView(Request $request): Response
     {
-        $storeId   = $request->route('id');
-        $productId = $request->route('pid');
+        $storeId   = (int)$request->route('id');
+        $productId = (int)$request->route('pid');
         $viewData = $this->service->productView($storeId, $productId);
 
         return $this->response->view('store.product_view', $viewData);
@@ -89,7 +89,7 @@ class StoreController extends Controller
 
     public function settings(Request $request): Response
     {
-        $storeId = $request->route('id');
+        $storeId = (int)$request->route('id');
         $viewData = $this->service->settings($storeId);
 
         return $this->response->view('store.settings', $viewData);

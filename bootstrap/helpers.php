@@ -144,26 +144,14 @@ if (!function_exists('asset_versioned')) {
         string $path
     ): string {
 
-        $path = ltrim($path, '/');
+        $publicUrl = asset($path);
+        
+        $absolutePath = $_SERVER['DOCUMENT_ROOT'] . $publicUrl;
 
-        $url = '/assets/' . $path;
-
-        $filePath = config('app.base_path')
-            . DIRECTORY_SEPARATOR
-            . 'public'
-            . DIRECTORY_SEPARATOR
-            . 'assets'
-            . DIRECTORY_SEPARATOR
-            . str_replace(
-                '/',
-                DIRECTORY_SEPARATOR,
-                $path
-            );
-
-        if (is_file($filePath)) {
-            return $url . '?v=' . filemtime($filePath);
+        if (is_file($absolutePath)) {
+            return $publicUrl . '?v=' . filemtime($absolutePath);
         }
 
-        return $url;
+        return $publicUrl;
     }
 }
