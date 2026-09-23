@@ -29,7 +29,7 @@ class UserController extends Controller
         $currency  = $request->input('currency');
         $state     = $request->input('state');
         $creator   = $request->input('creator');
-        $file      = $request->file('file') ?? null;
+        $file      = $request->input('file') ?? null;
 
         $result = $this->service->register(
             $firstname,

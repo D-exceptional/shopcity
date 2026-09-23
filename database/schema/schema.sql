@@ -416,8 +416,8 @@ CREATE TABLE IF NOT EXISTS general_notifications (
   notification_details VARCHAR(1000) NOT NULL,
   notification_type VARCHAR(255) NOT NULL,
   notification_receiver INT NOT NULL,
-  notification_date VARCHAR(50) NOT NULL,
-  notification_status VARCHAR(50) NOT NULL,
+  notification_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  notification_status VARCHAR(50) DEFAULT 'Unread' NOT NULL,
   PRIMARY KEY (notification_id),
   FOREIGN KEY (notification_receiver) REFERENCES users (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -15,7 +15,7 @@ class Push extends Model
         ?int $targetId = null
     ): array {
 
-        $targetType = ucwords($targetType);
+        $targetType = strtolower($targetType);
 
         switch ($targetType) {
 

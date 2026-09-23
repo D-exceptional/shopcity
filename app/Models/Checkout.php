@@ -30,14 +30,13 @@ class CheckoutPayment extends Model
 
         $reference = $this->generateReference();
 
-        $createQuery = "
-            INSERT INTO {$this->table} (order_id, user_id, amount, reference, currency) 
-            VALUES (?, ?, ?, ?, ?)
-        ";
-
-        return $this->executeQuery(
-            $createQuery,
-            [$orderId, $userId, $amount, $reference, $currency]
-        );
+        return $this->query()
+            ->insert([
+                'order_id'  => $orderId,
+                'user_id'   => $userId,
+                'amount'    => $amount,
+                'reference' => $reference,
+                'currency'  => $currency
+            ]);
     }
 }

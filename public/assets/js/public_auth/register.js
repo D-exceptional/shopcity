@@ -16,7 +16,6 @@ import { displayMessage } from "../../js/shared/ui/index.js";
 import {
   validateInput,
   togglePasswordVisibility,
-  capitalizeWords,
   previewFile,
   loadCountries,
   uploadToCloudinary,
@@ -29,10 +28,6 @@ import { redirect } from "../../js/shared/modules/index.js";
 (async function ($) {
   "use strict";
 
-  /*const queryString = new URL(window.location);
-  const urlParams = new URLSearchParams(queryString.search);
-  const userRole = capitalizeWords(urlParams.get("type") || "customer");
-  */
   const userRole = $("div.page-header").data("role") || "Customer";
 
   let currency = BASE_CURRENCY;
@@ -61,7 +56,7 @@ import { redirect } from "../../js/shared/modules/index.js";
     togglePasswordVisibility($(this), "password");
   });
 
-  $(".form-text .form-control").on("input blur", function () {
+  $(".form-text .form-control").on("blur", function () {
     validateInput(this);
   });
 

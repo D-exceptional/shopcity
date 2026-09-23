@@ -139,7 +139,7 @@ class PushManager
     ): void {
 
         $accessToken = $this->getAccessToken();
-        $tokens      = $this->pushModel->getTokens($target, $userId);
+        $tokens      = $this->pushModel->getTokenIds($target, $userId);
 
         if (empty($tokens)) {
             throw new \RuntimeException('No tokens supplied for push notifications.');
@@ -161,9 +161,9 @@ class PushManager
                         'body'  => $body
                     ],
                     'data' => array_merge([
-                        'click_action' => $data['url'] ?? 'https://shop.mrsamase.com',
+                        'click_action' => $data['url'] ?? '/',
                         'type'         => $data['type'] ?? 'general',
-                        'icon'         => 'https://shop.mrsamase.com/assets/img/logo-192.png'
+                        'icon'         => '/assets/img/logo-192.png'
                     ], $data)
                 ]
             ];

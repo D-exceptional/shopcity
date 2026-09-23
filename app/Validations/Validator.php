@@ -81,7 +81,7 @@ class Validator
 
         // If errors exist, respond immediately
         if (!empty($errors)) {
-            throw new ValidationException($errors);
+            throw new ValidationException('Validation failed for this request', 422, $errors);
         }
     }
 }

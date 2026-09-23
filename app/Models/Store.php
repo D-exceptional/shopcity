@@ -459,10 +459,10 @@ class Store extends Model
             GROUP BY s.store_id
             HAVING COUNT(p.product_id) > 0
             ORDER BY s.store_name ASC
-            LIMIT ? OFFSET ?
+            LIMIT {$limit} OFFSET {$offset}
         ";
 
-        return $this->queryAll($brandsQuery, [$limit, $offset]);
+        return $this->queryAll($brandsQuery);
     }
 
     private function formatBrands(
@@ -670,10 +670,10 @@ class Store extends Model
             {$baseQuery}
             {$havingCondition}
             ORDER BY total_orders DESC
-            LIMIT ? OFFSET ?
+        LIMIT {$limit} OFFSET {$offset}
         ";
 
-        $customers = $this->queryAll($customerQuery, [$storeId, $limit, $offset]);
+        $customers = $this->queryAll($customerQuery, [$storeId]);
 
         // -------------------------------
         // 3️⃣ Return in pagination format

@@ -142,6 +142,10 @@ class ExceptionHandler
         Throwable $exception
     ): void {
 
+        if ($exception instanceof RouteNotFoundException) {
+            return;
+        }
+
         $this->writeLog(
             sprintf(
                 "UNCAUGHT EXCEPTION: %s in %s on line %d\n%s",

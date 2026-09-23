@@ -290,10 +290,10 @@ class Wallet extends Model
             WHERE 
                 user_id = ? 
             ORDER BY created_at DESC 
-            LIMIT ? OFFSET ?
+                LIMIT {$limit} OFFSET {$offset}
         ";
 
-        return $this->queryAll($fetchQuery, [$userId, $limit, $offset]);
+        return $this->queryAll($fetchQuery, [$userId]);
     }
 
     public function getPaymentsByType(
@@ -309,10 +309,10 @@ class Wallet extends Model
                 * 
             FROM {$table} 
             ORDER BY created_at DESC 
-            LIMIT ? OFFSET ?
+            LIMIT {$limit} OFFSET {$offset}
         ";
 
-        return $this->queryAll($fetchQuery, [$limit, $offset]);
+        return $this->queryAll($fetchQuery);
     }
 
     public function getPaymentsByStatus(
@@ -332,10 +332,10 @@ class Wallet extends Model
             WHERE 
                 {$column} = ? 
             ORDER BY created_at DESC 
-            LIMIT ? OFFSET ?
+            LIMIT {$limit} OFFSET {$offset}
         ";
 
-        return $this->queryAll($fetchQuery, [$status, $limit, $offset]);
+        return $this->queryAll($fetchQuery, [$status]);
     }
 
     public function getBalance(

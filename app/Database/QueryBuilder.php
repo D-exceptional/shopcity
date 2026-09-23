@@ -502,7 +502,7 @@ class QueryBuilder
 
         $this->reset();
 
-        return $results;
+        return $results ?? [];
     }
 
     public function first(): ?array

@@ -2,14 +2,10 @@
 // Base Urls
 // -------------------------------------------------
 export const apiUrl =
-  window.location.hostname === "localhost"
-    ? "http://localhost/projects/showcase/shopcity/api"
-    : "";
+  window.location.hostname === "localhost" ? "http://localhost:8080/api" : "";
 
 export const baseUrl =
-  window.location.hostname === "localhost"
-    ? "http://localhost/projects/showcase/shopcity"
-    : "";
+  window.location.hostname === "localhost" ? "http://localhost:8080" : "";
 
 // -------------------------------------------------
 // Auto Detect Status

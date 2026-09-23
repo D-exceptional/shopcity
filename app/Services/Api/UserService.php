@@ -13,12 +13,12 @@ use App\Events\User\UserStatusUpdated;
 use App\Events\User\ContactMessageReceived;
 use App\Events\EventDispatcher;
 use App\Support\TextManager;
+use App\Database\Database;
 use App\Models\User;
 use App\Models\Wallet;
 
 class UserService
 {
-    private Connection $dbConn;
     private string $baseUrl;
 
     public function __construct(
@@ -26,18 +26,18 @@ class UserService
         protected SessionInterface $sessionManager,
         protected EventDispatcher $eventDispatcher,
         protected TextManager $textManager,  
+        protected Database $dbConn,
         protected User $userModel, 
         protected Wallet $walletModel, 
     ) {
-        $this->dbConn  = $this->userModel->db;
-        $this->baseUrl = $appUrl; 
+        $this->baseUrl = config('app.url'); 
     }
 
     public function register(
         string $firstname,
         string $lastname,
         string $email,
-        int $contact,
+        string $contact,
         string $country,
         string $password,
         string $role,
@@ -46,7 +46,7 @@ class UserService
         string $currency,
         string $state,
         string $creator,
-        ?string $file
+        ?string $file,
     ): Result {
 
         // Define Roles Configurations
@@ -62,8 +62,8 @@ class UserService
         }
 
         // 2. Email Uniqueness
-        $hasRegistered = $this->userModel->findByEmail($email);
-        if ($hasRegistered === true) {
+        $userCheck = $this->userModel->findByEmail($email);
+        if (!is_null($userCheck)) {
             return $this->result->error('Email already registered', 409);
         }
 
@@ -86,11 +86,9 @@ class UserService
         $userSubject  = $isActiveRole ? 'Registration Successful' : 'Registration Under Review';
 
         // 4. Begin Transaction (So DB + File Upload Are Atomic)
-        $this->dbConn->beginTransaction();
-
         try {
-            $userId = $this->userModel->createAccount(
-                'None',
+
+            $userId = $this->dbConn->transaction(function () use (
                 $firstname,
                 $lastname,
                 $email,
@@ -99,42 +97,86 @@ class UserService
                 $state,
                 $password,
                 $role,
+                $currency,
+                $file,
+                $rolesConfig,
                 $status
-            );
+            ) {
 
-            if (!$userId) {
-                throw new \Exception("User creation failed");
-            }
+                $userId = $this->userModel->createAccount(
+                    'None',
+                    $firstname,
+                    $lastname,
+                    $email,
+                    $contact,
+                    $country,
+                    $state,
+                    $password,
+                    $role,
+                    $status
+                );
 
-            // Handle Account Setups
-            if (in_array($role, $rolesConfig['setup'])) {
-
-                // Handle Wallet Creation
-                $this->walletModel->createWallet($role, 0, $userId);
-
-                // Handle Billing Details
-                if ($role === 'Customer') {
-                    $this->userModel->createBillingDetails('None', 'None', 'None', $userId);
+                if (!$userId) {
+                    throw new \Exception(
+                        'User creation failed'
+                    );
                 }
 
-                // Handle Socials + Bank + File Upload
-                if ($role === 'Vendor') {
-                    $this->userModel->createSocials($userId);
-                    $this->walletModel->createDetails(0, 'None', 'None', $currency, $userId);
+                // Handle Account Setups
+                if (in_array($role, $rolesConfig['setup'], true)) {
 
-                    if (isset($file) && !is_null($file)) {
-                        $this->userModel->uploadID($file, $userId);
+                    // Handle Wallet Creation
+                    $this->walletModel->createWallet(
+                        $role,
+                        0,
+                        $userId
+                    );
+
+                    // Handle Billing Details
+                    if ($role === 'Customer') {
+
+                        $this->userModel->createBillingDetails(
+                            'None',
+                            'None',
+                            'None',
+                            $userId
+                        );
+                    }
+
+                    // Handle Vendor Setup
+                    if ($role === 'Vendor') {
+
+                        $this->userModel->createSocials(
+                            $userId
+                        );
+
+                        $this->walletModel->createDetails(
+                            0,
+                            'None',
+                            'None',
+                            $currency,
+                            $userId
+                        );
+
+                        if ($file !== null) {
+
+                            $this->userModel->uploadID(
+                                $file,
+                                $userId
+                            );
+                        }
                     }
                 }
-            }
 
-            $this->dbConn->commit();
+                return $userId;
+            });
 
         } catch (\Throwable $e) {
 
-            $this->dbConn->rollBack();
-
-            return $this->result->error('Registration failed: ' . $e->getMessage(), 500);
+            return $this->result->error(
+                'Registration failed: ' . $e->getMessage(),
+                500
+            );
         }
 
         $this->eventDispatcher->dispatch(
@@ -157,7 +199,7 @@ class UserService
 
         // Check User Availability
         $user = $this->userModel->findByEmail($email);
-        if ($user === false) {
+        if ($user === null) {
             return $this->result->error('User not found', 404);
         }
         
@@ -202,7 +244,7 @@ class UserService
     ): Result {
 
         $user = $this->userModel->findByEmail($email);
-        if ($user === false) {
+        if ($user === null) {
             return $this->result->error('User not found', 404);
         }
 
@@ -324,7 +366,7 @@ class UserService
     ): Result
     {
         $user = $this->userModel->findById($userId);
-        if ($user === false) {
+        if ($user === null) {
             return $this->result->error('Details not found', 404);
         }
 

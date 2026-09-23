@@ -5,16 +5,16 @@ declare(strict_types=1);
 namespace App\Database;
 
 use PDO;
-use Exception;
+use Throwable;
 
 use App\Database\Connection;
 
 class Database
 {
-    protected PDO $db;
+    public PDO $db;
 
     public function __construct(
-        protected Connection $connection,
+        protected Connection $connection
     ) {
         $this->db = $connection->getConnection();
     }
@@ -113,8 +113,10 @@ class Database
     // =========================================
     // RUN TRANSACTION
     // =========================================
-    protected function transaction(callable $callback)
-    {
+    public function transaction(
+        callable $callback
+    ): mixed {
+
         try {
 
             $this->beginTransaction();
@@ -125,7 +127,7 @@ class Database
 
             return $result;
 
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
 
             $this->rollback();
 
