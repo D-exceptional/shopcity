@@ -22,7 +22,7 @@ class StoreService
         protected TextManager $textManager,  
         protected Store $storeModel, 
     ) {
-        $this->baseUrl = $appUrl; 
+        $this->baseUrl = config('app.url'); 
     }
 
     public function createStore(

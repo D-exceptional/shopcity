@@ -12,71 +12,53 @@ class Category extends Model
 
     public function all(): ?array
     {
-        $fetchQuery = "
-            SELECT 
-                DISTINCT category_name
-            FROM {$this->table} 
-            WHERE 
-                category_name IS NOT NULL 
-            ORDER BY 
-                category_name ASC
-        ";
-
-        return $this->queryAll($fetchQuery);
+        return $this->table()
+            ->select([
+                'category_name',
+            ])
+            ->distinct()
+            ->whereNotNull('category_name')
+            ->orderBy('category_name', 'ASC')
+            ->get();
     }
 
     public function group(
         ?int $storeId = null
-    ): ?array {
+    ): array {
 
-        if ($storeId === null) {
-            // Global View: Show All Categories (Even Empty Ones)
-            $allQuery = "
-                SELECT
-                    pc.category_id,
-                    pc.category_name,
-                    COUNT(p.product_id) AS product_count
-                FROM {$this->table} pc
-                LEFT JOIN products p 
-                ON 
-                    p.category = pc.category_name
-                GROUP BY 
-                    pc.category_id, pc.category_name
-                ORDER BY 
-                    pc.category_name ASC
-            ";
+        $query = $this->table('product_categories pc')
+            ->select([
+                'pc.category_id',
+                'pc.category_name',
+                'COUNT(p.product_id) AS product_count',
+            ])
+            ->join(
+                'products p',
+                'p.category',
+                '=',
+                'pc.category_name',
+                $storeId === null ? 'LEFT' : 'INNER'
+            )
+            ->when(
+                $storeId !== null,
+                function ($query) use ($storeId) {
+                    $query->where('p.store_id', '=', $storeId);
+                }
+            )
+            ->groupBy([
+                'pc.category_id',
+                'pc.category_name',
+            ])
+            ->orderBy('pc.category_name', 'ASC');
 
-            return $this->queryAll($allQuery);
-
-        } else {
-            // Store View: Only Categories That Have Products For That Store
-            $storeQuery = "
-                SELECT
-                    pc.category_id,
-                    pc.category_name,
-                    COUNT(p.product_id) AS product_count
-                FROM {$this->table} pc
-                INNER JOIN products p 
-                ON 
-                    p.category = pc.category_name
-                    AND p.store_id = ?
-                GROUP BY 
-                    pc.category_id, pc.category_name
-                HAVING 
-                    product_count > 0
-                ORDER BY 
-                    pc.category_name ASC
-            ";
-
-            return $this->queryAll($storeQuery, [$storeId]);
-        }
+        return $query->get();
     }
 
     public function create(
         string $category
     ): bool {
 
-        return $this->query()
+        return $this->table()
             ->insert([
                 'category_name' => $category,
             ]);
@@ -87,7 +69,7 @@ class Category extends Model
         int $categoryId
     ): bool {
 
-        return $this->query()
+        return $this->table()
             ->update([
                 'category_name' => $name,
                 'category_id'   => $categoryId,
@@ -98,29 +80,25 @@ class Category extends Model
         int $categoryId
     ): bool {
 
-        return $this->query()
+        return $this->table()
             ->where('category_id', '=', $categoryId)
             ->delete();
     }
 
     public function count(): int
     {
-        $countQuery = "
-            SELECT 
-                COUNT(DISTINCT category_name) AS total_categories
-            FROM {$this->table}
-        ";
-
-        $result = $this->queryOne($countQuery);
-
-        return (int) $result['total_categories'] ?? 0;
+        return $this->table()
+            ->count('category_name');
     }
     
     public function id(
         string $category
     ): int {
 
-        $result = $this->query()
+        $result = $this->table()
+            ->select([
+                'category_id',
+            ])
             ->where('category_name', '=', $category)
             ->first();
 
@@ -131,15 +109,13 @@ class Category extends Model
         int $categoryId
     ): ?array {
 
-        $fetchQuery = "
-            SELECT 
-                subcategory_name 
-            FROM product_subcategories 
-            WHERE 
-                category_id = ?
-        ";
-        
-        return $this->queryAll($fetchQuery, [$categoryId]);
+        return $this->table('product_subcategories')
+            ->select([
+                'subcategory_name',
+            ])
+            ->where('category_id', '=', $categoryId)
+            ->get();
+
     }
     
     public function fetch(

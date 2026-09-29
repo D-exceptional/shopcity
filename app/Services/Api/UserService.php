@@ -26,7 +26,7 @@ class UserService
         protected SessionInterface $sessionManager,
         protected EventDispatcher $eventDispatcher,
         protected TextManager $textManager,  
-        protected Database $dbConn,
+        protected Database $dbClient,
         protected User $userModel, 
         protected Wallet $walletModel, 
     ) {
@@ -85,10 +85,10 @@ class UserService
         $isActiveRole = in_array($role, $rolesConfig['active'], true);
         $userSubject  = $isActiveRole ? 'Registration Successful' : 'Registration Under Review';
 
-        // 4. Begin Transaction (So DB + File Upload Are Atomic)
+        // 4. Using Transaction (So DB + File Upload Are Atomic)
         try {
 
-            $userId = $this->dbConn->transaction(function () use (
+            $userId = $this->dbClient->transaction(function () use (
                 $firstname,
                 $lastname,
                 $email,
@@ -126,31 +126,49 @@ class UserService
                 if (in_array($role, $rolesConfig['setup'], true)) {
 
                     // Handle Wallet Creation
-                    $this->walletModel->createWallet(
+                    $walletCreated = $this->walletModel->createWallet(
                         $role,
                         0,
                         $userId
                     );
 
+                    if (!$walletCreated) {
+                        throw new \Exception(
+                            'User wallet creation failed'
+                        );
+                    }
+
                     // Handle Billing Details
                     if ($role === 'Customer') {
 
-                        $this->userModel->createBillingDetails(
+                        $billingsCreated = $this->userModel->createBillingDetails(
                             'None',
                             'None',
                             'None',
                             $userId
                         );
+
+                        if (!$billingsCreated) {
+                            throw new \Exception(
+                                'User billing details creation failed'
+                            );
+                        }
                     }
 
                     // Handle Vendor Setup
                     if ($role === 'Vendor') {
 
-                        $this->userModel->createSocials(
+                        $socialsCreated = $this->userModel->createSocials(
                             $userId
                         );
 
-                        $this->walletModel->createDetails(
+                        if (!$socialsCreated) {
+                            throw new \Exception(
+                                'User socials creation failed'
+                            );
+                        }
+
+                        $detailsCreated = $this->walletModel->createDetails(
                             0,
                             'None',
                             'None',
@@ -158,12 +176,24 @@ class UserService
                             $userId
                         );
 
+                        if (!$detailsCreated) {
+                            throw new \Exception(
+                                'User bank details creation failed'
+                            );
+                        }
+
                         if ($file !== null) {
 
-                            $this->userModel->uploadID(
+                            $fileSaved = $this->userModel->uploadID(
                                 $file,
                                 $userId
                             );
+
+                            if (!$fileSaved) {
+                                throw new \Exception(
+                                    'User verification document upload failed'
+                                );
+                            }
                         }
                     }
                 }

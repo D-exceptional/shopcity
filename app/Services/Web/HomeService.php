@@ -11,17 +11,19 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\Store;
 use App\Models\Wallet;
+use App\Models\Wishlist;
 
 class HomeService 
 {
     public function __construct(
         protected User $userModel,
-        protected Order $cartModel,
+        protected Cart $cartModel,
         protected Category $categoryModel,
         protected Order $orderModel,
         protected Product $productModel,
         protected Store $storeModel,
         protected Wallet $walletModel,
+        protected Wishlist $wishlistModel,
     ) {}
 
     public function brands(
@@ -299,9 +301,11 @@ class HomeService
     ): array {
 
         $walletBalance = $userId ? $this->walletModel->getBalance(env('PAYMENT_TABLE'), $userId) : 0;
+        $paymentList   = $userId ? $this->walletModel->getPaymentsByUser(env('TOPUP_TABLE'), $userId) : null;
         $userDetails   = $userId ? $this->userModel->findById($userId) : null;
 
         $data = [
+            'paymentList'   => $paymentList,
             'walletBalance' => $walletBalance,
             'userDetails'   => $userDetails
         ];

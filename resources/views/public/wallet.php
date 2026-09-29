@@ -72,20 +72,89 @@
                                 </button>
                             </div>
                         </div>
-                         <div class="col-md-12 col-lg-6 col-xl-6 wow fadeInUp" data-wow-delay="0.1s">
+                        <div class="col-md-12 col-lg-6 col-xl-6 wow fadeInUp" data-wow-delay="0.1s">
                             <div class="form-item">
-                                <h4 class="mb-4 wow fadeInUp" data-wow-delay="0.1s">Coin Calculator</h4>
-                                <input type="text" class="form-control wallet-balance" value="1 Coin = ₦100.00" disabled>
+                                <h4 class="mb-4 wow fadeInUp" data-wow-delay="0.1s">Topup History</h4>
                             </div>
-                            <div class="form-item">
-                                <label class="form-label my-3">Enter Amount (in coins)</label>
-                                <input type="text" class="form-control test-amount" data-tag="numeric">
+                          
+                            <div class="table-responsive <?= $isLoggedIn ? '' : 'nmt-25' ?>">
+                                <table class="table">
+                                    <thead>
+
+                                        <?php if ($isLoggedIn): ?>
+
+                                            <tr>
+                                                <th scope="col">S/N</th>
+                                                <th scope="col">Amount</th>
+                                                <th scope="col">Reference</th>
+                                                <th scope="col">Status</th>
+                                                <th scope="col">Date</th>
+                                                <th scope="col">Action</th>
+                                            </tr>
+
+                                        <?php endif; ?>
+
+                                    </thead>
+                                    <tbody>
+
+                                        <?php if ($isLoggedIn): ?>
+
+                                            <?php if (!empty($paymentList)): ?>
+
+                                                <!-- 🛒 LOGGED IN + PAYMENTS HAS ITEMS -->
+                                                <?php foreach ($paymentList as $payment): ?>
+
+                                                    <tr class="payment-item table-item" data-id="<?= $payment['topup_id'] ?>">
+                                                        <td>
+                                                            <p class="mb-0 py-4">#</p>
+                                                        </td>
+                                                        <td scope="row">
+                                                            <p class="mb-0 py-4 item-price"><?= $currencyManager->format((float)$payment['amount'] ?? 0); ?></p>
+                                                        </td>
+                                                        <td>
+                                                            <p class="mb-0 py-4"><?= htmlspecialchars($payment['reference']) ?></p>
+                                                        </td>
+                                                        <td>
+                                                            <p class="mb-0 py-4 item-price"><?= htmlspecialchars($payment['status']); ?></p>
+                                                        </td>
+                                                        <td>
+                                                            <p class="mb-0 py-4 item-price"><?= htmlspecialchars($payment['created_at']); ?></p>
+                                                        </td>
+                                                        <td class="py-4">
+                                                            <button class="btn btn-md rounded-circle bg-light border">
+                                                                <i class="fa fa-expand text-blue"></i>
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+
+                                                <?php endforeach; ?>
+
+                                            <?php else: ?>
+
+                                                <!-- 🧺 LOGGED IN + PAYMENT EMPTY -->
+                                                <tr>
+                                                    <td colspan="8" class="text-center py-5">
+                                                        <i class="fa fa-wallet fa-3x text-muted mb-3"></i>
+                                                        <p class="lead mb-2">You haven't made any topups yet.</p>
+                                                    </td>
+                                                </tr>
+
+                                            <?php endif; ?>
+                                            
+                                        <?php endif; ?>
+
+                                    </tbody>
+                                </table>
+
+                                <?php if ($isLoggedIn && !empty($paymentList)): ?>
+
+                                    <div class="col-12 text-center wow fadeInUp mt-5 py-2" data-wow-delay="0.2s">
+                                        <button type="button" class="btn btn-primary rounded-pill py-2 px-3 btn-load">Load More</button>
+                                    </div>
+
+                                <?php endif; ?>
+                                
                             </div>
-                            <div class="form-item">
-                                <label class="form-label my-3">Result (in ₦aira)</label>
-                                <input type="text" class="form-control result-amount" data-tag="numeric" disabled>
-                            </div>
-                            <!--------------- Update Details ----------------->
                         </div>
                     </div>
                 </form>

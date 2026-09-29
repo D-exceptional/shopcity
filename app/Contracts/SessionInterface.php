@@ -14,7 +14,7 @@ interface SessionInterface
 
     public function jwtLogin(array $user): array;
 
-    public function validate(int $absoluteMax = 7200, int $idleTimeout = 1800): bool;
+    public function validate(): bool;
 
     public function destroy(): void;
 

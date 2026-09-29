@@ -20,7 +20,7 @@ class Mail extends Model
         string $extension
     ): bool {
 
-        return $this->query()
+        return $this->table()
             ->insert([
                 'mail_type'      => $type,
                 'mail_subject'   => $subject,
@@ -38,7 +38,7 @@ class Mail extends Model
         string $email
     ): int {
 
-        return $this->query()
+        return $this->table()
             ->where('mail_receiver', '=', $email)
             ->count();
     }
@@ -47,7 +47,7 @@ class Mail extends Model
         string $name
     ): int {
 
-        return $this->query()
+        return $this->table()
             ->where('mail_sender', '=', $name)
             ->count();
     }
@@ -58,7 +58,7 @@ class Mail extends Model
         int $limit = 20
     ): array {
 
-        $mails = $this->query()
+        $mails = $this->table()
             ->where('mail_receiver', '=', $email)
             ->orderBy('mail_date', 'DESC')
             ->paginate($page, $limit)
@@ -75,7 +75,7 @@ class Mail extends Model
         int $limit = 20
     ): array {
 
-        $mails = $this->query()
+        $mails = $this->table()
             ->where('mail_sender', '=', $name)
             ->orderBy('mail_date', 'DESC')
             ->paginate($page, $limit)
@@ -90,7 +90,7 @@ class Mail extends Model
         int $mailId
     ): ?array {
 
-        return $this->query()
+        return $this->table()
             ->where('mail_id', '=', $mailId)
             ->first();
     }
@@ -99,7 +99,7 @@ class Mail extends Model
         int $mailId
     ): bool {
 
-        return $this->query()
+        return $this->table()
             ->where('mail_id', '=', $mailId)
             ->delete();
     }

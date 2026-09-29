@@ -11,8 +11,10 @@ abstract class Model extends Database
 {
     protected string $table;
 
-    protected function query(): QueryBuilder
-    {
-        return (new QueryBuilder($this->db))->table($this->table);
+    protected function table(
+        ?string $table = null
+    ): QueryBuilder {
+
+        return (new QueryBuilder($this->db))->table($table ?? $this->table);
     }
 }

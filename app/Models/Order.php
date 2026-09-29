@@ -19,86 +19,107 @@ class Order extends Model
         string $address, 
         array $items,
         int $userId
-    ): mixed {
+    ): array {
 
-        try {
-            $this->beginTransaction();
+        // Generate Order Tracking Code
+        $orderCode = $this->generateOrderCode();
 
-            // Generate Order Tracking Code
-            $orderCode = $this->generateOrderCode();
+        // Create Order
+        $orderId = $this->table()
+            ->insertGetId([
+                'user_id'          => $userId,
+                'subtotal_amount'  => $subtotal,
+                'tax_amount'       => $tax,
+                'discount_amount'  => $discount,
+                'shipping_amount'  => $shipping,
+                'total_amount'     => $total,
+                'shipping_address' => $address,
+                'tracking_code'    => $orderCode,
+                'facilitator_id'   => $userId  // This could be the referrer's ID 
+            ]);
 
-            // Create Order
-            $orderId = $this->query()
-                ->insertGetId([
-                    'user_id'          => $userId,
-                    'subtotal_amount'  => $subtotal,
-                    'tax_amount'       => $tax,
-                    'discount_amount'  => $discount,
-                    'shipping_amount'  => $shipping,
-                    'total_amount'     => $total,
-                    'shipping_address' => $address,
-                    'tracking_code'    => $orderCode,
-                    'facilitator_id'   => $userId  // This could be the referrer's ID 
-                ]);
+        if (!$orderId) {
+            throw new \Exception(
+                'Failed to create order ID'
+            );
+        }
 
-            // Base Insert Query For Order Items
-            $itemQuery = "
-                INSERT INTO order_items (
-                    order_id, product_id, quantity, price, store_id, tracking_code
-                ) 
-                VALUES (?, ?, ?, ?, ?, ?)
-            ";
+        // Track Stores
+        $stores = [];
 
-            // Base Item Save Query
-            $saveQuery = $this->db->prepare($itemQuery);
+        foreach ($items as $item) {
 
-            // Track Stores
-            $stores = [];
+            $productId = $item['product_id'];
+            $quantity  = $item['quantity'];
+            $price     = $item['price'];
+            $storeId   = $item['store_id'];
 
-            foreach ($items as $item) {
+            // Lock the product row to prevent concurrency
+            $product = $this->table('products')
+                ->where('product_id', '=', $productId)
+                ->lockForUpdate()
+                ->first();
 
-                // Generate item tracking code
-                $itemCode = $this->generateItemCode();
-
-                $saveQuery->execute([
-                    $orderId,
-                    $item['product_id'],
-                    $item['quantity'],
-                    $item['price'],
-                    $item['store_id'],
-                    $itemCode
-                ]);
-
-                // Calculate Item Total = Price * Quantity
-                $itemTotal = $item['price'] * $item['quantity'];
-
-                // Aggregate Per Store
-                if (!isset($stores[$item['store_id']])) {
-
-                    $stores[$item['store_id']] = [
-                        'store_id' => $item['store_id'],
-                        'total' => 0
-                    ];
-                }
-
-                $stores[$item['store_id']]['total'] += $itemTotal;
+            if (!$product) {
+                throw new \Exception("Product #{$productId} not found");
             }
 
-            // Commit Transaction
-            $this->commit();
+            // Check stock while the row is locked
+            if ($product['stock'] < $quantity) {
+                throw new \Exception("Insufficient stock for product #{$productId}");
+            }
 
-            // Return OrderId And Unique Store Details
-            return [
-                'id'     => $orderId,
-                'code'   => $orderCode,
-                'stores' => array_values($stores) // reset keys
-            ];
+            // Update stock (reduce)
+            $stockUpdated = $this->table('products')
+                ->where('product_id', '=', $productId)
+                ->decrement('stock', $quantity);
 
-        } catch (\Exception $e) {
+            if (!$stockUpdated) {
+                throw new \Exception("Failed to update stock for product #{$productId}");
+            }
 
-            $this->rollBack();
-            throw $e;
+            // Generate item tracking code
+            $itemCode = $this->generateItemCode();
+
+            // Create Order
+            $itemSaved = $this->table('order_items')
+                ->insert([
+                    'order_id'      => $orderId,
+                    'product_id'    => $productId,
+                    'quantity'      => $quantity,
+                    'price'         => $price,
+                    'store_id'      => $storeId,
+                    'tracking_code' => $itemCode,
+                ]);
+
+            // Check item saved status
+            if (!$itemSaved) {
+                throw new \Exception("Failed to save order item: #{$productId}");
+            }
+
+            // Calculate Item Total = Price * Quantity
+            $itemTotal = $price * $quantity;
+
+            // Aggregate Per Store
+            if (!isset($stores[$storeId])) {
+
+                $stores[$storeId] = [
+                    'store_id' => $storeId,
+                    'total' => 0
+                ];
+            }
+
+            $stores[$storeId]['total'] += $itemTotal;
         }
+
+        // Return OrderId And Unique Store Details
+        $orderData = [
+            'id'     => $orderId,
+            'code'   => $orderCode,
+            'stores' => array_values($stores) // reset keys
+        ];
+
+        return $orderData;
     }
 
     public function trackOrder(
@@ -106,7 +127,7 @@ class Order extends Model
         string $code
     ): ?array {
 
-        return $this->query()
+        return $this->table()
             ->where('user_id', '=', $userId)
             ->where('tracking_code', '=', $code)
             ->first();
@@ -116,7 +137,7 @@ class Order extends Model
         int $orderId
     ): ?array {
 
-        $order = $this->query()
+        $order = $this->table()
             ->where('order_id', '=', $orderId)
             ->first();
 
@@ -154,31 +175,6 @@ class Order extends Model
         ";
 
         return $this->queryAll($fetchQuery, [$orderId]);
-    }
-
-    private function fetchOrders(
-        ?string $sql = null, 
-        array $params = [], 
-        int $page = 1, 
-        int $limit = 20
-    ): ?array {
-        
-        $offset = ($page - 1) * $limit;
-
-        $sql .= " LIMIT ? OFFSET ?";
-        $stmt = $this->db->prepare($sql);
-
-        $i = 1;
-        foreach ($params as $param) {
-            $type = is_int($param) ? PDO::PARAM_INT : PDO::PARAM_STR;
-            $stmt->bindValue($i++, $param, $type);
-        }
-
-        $stmt->bindValue($i++, (int)$limit, PDO::PARAM_INT);
-        $stmt->bindValue($i, (int)$offset, PDO::PARAM_INT);
-        $stmt->execute();
-
-        return $stmt->fetchAll();
     }
 
     private function processOrders(
@@ -226,14 +222,6 @@ class Order extends Model
         return $stmt->fetchAll();
     }
 
-    private function countOrders(
-        ?string $sql = null, 
-        array $params = []
-    ): int {
-
-        return $this->fetchColumn($sql, $params);
-    }
-
     private function format(
         array $data, 
         int $total, 
@@ -255,21 +243,13 @@ class Order extends Model
         int $limit = 20
     ): array {
 
-        $fetchQuery = "
-            SELECT 
-                * 
-            FROM {$this->table} 
-            ORDER BY created_at DESC
-        ";
+        $orders = $this->table()
+            ->orderBy('created_at', 'DESC')
+            ->paginate($page, $limit)
+            ->get();
 
-        $countQuery = "
-            SELECT 
-                COUNT(*) 
-            FROM {$this->table}
-        ";
-
-        $orders = $this->fetchOrders($fetchQuery, [], $page, $limit);
-        $total  = $this->countOrders($countQuery);
+        $total = $this->table()
+            ->count();
 
         return $this->format($orders, $total, $page, $limit);
     }
@@ -280,25 +260,15 @@ class Order extends Model
         int $limit = 20
     ): array {
 
-        $fetchQuery = "
-            SELECT 
-                * 
-            FROM {$this->table} 
-            WHERE 
-                order_status = ? 
-            ORDER BY order_id DESC
-        ";
+        $orders = $this->table()
+            ->where('order_status', '=', $status)
+            ->orderBy('order_id', 'DESC')
+            ->paginate($page, $limit)
+            ->get();
 
-        $countQuery = "
-            SELECT 
-                COUNT(*) 
-            FROM {$this->table}
-            WHERE 
-                order_status = ?
-        ";
-
-        $orders = $this->fetchOrders($fetchQuery, [$status], $page, $limit);
-        $total  = $this->countOrders($countQuery, [$status]);
+        $total = $this->table()
+            ->where('order_status', '=', $status)
+            ->count();
 
         return $this->format($orders, $total, $page, $limit);
     }
@@ -309,26 +279,16 @@ class Order extends Model
         int $limit = 20
     ): array {
 
-        $fetchQuery = "
-            SELECT 
-                * 
-            FROM {$this->table} 
-            WHERE 
-                user_id = ? 
-                AND order_status != 'Cancelled' 
-            ORDER BY created_at DESC
-        ";
+        $orders = $this->table()
+            ->where('user_id', '=', $userId)
+            ->where('order_status', '!=', 'Cancelled')
+            ->orderBy('created_at', 'DESC')
+            ->paginate($page, $limit)
+            ->get();
 
-        $countQuery = "
-            SELECT 
-                COUNT(*) 
-            FROM {$this->table} 
-            WHERE 
-                user_id = ?
-        ";
-
-        $orders = $this->fetchOrders($fetchQuery, [$userId], $page, $limit);
-        $total  = $this->countOrders($countQuery, [$userId]);
+        $total = $this->table()
+            ->where('user_id', '=', $userId)
+            ->count();
 
         return $this->format($orders, $total, $page, $limit);
     }
@@ -339,25 +299,15 @@ class Order extends Model
         int $limit = 20
     ): array {
 
-        $fetchQuery = "
-            SELECT 
-                * 
-            FROM order_items 
-            WHERE 
-                store_id = ? 
-            ORDER BY item_id DESC
-        ";
+        $orders = $this->table('order_items')
+            ->where('store_id', '=', $storeId)
+            ->orderBy('item_id', 'DESC')
+            ->paginate($page, $limit)
+            ->get();
 
-        $countQuery = "
-            SELECT 
-                COUNT(*) 
-            FROM order_items
-            WHERE 
-                store_id = ?
-        ";
-
-        $orders = $this->processOrders($fetchQuery, [$storeId], $page, $limit);
-        $total  = $this->countOrders($countQuery, [$storeId]);
+        $total = $this->table('order_items')
+            ->where('store_id', '=', $storeId)
+            ->count();
 
         return $this->format($orders, $total, $page, $limit);
     }
@@ -369,27 +319,17 @@ class Order extends Model
         int $limit = 20
     ): array {
 
-        $fetchQuery = "
-            SELECT 
-                * 
-            FROM order_items 
-            WHERE 
-                store_id = ? 
-                AND item_status = ? 
-            ORDER BY item_id DESC
-        ";
+        $orders = $this->table('order_items')
+            ->where('store_id', '=', $storeId)
+            ->where('item_status', '=', $status)
+            ->orderBy('item_id', 'DESC')
+            ->paginate($page, $limit)
+            ->get();
 
-        $countQuery = "
-            SELECT 
-                COUNT(*) 
-            FROM order_items 
-            WHERE 
-                store_id = ? 
-                AND item_status = ?
-        ";
-
-        $orders = $this->processOrders($fetchQuery, [$storeId, $status], $page, $limit);
-        $total  = $this->countOrders($countQuery, [$storeId, $status]);
+        $total = $this->table('order_items')
+            ->where('store_id', '=', $storeId)
+            ->where('item_status', '=', $status)
+            ->count();
 
         return $this->format($orders, $total, $page, $limit);
     }
@@ -399,15 +339,20 @@ class Order extends Model
         string $status
     ): bool {
 
-        $sql = "
-            UPDATE order_items 
-            SET 
-                item_status = ? 
-            WHERE 
-                item_id = ?
-        ";
+        $existing = $this->table('order_items')
+            ->where('item_id', '=', $itemId)
+            ->lockForUpdate()
+            ->first();
 
-        return $this->executeQuery($sql, [$status, $itemId]);
+        if (!$existing) {
+            throw new \Exception("Item #{$itemId} not found");
+        }
+
+        return $this->table('order_items')
+            ->where('item_id', '=', $itemId)
+            ->update([
+                'item_status' => $status,
+            ]);
     }
 
     public function updateItemFinalizedStatus(
@@ -415,15 +360,20 @@ class Order extends Model
         string $status
     ): bool {
 
-        $sql = "
-            UPDATE order_items 
-            SET 
-                finalized = ? 
-            WHERE 
-                item_id = ?
-        ";
+        $existing = $this->table('order_items')
+            ->where('item_id', '=', $itemId)
+            ->lockForUpdate()
+            ->first();
 
-        return $this->executeQuery($sql, [$status, $itemId]);
+        if (!$existing) {
+            throw new \Exception("Item #{$itemId} not found");
+        }
+
+        return $this->table('order_items')
+            ->where('item_id', '=', $itemId)
+            ->update([
+                'finalized' => $status,
+            ]);
     }
 
     public function updateOrderStatus(
@@ -431,9 +381,20 @@ class Order extends Model
         string $status
     ): bool {
 
-        return $this->query()
+        $existing = $this->table()
             ->where('order_id', '=', $orderId)
-            ->update(['order_status' => $status]);
+            ->lockForUpdate()
+            ->first();
+
+        if (!$existing) {
+            throw new \Exception("Order #{$orderId} not found");
+        }
+
+        return $this->table()
+            ->where('order_id', '=', $orderId)
+            ->update([
+                'order_status' => $status
+            ]);
     }
 
     public function completeOrder(
@@ -454,7 +415,7 @@ class Order extends Model
         int $orderId
     ): bool {
 
-        return $this->query()
+        return $this->table()
             ->where('order_id', '=', $orderId)
             ->delete();
     }
@@ -463,33 +424,25 @@ class Order extends Model
         int $orderId
     ): bool {
 
-        $sql = "
-            DELETE FROM order_items 
-            WHERE 
-                order_id = ?
-        ";
-
-        return $this->executeQuery($sql, [$orderId]);
+        return $this->table('order_items')
+            ->where('order_id', '=', $orderId)
+            ->delete();
     }
 
     public function deleteOrderPayment(
         int $orderId
     ): bool {
 
-        $sql = "
-            DELETE FROM payments
-            WHERE 
-                order_id = ?
-        ";
-
-        return $this->executeQuery($sql, [$orderId]);
+        return $this->table('payments')
+            ->where('order_id', '=', $orderId)
+            ->delete();
     }
 
     public function getOrderTotal(
         int $orderId
     ): int {
 
-        $result = $this->query()
+        $result = $this->table()
             ->select(['total_amount'])
             ->where('order_id', '=', $orderId)
             ->first();
@@ -501,7 +454,7 @@ class Order extends Model
         int $orderId
     ): ?array {
 
-        return $this->query()
+        return $this->table()
             ->select([
                 'total_amount',
                 'tracking_code',
@@ -515,38 +468,30 @@ class Order extends Model
         int $orderId
     ): ?array {
 
-        $sql = "
-            SELECT DISTINCT 
-                store_id 
-            FROM order_items 
-            WHERE 
-                order_id = ? 
-            ORDER BY store_id ASC
-        ";
-
-        return $this->queryAll($sql, [$orderId]);
+        return $this->table('order_items')
+            ->select([
+                'store_id'
+            ])
+            ->distinct()
+            ->where('order_id', '=', $orderId)
+            ->orderBy('store_id', 'ASC')
+            ->get();
     }
 
     public function getItemDetails(
         int $itemId
     ): ?array {
 
-        $sql = "
-            SELECT 
-                * 
-            FROM order_items
-            WHERE 
-                item_id = ?
-        ";
-
-        return $this->queryOne($sql, [$itemId]);
+        return $this->table('order_items')
+            ->where('item_id', '=', $itemId)
+            ->first();
     }
 
     public function getUserByOrderId(
         int $orderId
     ): ?int {
 
-        $result = $this->query()
+        $result = $this->table()
             ->select(['user_id'])
             ->where('order_id', '=', $orderId)
             ->first();
@@ -567,6 +512,7 @@ class Order extends Model
         ?int $storeId = null
     ): float {
 
+        /*
         $sql = "
             SELECT 
                 COALESCE(SUM(oi.price * oi.quantity), 0) AS total_revenue
@@ -595,7 +541,37 @@ class Order extends Model
 
         $result = $stmt->fetchColumn();
 
+
         return (float) ($result !== false ? $result : 0);
+        */
+
+        $total = $this->table('order_items AS oi')
+            ->select([
+                'COALESCE(SUM(oi.price * oi.quantity), 0) AS total_revenue',
+            ])
+            ->join(
+                'stores AS s',
+                's.store_id',
+                '=',
+                'oi.store_id',
+            )
+            // Vendor mode: filter by vendor’s user ID
+            ->when(
+                $userId !== null,
+                function ($query) use ($userId) {
+                    $query->where('s.user_id', '=', $userId);
+                }
+            )
+            // Store-specific mode (for both admin + vendor)
+            ->when(
+                $storeId !== null,
+                function ($query) use ($storeId) {
+                    $query->where('oi.store_id', '=', $storeId);
+                }
+            )
+            ->count();
+
+            return (float) $total ?? 0;
     }
 
     /**
@@ -613,6 +589,7 @@ class Order extends Model
         ?int $storeId = null
     ): int {
 
+        /*
         $sql = "
             SELECT 
                 COALESCE(COUNT(oi.item_id), 0) AS total_orders
@@ -657,6 +634,51 @@ class Order extends Model
         $result = $stmt->fetchColumn();
 
         return (int) ($result !== false ? $result : 0);
+        */
+
+        $total = $this->table('order_items AS oi')
+            ->select([
+                'COALESCE(COUNT(oi.item_id), 0) AS total_orders',
+            ])
+            ->join(
+                'stores AS s',
+                's.store_id',
+                '=',
+                'oi.store_id',
+            )
+            // ------------------------------------------
+            // Vendor mode: filter by vendor's user_id
+            // Admin mode: skip this (admin sees all)
+            // ------------------------------------------
+            ->when(
+                $userId !== null,
+                function ($query) use ($userId) {
+                    $query->where('s.user_id', '=', $userId);
+                }
+            )
+            // ------------------------------------------
+            // Status filter (Delivered, Pending, etc.)
+            // Optional
+            // ------------------------------------------
+            ->when(
+                $status !== null,
+                function ($query) use ($status) {
+                    $query->where('oi.item_status', '=', $status);
+                }
+            )
+            // ------------------------------------------
+            // Store filter (for admin + vendor)
+            // Optional
+            // ------------------------------------------
+            ->when(
+                $storeId !== null,
+                function ($query) use ($storeId) {
+                    $query->where('oi.store_id', '=', $storeId);
+                }
+            )
+            ->count();
+
+            return (float) $total ?? 0;
     }
 
     /**
@@ -672,6 +694,7 @@ class Order extends Model
         string $role = 'vendor'
     ): int {
 
+        /*
         $sql = "
             SELECT 
                 COALESCE(COUNT(DISTINCT o.user_id), 0) AS unique_customers
@@ -702,6 +725,42 @@ class Order extends Model
         $result = $stmt->fetchColumn();
 
         return (int) ($result !== false ? $result : 0);
+        */
+
+        $total = $this->table('order_items AS oi')
+            ->select([
+                'COALESCE(COUNT(DISTINCT o.user_id), 0) AS unique_customers',
+            ])
+            ->join(
+                'stores AS s',
+                's.store_id',
+                '=',
+                'oi.store_id',
+            )
+            ->join(
+                'orders AS o',
+                'o.order_id',
+                '=',
+                'oi.order_id',
+            )
+            // Vendor mode → restrict by vendor's user_id
+            ->when(
+                $userId !== null
+                && $role === 'vendor',
+                function ($query) use ($userId) {
+                    $query->where('s.user_id', '=', $userId);
+                }
+            )
+            // Store-specific mode (for both admin + vendor)
+            ->when(
+                $storeId !== null,
+                function ($query) use ($storeId) {
+                    $query->where('oi.store_id', '=', $storeId);
+                }
+            )
+            ->count();
+
+            return (int) $total ?? 0;
     }
 
     public function generateOrderCode(): string
@@ -818,7 +877,7 @@ class Order extends Model
         string $timeframe = 'today', 
         string $startDate = null, 
         string $endDate = null
-    ): ?array {
+    ): array {
 
         list($start, $end, $resolvedTimeframe) = $this->getDateRange($timeframe, $startDate, $endDate);
 
@@ -826,6 +885,7 @@ class Order extends Model
 
         if ($view === 'admin') {
             // Admin: Global Totals
+            /*
             $query = "
                 SELECT 
                     COUNT(*) AS total_sales,
@@ -838,6 +898,15 @@ class Order extends Model
             $stmt = $this->db->prepare($query);
             $stmt->execute($params);
             $result = $stmt->fetch();
+            */
+
+            $result = $this->table('order_items oi')
+                ->select([
+                    'COUNT(*) AS total_sales',
+                    'SUM(oi.price) AS total_revenue',
+                ])
+                ->whereBetween('oi.created_at', [$start, $end])
+                ->first();
 
             return [
                 'view'          => $view,
@@ -854,6 +923,7 @@ class Order extends Model
             }
 
             // --- 1️⃣ Vendor Totals (All Stores Combined)
+            /*
             $summaryQuery = "
                 SELECT 
                     COUNT(*) AS total_sales,
@@ -868,8 +938,31 @@ class Order extends Model
             $summaryStmt = $this->db->prepare($summaryQuery);
             $summaryStmt->execute([$userId, $start, $end]);
             $summary = $summaryStmt->fetch();
+            */
+
+            $summary = $this->table('order_items AS oi')
+                ->select([
+                    'COUNT(*) AS total_sales',
+                    'SUM(oi.price) AS total_revenue',
+                ])
+                ->join(
+                    'stores AS s',
+                    's.store_id',
+                    '=',
+                    'oi.store_id',
+                )
+                // Vendor mode → restrict by vendor's user_id
+                ->when(
+                    $userId !== null,
+                    function ($query) use ($userId) {
+                        $query->where('s.user_id', '=', $userId);
+                    }
+                )
+                ->whereBetween('oi.created_at', [$start, $end])
+                ->first();
 
             // --- 2️⃣ Store Breakdown
+            /*
             $storeQuery = "
                 SELECT 
                     s.store_id AS store_id,
@@ -888,6 +981,35 @@ class Order extends Model
             $storeStmt = $this->db->prepare($storeQuery);
             $storeStmt->execute([$userId, $start, $end]);
             $stores = $storeStmt->fetchAll(PDO::FETCH_ASSOC);
+            */
+
+            $stores = $this->table('order_items AS oi')
+                ->select([
+                    's.store_id AS store_id',
+                    's.store_name',
+                    'COUNT(*) AS total_sales',
+                    'SUM(oi.price) AS total_revenue'
+                ])
+                ->join(
+                    'stores AS s',
+                    's.store_id',
+                    '=',
+                    'oi.store_id',
+                )
+                // Vendor mode → restrict by vendor's user_id
+                ->when(
+                    $userId !== null,
+                    function ($query) use ($userId) {
+                        $query->where('s.user_id', '=', $userId);
+                    }
+                )
+                ->whereBetween('oi.created_at', [$start, $end])
+                ->groupBy([
+                    's.store_id',
+                    's.store_name',
+                ])
+                ->orderBy('total_revenue', 'DESC')
+                ->get();
 
             return [
                 'view'          => $view,

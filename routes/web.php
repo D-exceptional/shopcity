@@ -5,9 +5,10 @@ declare(strict_types=1);
 // Import Middlewares
 use App\Http\Middlewares\{
     AuthMiddleware,
-    CsrfMiddleware,
     RoleMiddleware,
     RateLimitMiddleware,
+    GuestMiddleware,
+    SessionMiddleware,
 };
 
 // Import Controllers
@@ -29,6 +30,8 @@ $router->group('/auth', function ($router) {
     $router->get('/admin/verify', [AuthController::class, 'adminVerify'], [], 'auth.admin.verify');
     $router->get('/admin/update', [AuthController::class, 'adminUpdate'], [], 'auth.admin.update');
 }, [
+    [SessionMiddleware::class, 'handle'],
+    [GuestMiddleware::class, 'handle'],
     [
         RateLimitMiddleware::class, 'handle', 
         [
@@ -58,9 +61,9 @@ $router->group('/admin', function ($router) {
     $router->get('/stores/page/{page}', [AdminController::class, 'storeList'], [], 'web.admin.store.list');
     $router->get('/users/role/{role}/page/{page}', [AdminController::class, 'users'], [], 'web.admin.users');
 }, [
-    [RoleMiddleware::class, 'handle', ['role' => ['admin']]],
+    [SessionMiddleware::class, 'handle'],
     [AuthMiddleware::class, 'handle'],
-    [CsrfMiddleware::class, 'handle'],
+    [RoleMiddleware::class, 'handle', ['role' => ['admin']]],
     [
         RateLimitMiddleware::class, 'handle', 
         [
@@ -87,9 +90,9 @@ $router->group('/vendor', function ($router) {
     $router->get('/wallet', [VendorController::class, 'wallet'], [], 'web.vendor.wallet');
     $router->get('/payouts', [VendorController::class, 'withdrawal'], [], 'web.vendor.withdrawal');
 }, [
-    [RoleMiddleware::class, 'handle', ['role' => ['vendor']]],
+    [SessionMiddleware::class, 'handle'],
     [AuthMiddleware::class, 'handle'],
-    [CsrfMiddleware::class, 'handle'],
+    [RoleMiddleware::class, 'handle', ['role' => ['vendor']]],
     [
         RateLimitMiddleware::class, 'handle', 
         [
@@ -114,9 +117,9 @@ $router->group('/store', function ($router) {
     $router->get('/{id}/coupon/create', [StoreController::class, 'couponCreate'], [], 'web.store.coupon.create');
     $router->get('/{id}/coupons/page/{page}', [StoreController::class, 'couponList'], [], 'web.store.coupon.list');
 }, [
-    [RoleMiddleware::class, 'handle', ['role' => ['vendor']]],
+    [SessionMiddleware::class, 'handle'],
     [AuthMiddleware::class, 'handle'],
-    [CsrfMiddleware::class, 'handle'],
+    [RoleMiddleware::class, 'handle', ['role' => ['vendor']]],
     [
         RateLimitMiddleware::class, 'handle', 
         [
@@ -132,25 +135,25 @@ $router->group('/store', function ($router) {
 // -------------------------------------------------
 $router->group('', function ($router) {
     $router->get('/', [HomeController::class, 'home'], [], 'web.public.home');
-    $router->get('/page/{page}', [HomeController::class, 'homePaginated'], [], 'web.public.home');
+    $router->get('/page/{page}', [HomeController::class, 'homePaginated'], [], 'web.public.home.paginated');
     $router->get('/about', [HomeController::class, 'about'], [], 'web.public.about');
     $router->get('/brands', [HomeController::class, 'brands'], [], 'web.public.brands');
-    $router->get('/brands/page/{page}', [HomeController::class, 'brandsPaginated'], [], 'web.public.brands');
+    $router->get('/brands/page/{page}', [HomeController::class, 'brandsPaginated'], [], 'web.public.brands.paginated');
     $router->get('/cart', [HomeController::class, 'cart'], [], 'web.public.cart');
     $router->get('/contact', [HomeController::class, 'contact'], [], 'web.public.contact');
     $router->get('/delivery', [HomeController::class, 'delivery'], [], 'web.public.delivery');
     $router->get('/faq', [HomeController::class, 'faq'], [], 'web.public.faq');
     $router->get('/order/{id}', [HomeController::class, 'orderView'], [], 'web.public.order.view');
     $router->get('/orders', [HomeController::class, 'orders'], [], 'web.public.orders');
-    $router->get('/orders/page/{page}', [HomeController::class, 'ordersPaginated'], [], 'web.public.orders');
+    $router->get('/orders/page/{page}', [HomeController::class, 'ordersPaginated'], [], 'web.public.orders.paginated');
     $router->get('/privacy', [HomeController::class, 'privacy'], [], 'web.public.privacy');
     $router->get('/product/{id}', [HomeController::class, 'productView'], [], 'web.public.product.view');
     $router->get('/products/{filter}/{value}/page/{page}', [HomeController::class, 'productList'], [], 'web.public.product.list');
     $router->get('/store/{id}', [HomeController::class, 'store'], [], 'web.public.store.view');
-    $router->get('/store/{id}/page/{page}', [HomeController::class, 'storePaginated'], [], 'web.public.store.view');
+    $router->get('/store/{id}/page/{page}', [HomeController::class, 'storePaginated'], [], 'web.public.store.view.paginated');
     $router->get('/store/{id}/{filter}/{value}/page/{page}', [HomeController::class, 'productStore'], [], 'web.public.product.store');
     $router->get('/product/{search}/search', [HomeController::class, 'productSearch'], [], 'web.public.product.search');
-    $router->get('/product/{search}/search/page/{page}', [HomeController::class, 'productSearchPaginated'], [], 'web.public.product.search');
+    $router->get('/product/{search}/search/page/{page}', [HomeController::class, 'productSearchPaginated'], [], 'web.public.product.search.paginated');
     $router->get('/profile', [HomeController::class, 'profile'], [], 'web.public.profile');
     $router->get('/returns', [HomeController::class, 'returns'], [], 'web.public.returns');
     $router->get('/support', [HomeController::class, 'support'], [], 'web.public.support');
@@ -160,8 +163,9 @@ $router->group('', function ($router) {
     $router->get('/wallet', [HomeController::class, 'wallet'], [], 'web.public.wallet');
     $router->get('/warranty', [HomeController::class, 'warranty'], [], 'web.public.warranty');
     $router->get('/wishlist', [HomeController::class, 'wishlist'], [], 'web.public.wishlist');
-    $router->get('/wishlist/page/{page}', [HomeController::class, 'wishlistPaginated'], [], 'web.public.wishlist');
+    $router->get('/wishlist/page/{page}', [HomeController::class, 'wishlistPaginated'], [], 'web.public.wishlist.paginated');
 }, [
+    [SessionMiddleware::class, 'handle'],
     [
         RateLimitMiddleware::class, 'handle', 
         [

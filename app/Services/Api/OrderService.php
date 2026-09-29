@@ -28,7 +28,7 @@ class OrderService
         protected User $userModel,
         protected Product $productModel,
     ) {
-        $this->baseUrl = $appUrl; 
+        $this->baseUrl = config('app.url'); 
     }
 
     public function trackOrder(

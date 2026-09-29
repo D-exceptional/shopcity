@@ -7,6 +7,7 @@ namespace App\Services\Api;
 use App\Core\Result;
 use App\Events\Checkout\Checkout;
 use App\Events\EventDispatcher;
+use App\Database\Database;
 use App\Models\Cart;
 use App\Models\CheckoutPayment;    
 use App\Models\Order;
@@ -20,13 +21,14 @@ class CheckoutService
     public function __construct(
         protected Result $result, 
         protected EventDispatcher $eventDispatcher,
+        protected Database $dbClient,
         protected Cart $cartModel, 
         protected CheckoutPayment $checkoutModel, 
         protected Order $orderModel, 
         protected Wallet $walletModel, 
     ) {
         $this->currency = env('BASE_CURRENCY');  
-        $this->baseUrl  = $appUrl;
+        $this->baseUrl  = config('app.url');
     }
 
     public function processCheckout(
@@ -43,40 +45,76 @@ class CheckoutService
         // Extract User Data
         $userId = $user['id'];
 
-        // Create Order Records
-        $order = $this->orderModel->createOrder(
-            $subtotal, 
-            $tax, 
-            $discount, 
-            $shipping, 
-            $total, 
-            $address, 
-            $items, 
-            $userId
-        );
+        $order = $this->dbClient->transaction(function () use (
+            $subtotal,
+            $tax,
+            $discount,
+            $shipping,
+            $total,
+            $address,
+            $items,
+            $userId,
+        ) {
+
+            // Create Order Records
+            $order = $this->orderModel->createOrder(
+                $subtotal, 
+                $tax, 
+                $discount, 
+                $shipping, 
+                $total, 
+                $address, 
+                $items, 
+                $userId
+            );
+
+            // Get Order Data
+            $orderId   = $order['id'];
+            $orderCode = $order['code'];
+            $stores    = $order['stores'];
+
+            // Check Order Status
+            if (!$orderId || !$orderCode || !$stores || empty($stores)) {
+                throw new \Exception(
+                    'Order creation failed'
+                );
+            }
+
+            // Create Payment Record
+            $paymentCreated = $this->checkoutModel->createPayment($orderId, $total, $this->currency, $userId);
+
+            if (!$paymentCreated) {
+                throw new \Exception(
+                    'Failed to create payment record'
+                );
+            }
+
+            // Clear Cart
+            $cartCleared = $this->cartModel->clear($userId);
+
+            if (!$cartCleared) {
+                throw new \Exception(
+                    'Failed to clear cart'
+                );
+            }
+
+            // Deduct Wallet
+            $walletDebited = $this->walletModel->debitWallet('wallet_coin', $total, $userId);
+
+            if (!$walletDebited) {
+                throw new \Exception(
+                    'Failed to debit wallet'
+                );
+            }
+
+            return $order;
+        });
         
         // Get Order Data
         $orderId   = $order['id'];
         $orderCode = $order['code'];
         $stores    = $order['stores'];
-
-        // Check Order Status
-        if (!$orderId || !$orderCode || !$stores) {
-            return $this->result->error('Failed to create your order', 500);
-        }
-
-        // Create Payment Record
-        $payment = $this->checkoutModel->createPayment($orderId, $total, $this->currency, $userId);
-        if ($payment === false) {
-           return $this->result->error('Failed to create payment record', 500);
-        }
-
-        // Clear Cart
-        $this->cartModel->clear($userId);
-
-        // Deduct Wallet
-        $this->walletModel->debitWallet('wallet_coin', $total, $userId);
-
+        
         $this->eventDispatcher->dispatch(
             new Checkout(
                 orderCode: $orderCode,

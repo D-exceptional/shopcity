@@ -168,12 +168,12 @@ class RedisDriver extends RedisStore implements SessionInterface
 
         $token = $this->jwt->generate([
             'id'         => $user['id'],
-            'name'       => $user['fullname'],
+            'name'       => $user['name'],
             'email'      => $user['email'],
             'role'       => $user['role'],
             'session_id' => $sessionId,
             'iat'        => time(),
-            'exp'        => $this->jwtExpireAt
+            'exp'        => time() + $this->jwtExpireAt
         ]);
 
         $metadata = [
@@ -188,10 +188,10 @@ class RedisDriver extends RedisStore implements SessionInterface
         return ['token' => $token];
     }
 
-    public function validate(
-        int $absoluteMax = 7200,
-        int $idleTimeout = 1800
-    ): bool {
+    public function validate(): bool {
+
+        $absoluteMax = env('SESSION_LIFETIME');
+        $idleTimeout = env('SESSION_TIMEOUT');
 
         $now = time();
 

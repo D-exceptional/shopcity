@@ -26,9 +26,9 @@ class Queue extends RedisQueue
         string $jobClass,
         array $data      = [],
         string $queue    = 'default',
-        int $delay       = 0,
-        int $maxAttempts = 3,
-        int $timeout     = 30
+        int $delay       = 5,
+        int $maxAttempts = 5,
+        int $timeout     = 60
     ): void {
 
         $encodedData = json_encode($data);

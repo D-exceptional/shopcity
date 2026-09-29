@@ -28,14 +28,6 @@ class AuthMiddleware
             throw new MiddlewareException('Unauthorized', 401);
         }
 
-        // User is authenticated 
-        // Set the authenticated user in the request object
-        // Continue to next middleware or controller
-        $user = $this->session->user();
-        if ($user) {
-            $request->setUser($user);
-        }
-
         // Continue pipeline
         return $next($request);
     }

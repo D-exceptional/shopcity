@@ -40,32 +40,24 @@ class RouteLoader
 
         $routeCollections = config('router.collections', ['api', 'web']);
 
-        foreach ($routeCollections as $collection) {
+        if (!empty($routeCollections)) {
+           
+            foreach ($routeCollections as $collection) {
 
-            $file =
-                $basePath .
-                "/routes/{$collection}.php";
+                $file = $basePath . "/routes/{$collection}.php";
 
-            if (!file_exists($file)) {
+                if (!file_exists($file)) {
 
-                echo "Skipping missing route file: {$file}\n";
+                    echo "Skipping missing route file: {$file}\n";
 
-                continue;
+                    continue;
+                }
+
+                $router->loadCollection(
+                    $collection,
+                    $basePath . "/routes/{$collection}.php"
+                );
             }
-
-            $router->setCollection(
-                $collection
-            );
-
-            require $file;
         }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Reset Active Collection
-        |--------------------------------------------------------------------------
-        */
-
-        $router->resetCollection();
     }
 }

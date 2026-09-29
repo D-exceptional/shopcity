@@ -30,7 +30,7 @@ class MailService
             'secure'    => env('MAIL_SECURE')
         ];
 
-        $this->baseUrl = $appUrl; 
+        $this->baseUrl = config('app.url'); 
     }
 
     public function countMessages(

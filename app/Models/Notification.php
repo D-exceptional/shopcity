@@ -14,7 +14,7 @@ class Notification extends Model
         int $receiver
     ): bool {
 
-        return $this->query()
+        return $this->table()
             ->insert([
                 'notification_details'  => $details,
                 'notification_type'     => $type,
@@ -24,7 +24,7 @@ class Notification extends Model
 
     public function countAll(): int
     {
-        return $this->query()
+        return $this->table()
             ->count();
     }
 
@@ -32,7 +32,7 @@ class Notification extends Model
         int $userId
     ): int {
 
-        return $this->query()
+        return $this->table()
             ->where('notification_receiver', '=', $userId)
             ->count();
     }
@@ -41,7 +41,7 @@ class Notification extends Model
         int $userId
     ): int {
 
-        return $this->query()
+        return $this->table()
             ->where('notification_receiver', '=', $userId)
             ->where('notification_status', '=', 'Unread')
             ->count();
@@ -49,21 +49,20 @@ class Notification extends Model
 
     public function countUnreadByType(
         int $userId
-    ): ?array {
+    ): array {
 
-        $fetchQuery = "
-            SELECT 
-                notification_type, 
-                COUNT(*) AS count, 
-                MAX(notification_date) AS last_date
-            FROM {$this->table}
-            WHERE 
-                notification_receiver = ?
-                AND notification_status = 'Unread'
-            GROUP BY notification_type
-        ";
-
-        return $this->queryAll($fetchQuery, [$userId]);
+        return $this->table()
+            ->select([
+                'notification_type',
+                'COUNT(*) AS count',
+                'MAX(notification_date) AS last_date',
+            ])
+            ->where('notification_receiver', '=', $userId)
+            ->where('notification_status', '=', 'Unread')
+            ->groupBy([
+                'notification_type',
+            ])
+            ->get();
     }
 
     public function getUnreadById(
@@ -72,7 +71,7 @@ class Notification extends Model
         int $limit = 20
     ): ?array {
 
-        return $this->query()
+        return $this->table()
             ->where('notification_receiver', '=', $userId)
             ->where('notification_status', '=', 'Unread')
             ->orderBy('notification_date', 'DESC')
@@ -86,7 +85,7 @@ class Notification extends Model
         int $limit = 20
     ): ?array {
 
-        return $this->query()
+        return $this->table()
             ->where('notification_receiver', '=', $userId)
             ->orderBy('notification_date', 'DESC')
             ->paginate($page, $limit)
@@ -97,7 +96,7 @@ class Notification extends Model
         int $userId
     ): bool {
 
-        return $this->query()
+        return $this->table()
             ->where('notification_receiver', '=', $userId)
             ->update(['notification_status' => 'Read']);
     }

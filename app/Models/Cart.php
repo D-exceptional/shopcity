@@ -8,168 +8,215 @@ class Cart extends Model
 {
     protected string $table = 'cart';
 
+    // =========================================
+    // VIEW CART
+    // =========================================
+
     public function view(
         int $userId
-    ): ?array {
+    ): array {
+        /*
+         * The product_media subquery is still raw SQL for now.
+         *
+         * Your current QueryBuilder does not yet support
+         * subqueries in joins, so there is no reason to force
+         * this query into the builder prematurely.
+         */
 
         $sql = "
-            SELECT 
-                c.cart_id, 
-                c.user_id, 
-                c.product_id, 
-                c.quantity, 
-                p.product_name, 
+            SELECT
+                c.cart_id,
+                c.user_id,
+                c.product_id,
+                c.quantity,
+                p.product_name,
                 p.category,
-                p.product_price, 
+                p.product_price,
                 p.store_id,
                 (p.product_price * c.quantity) AS total_price,
                 pm.media_url AS product_image
+
             FROM {$this->table} c
-            JOIN products p ON p.product_id = c.product_id
-            LEFT JOIN product_media pm 
+
+            JOIN products p
+                ON p.product_id = c.product_id
+
+            LEFT JOIN product_media pm
                 ON pm.product_id = p.product_id
                 AND pm.media_id = (
-                    SELECT MIN(media_id) 
-                    FROM product_media 
+                    SELECT MIN(media_id)
+                    FROM product_media
                     WHERE product_id = p.product_id
                 )
-            WHERE 
-                c.user_id = ?
+
+            WHERE c.user_id = ?
         ";
 
         return $this->queryAll($sql, [$userId]);
     }
 
+
+    // =========================================
+    // ADD TO CART
+    // =========================================
+
     public function add(
-        int $productId, 
-        int $quantity, 
+        int $productId,
+        int $quantity,
         int $userId
     ): bool {
 
-        $isExisting = $this->query()
-            ->where('user_id', '=', $userId)
-            ->where('product_id', '=', $productId)
-            ->first();
+        return $this->transaction(function () use (
+            $productId,
+            $quantity,
+            $userId
+        ) {
 
-        if ($isExisting) {
+            $existing = $this->table()
+                ->where('user_id', '=', $userId)
+                ->where('product_id', '=', $productId)
+                ->lockForUpdate()
+                ->first();
 
-            $updateQuery = "
-                UPDATE {$this->table} 
-                SET 
-                    quantity = quantity + ? 
-                WHERE 
-                    cart_id = ?
-            ";
-           
-            return $this->executeQuery(
-                $updateQuery,
-                [$quantity, $isExisting['cart_id']]
-            );
+            if ($existing) {
 
-        } else {
-            
-            return $this->query()
+                return $this->table()
+                    ->where('cart_id', '=', $existing['cart_id'])
+                    ->increment('quantity', $quantity);
+            }
+
+            return $this->table()
                 ->insert([
                     'product_id' => $productId,
                     'quantity'   => $quantity,
                     'user_id'    => $userId,
                 ]);
-        }
+        });
     }
+
+
+    // =========================================
+    // UPDATE CART ITEM
+    // =========================================
 
     public function update(
-        int $productId, 
-        int $quantity, 
+        int $productId,
+        int $quantity,
         int $userId
     ): bool {
 
-        return $this->query()
+        return $this->table()
+            ->where('product_id', '=', $productId)
+            ->where('user_id', '=', $userId)
             ->update([
-                'quantity'   => $quantity,
-                'product_id' => $productId,
-                'user_id'    => $userId,
+                'quantity' => $quantity,
             ]);
     }
+
+
+    // =========================================
+    // REMOVE CART ITEM
+    // =========================================
 
     public function remove(
-        int $productId, 
+        int $productId,
         int $userId
     ): bool {
 
-        return $this->query()
-            ->delete([
-                'product_id' => $productId,
-                'user_id'    => $userId,
-            ]);
+        return $this->table()
+            ->where('product_id', '=', $productId)
+            ->where('user_id', '=', $userId)
+            ->delete();
     }
+
+
+    // =========================================
+    // CLEAR CART
+    // =========================================
 
     public function clear(
         int $userId
     ): bool {
 
-        return $this->query()
-            ->delete([
-                'user_id' => $userId,
-            ]);
+        return $this->table()
+            ->where('user_id', '=', $userId)
+            ->delete();
     }
+
+
+    // =========================================
+    // TOTAL ITEMS
+    // =========================================
 
     public function countTotal(
         int $userId
     ): int {
 
-        $countQuery = "
-            SELECT 
-                COALESCE(SUM(quantity), 0) AS total_items
-            FROM {$this->table}
-            WHERE 
-                user_id = ?
-        ";
-
-        $result = $this->queryOne($countQuery, [$userId]);
-
-        return (int) $result['total_items'] ?? 0;
+        return (int) (
+            $this->table()
+                ->where('user_id', '=', $userId)
+                ->sum('quantity')
+        );
     }
+
+
+    // =========================================
+    // NUMBER OF CART ITEMS
+    // =========================================
 
     public function countCart(
         int $userId
     ): int {
 
-        return $this->query()
+        return $this->table()
             ->where('user_id', '=', $userId)
             ->count();
     }
 
+
+    // =========================================
+    // NUMBER OF USERS WITH CARTS
+    // =========================================
+
     public function countAll(): int
     {
-        $countQuery = "
-            SELECT COUNT(DISTINCT user_id) AS pending_carts
-            FROM {$this->table}
-        ";
-
-        $result = $this->queryOne($countQuery);
-
-        return (int) $result['pending_carts'];
+        return $this->table()
+            ->count('user_id');
     }
+
+
+    // =========================================
+    // CART USERS
+    // =========================================
 
     public function getCartUsers(): array
     {
-        $fetchQuery = "
-            SELECT 
-                u.user_id, 
-                u.firstname, 
-                u.lastname, 
-                u.email,
-                COALESCE(SUM(c.quantity), 0) AS total_items
-            FROM {$this->table} c
-            INNER JOIN users u ON c.user_id = u.user_id
-            GROUP BY u.user_id, u.firstname, u.lastname, u.email
-        ";
-
-        $users = $this->queryAll($fetchQuery);
+        $users = $this->table()
+            ->select([
+                'u.user_id',
+                'u.firstname',
+                'u.lastname',
+                'u.email',
+                'COALESCE(SUM(cart.quantity), 0) AS total_items',
+            ])
+            ->join(
+                'users u',
+                'cart.user_id',
+                '=',
+                'u.user_id',
+                'INNER'
+            )
+            ->groupBy([
+                'u.user_id',
+                'u.firstname',
+                'u.lastname',
+                'u.email',
+            ])
+            ->get();
 
         return [
-            'count' => count($users),   // total distinct users with carts
-            'users' => $users           // user details + cart totals
+            'count' => count($users),
+            'users' => $users,
         ];
     }
 }

@@ -23,7 +23,7 @@ class Product extends Model
         int $storeId
     ): int {
 
-        return $this->query()
+        return $this->table()
             ->insertGetId([
                 'product_name'        => $name,
                 'product_description' => $description,
@@ -52,7 +52,7 @@ class Product extends Model
         int $productId
     ): bool {
 
-        return $this->query()
+        return $this->table()
             ->where('product_id', '=', $productId)
             ->update([
                 'product_name'        => $name,
@@ -75,7 +75,7 @@ class Product extends Model
         int $productId
     ): bool {
 
-        return $this->query()
+        return $this->table()
             ->where('product_id', '=', $productId)
             ->update([
                 'visibility'  => $visibility,
@@ -87,16 +87,25 @@ class Product extends Model
         int $productId
     ): bool {
 
-        return $this->query()
+        return $this->table()
             ->where('product_id', '=', $productId)
             ->delete();
     }
 
     public function find(
-        int $productId
+        int $productId,
+        bool $transaction = false
     ): ?array {
 
-        return $this->query()
+        if (!$transaction) {
+
+            return $this->table()
+                ->where('product_id', '=', $productId)
+                ->lockForUpdate()
+                ->first();
+        } 
+
+        return $this->table()
             ->where('product_id', '=', $productId)
             ->first();
     }
@@ -107,42 +116,44 @@ class Product extends Model
 
         if (empty($products)) return [];
 
-        $productIds   = array_column($products, 'product_id');
-        $placeholders = implode(',', array_fill(0, count($productIds), '?'));
+        $productIds       = array_column($products, 'product_id');
+        $mediaByProduct   = [];
+        $ratingsByProduct = [];
 
         // ------------ FETCH ONE MEDIA PER PRODUCT ----------- //
-        $mediaQuery = "
-            SELECT pm.*
-            FROM product_media pm
-            INNER JOIN (
-                SELECT product_id, MIN(media_id) AS first_media_id
-                FROM product_media
-                WHERE 
-                    product_id IN ($placeholders)
-                GROUP BY product_id
-            ) first_media
-            ON pm.media_id = first_media.first_media_id
-        ";
+        $firstMedia = $this->table('product_media')
+            ->select([
+                'product_id',
+                'MIN(media_id) AS first_media_id'
+            ])
+            ->whereIn('product_id', $productIds)
+            ->groupBy(['product_id']);
 
-        $allMedia = $this->queryAll($mediaQuery, $productIds);
+        $allMedia = $this->table('product_media AS pm')
+            ->joinSub(
+                $firstMedia,
+                'first_media',
+                'pm.media_id',
+                '=',
+                'first_media.first_media_id'
+            )
+            ->get();
 
-        $mediaByProduct = [];
         foreach ($allMedia as $media) {
             $mediaByProduct[$media['product_id']][] = $media; 
         }
 
         // --- Fetch Ratings --- //
-        $ratingsQuery = "
-            SELECT product_id, AVG(rating) as average_rating, COUNT(*) as rating_count
-            FROM reviews
-            WHERE 
-                product_id IN ($placeholders)
-            GROUP BY product_id
-        ";
+        $allRatings = $this->table('reviews')
+            ->select([
+                'product_id',
+                'AVG(rating) AS average_rating',
+                'COUNT(*) AS rating_count',
+            ])
+            ->whereIn('product_id', $productIds)
+            ->groupBy(['product_id'])
+            ->get();
 
-        $allRatings = $this->queryAll($ratingsQuery, $productIds);
-
-        $ratingsByProduct = [];
         foreach ($allRatings as $rating) {
             $ratingsByProduct[$rating['product_id']] = [
                 'average' => round((float)$rating['average_rating'], 2),
@@ -162,83 +173,33 @@ class Product extends Model
         return $products;
     }
 
-    private function fetchProducts(
-        ?string $sql = null, 
-        array $params = [], 
-        int $page = 1, 
-        int $limit = 20
-    ): ?array {
-
-        $offset = ($page - 1) * $limit;
-
-        $sql .= " LIMIT ? OFFSET ?";
-        $stmt = $this->db->prepare($sql);
-
-        $i = 1;
-        foreach ($params as $param) {
-            $type = is_int($param) ? PDO::PARAM_INT : PDO::PARAM_STR;
-            $stmt->bindValue($i++, $param, $type);
-        }
-
-        $stmt->bindValue($i++, (int)$limit, PDO::PARAM_INT);
-        $stmt->bindValue($i, (int)$offset, PDO::PARAM_INT);
-        $stmt->execute();
-
-        $products = $stmt->fetchAll();
-
-        return $this->buildProducts($products);
-    }
-
-    private function countProducts(
-        string $sql, 
-        array $params = []
-    ): int {
-
-        return $this->fetchColumn($sql, $params);
-    }
-
-    private function format(
-        array $data, 
-        int $total, 
-        int $page, 
-        int $limit
-    ): ?array {
-
-        return [
-            'products'    => $data,
-            'total'       => $total,
-            'page'        => $page,
-            'per_page'    =>$limit,
-            'total_pages' => ceil($total /$limit),
-        ];
-    }
-
     public function findByAll(
         int $page = 1, 
         int $limit = 20, 
         string $view = 'customer'
-    ): ?array {
+    ): array {
 
-        // Add Filtering Based On View
-        $condition = in_array($view, ['customer']) ? "WHERE visibility = 'Visible'" : "";  
+        $data = $this->table()
+            ->when(
+                in_array($view, ['customer']),
 
-        $productsQuery = "
-            SELECT 
-                * 
-            FROM {$this->table} 
-            {$condition} 
-            ORDER BY created_at DESC
-        ";
+                fn($query) =>
+                    $query->where('visibility', '=', 'Visible')
+            )
+            ->orderBy('created_at', 'DESC')
+            ->paginate($page, $limit)
+            ->get();
 
-        $countQuery = "
-            SELECT 
-                COUNT(*) 
-            FROM {$this->table} 
-            {$condition}
-        ";
+        $total = $this->table()
+            ->when(
+                in_array($view, ['customer']),
 
-        $products = $this->fetchProducts($productsQuery, [], $page, $limit);
-        $total    = $this->countProducts($countQuery);
+                fn($query) =>
+                    $query->where('visibility', '=', 'Visible')
+            )
+            ->count();
+
+        $products = $this->buildProducts($data);
 
         return $this->format($products, $total, $page, $limit);
     }
@@ -248,32 +209,31 @@ class Product extends Model
         int $page = 1, 
         int $limit = 20, 
         string $view = 'customer'
-    ): ?array {
+    ): array {
 
-        // Add Filtering Based On View
-        $condition = in_array($view, ['customer']) ? "AND visibility = 'Visible'" : ""; 
+        $data = $this->table()
+            ->where('category', '=', $category)
+            ->when(
+                in_array($view, ['customer']),
 
-        $productsQuery = "
-            SELECT 
-                * 
-            FROM {$this->table} 
-            WHERE 
-                category = ? 
-                {$condition} 
-            ORDER BY created_at DESC
-        ";
+                fn($query) =>
+                    $query->where('visibility', '=', 'Visible')
+            )
+            ->orderBy('created_at', 'DESC')
+            ->paginate($page, $limit)
+            ->get();
 
-        $countQuery = "
-            SELECT 
-                COUNT(*) 
-            FROM {$this->table} 
-            WHERE 
-                category = ? 
-                {$condition}
-        ";
+        $total = $this->table()
+            ->where('category', '=', $category)
+            ->when(
+                in_array($view, ['customer']),
 
-        $products = $this->fetchProducts($productsQuery, [$category], $page, $limit);
-        $total    = $this->countProducts($countQuery, [$category]);
+                fn($query) =>
+                    $query->where('visibility', '=', 'Visible')
+            )
+            ->count();
+
+        $products = $this->buildProducts($data);
 
         return $this->format($products, $total, $page, $limit);
     }
@@ -283,32 +243,31 @@ class Product extends Model
         int $page = 1, 
         int $limit = 20, 
         string $view = 'customer'
-    ): ?array {
+    ): array {
 
-        // Add Filtering Based On View
-        $condition = in_array($view, ['customer']) ? "AND visibility = 'Visible'" : "";  
+        $data = $this->table()
+            ->where('store_id', '=', $storeId)
+            ->when(
+                in_array($view, ['customer']),
 
-        $productsQuery = "
-            SELECT 
-                * 
-            FROM {$this->table}
-            WHERE 
-                store_id = ? 
-                {$condition} 
-            ORDER BY created_at DESC
-        ";
+                fn($query) =>
+                    $query->where('visibility', '=', 'Visible')
+            )
+            ->orderBy('created_at', 'DESC')
+            ->paginate($page, $limit)
+            ->get();
 
-        $countQuery = "
-            SELECT 
-                COUNT(*) 
-            FROM {$this->table} 
-            WHERE 
-                store_id = ? 
-                {$condition}
-        ";
+        $total = $this->table()
+            ->where('store_id', '=', $storeId)
+            ->when(
+                in_array($view, ['customer']),
 
-        $products = $this->fetchProducts($productsQuery, [$storeId], $page, $limit);
-        $total    = $this->countProducts($countQuery, [$storeId]);
+                fn($query) =>
+                    $query->where('visibility', '=', 'Visible')
+            )
+            ->count();
+
+        $products = $this->buildProducts($data);
 
         return $this->format($products, $total, $page, $limit);
     }
@@ -319,34 +278,33 @@ class Product extends Model
         int $page = 1, 
         int $limit = 20, 
         string $view = 'customer'
-    ): ?array {
+    ): array {
 
-        // Add Filtering Based On View
-        $condition = in_array($view, ['customer']) ? "AND visibility = 'Visible'" : ""; 
+        $data = $this->table()
+            ->where('store_id', '=', $storeId)
+            ->where('category', '=', $category)
+            ->when(
+                in_array($view, ['customer']),
 
-        $productsQuery = "
-            SELECT 
-                * 
-            FROM {$this->table} 
-            WHERE 
-                store_id = ? 
-                AND category = ? 
-                {$condition} 
-            ORDER BY created_at DESC
-        ";
+                fn($query) =>
+                    $query->where('visibility', '=', 'Visible')
+            )
+            ->orderBy('created_at', 'DESC')
+            ->paginate($page, $limit)
+            ->get();
 
-        $countQuery = "
-            SELECT 
-                COUNT(*) 
-            FROM {$this->table} 
-            WHERE 
-                store_id = ? 
-                AND category = ? 
-                {$condition}
-        ";
+        $total = $this->table()
+            ->where('store_id', '=', $storeId)
+            ->where('category', '=', $category)
+            ->when(
+                in_array($view, ['customer']),
 
-        $products = $this->fetchProducts($productsQuery, [$storeId, $category], $page, $limit);
-        $total    = $this->countProducts($countQuery, [$storeId, $category]);
+                fn($query) =>
+                    $query->where('visibility', '=', 'Visible')
+            )
+            ->count();
+
+        $products = $this->buildProducts($data);
 
         return $this->format($products, $total, $page, $limit);
     }
@@ -355,32 +313,31 @@ class Product extends Model
         int $page = 1, 
         int $limit = 20, 
         string $view = 'customer'
-    ): ?array {
+    ): array {
 
-        // Add Filtering Based On View
-        $condition = in_array($view, ['customer']) ? "AND visibility = 'Visible'" : ""; 
+        $data = $this->table()
+            ->where('created_at', '>=', 'NOW() - INTERVAL 7 DAY')
+            ->when(
+                in_array($view, ['customer']),
 
-        $productsQuery = "
-            SELECT 
-                * 
-            FROM {$this->table} 
-            WHERE 
-                created_at >= NOW() - INTERVAL 7 DAY 
-                {$condition} 
-            ORDER BY created_at DESC
-        ";
+                fn($query) =>
+                    $query->where('visibility', '=', 'Visible')
+            )
+            ->orderBy('created_at', 'DESC')
+            ->paginate($page, $limit)
+            ->get();
 
-        $countQuery = "
-            SELECT 
-                COUNT(*) 
-            FROM {$this->table} 
-            WHERE 
-                created_at >= NOW() - INTERVAL 7 DAY 
-                {$condition}
-        ";
+        $total = $this->table()
+            ->where('created_at', '>=', 'NOW() - INTERVAL 7 DAY')
+            ->when(
+                in_array($view, ['customer']),
 
-        $products = $this->fetchProducts($productsQuery, [], $page, $limit);
-        $total    = $this->countProducts($countQuery);
+                fn($query) =>
+                    $query->where('visibility', '=', 'Visible')
+            )
+            ->count();
+
+        $products = $this->buildProducts($data);
 
         return $this->format($products, $total, $page, $limit);
     }
@@ -389,68 +346,100 @@ class Product extends Model
         int $page = 1, 
         int $limit = 20, 
         string $view = 'customer'
-    ): ?array {
+    ): array {
 
-        // Add Filtering Based On View
-        $condition = in_array($view, ['customer']) ? "AND visibility = 'Visible'" : ""; 
+        $data = $this->table()
+            ->where('is_featured', '=', 'TRUE')
+            ->when(
+                in_array($view, ['customer']),
 
-        // Logic for featured products is now based on `is_featured` column of the products table and not by `storedId`.
-        $productsQuery = "
-            SELECT 
-                * 
-            FROM {$this->table} 
-            WHERE 
-                is_featured = TRUE 
-                {$condition} 
-            ORDER BY created_at DESC
-        ";
+                fn($query) =>
+                    $query->where('visibility', '=', 'Visible')
+            )
+            ->orderBy('created_at', 'DESC')
+            ->paginate($page, $limit)
+            ->get();
 
-        $countQuery = "
-            SELECT 
-                COUNT(*) 
-            FROM {$this->table} 
-            WHERE 
-                is_featured = TRUE 
-                {$condition}
-        ";
+        $total = $this->table()
+            ->where('is_featured', '=', 'TRUE')
+            ->when(
+                in_array($view, ['customer']),
 
-        $products = $this->fetchProducts($productsQuery, [], $page, $limit);
-        $total    = $this->countProducts($countQuery);
+                fn($query) =>
+                    $query->where('visibility', '=', 'Visible')
+            )
+            ->count();
+
+        $products = $this->buildProducts($data);
 
         return $this->format($products, $total, $page, $limit);
     }
 
     public function findTopSelling(
-        int $page = 1, 
+        int $page = 1,
         int $limit = 20
     ): ?array {
 
-        $productsQuery = "
-            SELECT 
-                p.*, 
-                SUM(oi.quantity) AS total_quantity_sold
-            FROM order_items oi
-            JOIN products p ON p.product_id = oi.product_id
-            GROUP BY oi.product_id
-            HAVING SUM(oi.quantity) > 100
-            ORDER BY total_quantity_sold DESC
-        ";
+        // =========================================
+        // TOP SELLING PRODUCTS QUERY
+        // =========================================
+        $data = $this->table('products AS p')
+            ->select([
+                'p.*',
+                'SUM(oi.quantity) AS total_quantity_sold',
+            ])
+            ->join(
+                'order_items AS oi',
+                'oi.product_id',
+                '=',
+                'p.product_id'
+            )
+            /*
+            ->select([
+                'p.*',
+                'SUM(oi.quantity) AS total_quantity_sold',
+            ])
+            */
+            ->groupBy('p.product_id')
+            ->having(
+                'SUM(oi.quantity)',
+                '>',
+                100
+            )
+            ->orderBy(
+                'total_quantity_sold',
+                'DESC'
+            )
+            ->paginate($page, $limit)
+            ->get();
 
-        $countQuery = "
-            SELECT 
-                COUNT(*) 
-            FROM (
-                SELECT product_id
-                FROM order_items
-                GROUP BY product_id
-                HAVING SUM(quantity) > 100
-            ) AS top_sellers
-        ";
+        $products = $this->buildProducts($data);
 
-        $products = $this->fetchProducts($productsQuery, [], $page, $limit);
-        $total    = $this->countProducts($countQuery);
+        // =========================================
+        // TOTAL TOP SELLING PRODUCTS
+        // =========================================
+        $topSellingProducts = $this->table('order_items')
+            ->select('product_id')
+            ->groupBy('product_id')
+            ->having(
+                'SUM(quantity)',
+                '>',
+                100
+            )
+            ->get();
 
-        return $this->format($products, $total, $page, $limit);
+        $total = count($topSellingProducts);
+
+        // =========================================
+        // FORMAT RESPONSE
+        // =========================================
+
+        return $this->format(
+            $products,
+            $total,
+            $page,
+            $limit
+        );
     }
 
     public function findByPriceRange(
@@ -459,32 +448,31 @@ class Product extends Model
         int $page = 1, 
         int $limit = 20, 
         string $view = 'customer'
-    ): ?array {
+    ): array {
 
-        // Add Filtering Based On View
-        $condition = in_array($view, ['customer']) ? "AND visibility = 'Visible'" : ""; 
+        $data = $this->table()
+            ->whereBetween('product_price', [$min, $max])
+            ->when(
+                in_array($view, ['customer']),
 
-        $productsQuery = "
-            SELECT 
-                * 
-            FROM {$this->table} 
-            WHERE 
-                product_price BETWEEN ? AND ? 
-                {$condition} 
-            ORDER BY product_price ASC
-        ";
+                fn($query) =>
+                    $query->where('visibility', '=', 'Visible')
+            )
+            ->orderBy('created_at', 'DESC')
+            ->paginate($page, $limit)
+            ->get();
 
-        $countQuery = "
-            SELECT 
-                COUNT(*) 
-            FROM {$this->table} 
-            WHERE 
-                product_price BETWEEN ? AND ? 
-                {$condition}
-        ";
+        $total = $this->table()
+            ->whereBetween('product_price', [$min, $max])
+            ->when(
+                in_array($view, ['customer']),
 
-        $products = $this->fetchProducts($productsQuery, [$min, $max], $page, $limit);
-        $total    = $this->countProducts($countQuery, [$min, $max]);
+                fn($query) =>
+                    $query->where('visibility', '=', 'Visible')
+            )
+            ->count();
+
+        $products = $this->buildProducts($data);
 
         return $this->format($products, $total, $page, $limit);
     }
@@ -494,32 +482,31 @@ class Product extends Model
         int $page = 1, 
         int $limit = 20, 
         string $view = 'customer'
-    ): ?array {
+    ): array {
 
-        // Add Filtering Based On View
-        $condition = in_array($view, ['customer']) ? "AND visibility = 'Visible'" : ""; 
+        $data = $this->table()
+            ->where('product_price', '>=', $min)
+            ->when(
+                in_array($view, ['customer']),
 
-        $productsQuery = "
-            SELECT 
-                * 
-            FROM {$this->table} 
-            WHERE 
-                product_price >= ? 
-                {$condition} 
-            ORDER BY product_price ASC
-        ";
+                fn($query) =>
+                    $query->where('visibility', '=', 'Visible')
+            )
+            ->orderBy('product_price', 'ASC')
+            ->paginate($page, $limit)
+            ->get();
 
-        $countQuery = "
-            SELECT 
-                COUNT(*) 
-            FROM {$this->table} 
-            WHERE 
-                product_price >= ? 
-                {$condition}
-        ";
+        $total = $this->table()
+            ->where('product_price', '>=', $min)
+            ->when(
+                in_array($view, ['customer']),
 
-        $products = $this->fetchProducts($productsQuery, [$min], $page, $limit);
-        $total    = $this->countProducts($countQuery, [$min]);
+                fn($query) =>
+                    $query->where('visibility', '=', 'Visible')
+            )
+            ->count();
+
+        $products = $this->buildProducts($data);
 
         return $this->format($products, $total, $page, $limit);
     }
@@ -529,32 +516,31 @@ class Product extends Model
         int $page = 1, 
         int $limit = 20, 
         string $view = 'customer'
-    ): ?array {
+    ): array {
 
-        // Add Filtering Based On View
-        $condition = in_array($view, ['customer']) ? "AND visibility = 'Visible'" : ""; 
+        $data = $this->table()
+            ->where('product_price', '<=', $max)
+            ->when(
+                in_array($view, ['customer']),
 
-        $productsQuery = "
-            SELECT 
-                * 
-            FROM {$this->table} 
-            WHERE 
-                product_price <= ? 
-                {$condition} 
-            ORDER BY product_price ASC
-        ";
+                fn($query) =>
+                    $query->where('visibility', '=', 'Visible')
+            )
+            ->orderBy('product_price', 'ASC')
+            ->paginate($page, $limit)
+            ->get();
 
-        $countQuery = "
-            SELECT 
-                COUNT(*) 
-            FROM {$this->table} 
-            WHERE 
-                product_price <= ? 
-                {$condition}
-        ";
+        $total = $this->table()
+            ->where('product_price', '<=', $max)
+            ->when(
+                in_array($view, ['customer']),
 
-        $products = $this->fetchProducts($productsQuery, [$max], $page, $limit);
-        $total    = $this->countProducts($countQuery, [$max]);
+                fn($query) =>
+                    $query->where('visibility', '=', 'Visible')
+            )
+            ->count();
+
+        $products = $this->buildProducts($data);
 
         return $this->format($products, $total, $page, $limit);
     }
@@ -563,62 +549,60 @@ class Product extends Model
         int $page = 1, 
         int $perCategory = 10, 
         string $view = 'customer'
-    ): ?array {
+    ): array {
 
-        // Add Filtering Based On View
-        $condition = in_array($view, ['customer']) ? "WHERE visibility = 'Visible'" : ""; 
+        $products = $this->table()
+            ->when(
+                in_array($view, ['customer']),
 
-        $productsQuery = "
-            SELECT 
-                * 
-            FROM {$this->table} 
-            {$condition} 
-            ORDER BY category ASC, created_at DESC 
-            LIMIT 1000
-        ";
-
-        $products = $this->queryAll($productsQuery);
+                fn($query) =>
+                    $query->where('visibility', '=', 'Visible')
+            )
+            ->orderBy('category', 'ASC')
+            ->orderBy('created_at', 'DESC')
+            ->limit(1000)
+            ->get();
 
         $productIds       = array_column($products, 'product_id');
         $mediaByProduct   = [];
         $ratingsByProduct = [];
 
         if (!empty($productIds)) {
+
             $placeholders = implode(',', array_fill(0, count($productIds), '?'));
 
             // ------------ FETCH ONE MEDIA PER PRODUCT ----------- //
-            $mediaQuery = "
-                SELECT 
-                    pm.*
-                FROM product_media pm
-                INNER JOIN (
-                    SELECT 
-                        product_id, MIN(media_id) AS first_media_id
-                    FROM product_media
-                    WHERE 
-                        product_id IN ($placeholders)
-                    GROUP BY product_id
-                ) first_media
-                ON pm.media_id = first_media.first_media_id
-            ";
+            $firstMedia = $this->table('product_media')
+                ->select([
+                    'product_id',
+                    'MIN(media_id) AS first_media_id'
+                ])
+                ->whereIn('product_id', $productIds)
+                ->groupBy(['product_id']);
 
-            $allMedia = $this->queryAll($mediaQuery, $productIds);
+            $allMedia = $this->table('product_media AS pm')
+                ->joinSub(
+                    $firstMedia,
+                    'first_media',
+                    'pm.media_id',
+                    '=',
+                    'first_media.first_media_id'
+                )
+                ->get();
 
             foreach ($allMedia as $media) {
                 $mediaByProduct[$media['product_id']][] = $media;
             }
 
-            $ratingsQuery = "
-                SELECT 
-                    product_id, AVG(rating) AS average_rating, 
-                    COUNT(*) AS rating_count
-                FROM reviews
-                WHERE 
-                    product_id IN ($placeholders)
-                GROUP BY product_id
-            ";
-
-            $allRatings = $this->queryAll($ratingsQuery, $productIds);
+            $allRatings = $this->table('reviews')
+                ->select([
+                    'product_id',
+                    'AVG(rating) AS average_rating',
+                    'COUNT(*) AS rating_count',
+                ])
+                ->whereIn('product_id', $productIds)
+                ->groupBy(['product_id'])
+                ->get();
 
             foreach ($allRatings as $rating) {
 
@@ -665,47 +649,47 @@ class Product extends Model
         int $productId
     ): ?array {
 
-        $productQuery = "
-            SELECT * FROM {$this->table} 
-            WHERE 
-                product_id = ?
-        ";
-
         // ----------- Fetch Product ----------- //
-        $product = $this->queryOne($productQuery, [$productId]);
+        $product = $this->table()
+            ->where('product_id', '=', $productId)
+            ->first();
 
         if ($product === false) {
             return false;
         }
 
         // ----------- Attach Media ----------- //
-        $mediaQuery = "
-            SELECT * FROM product_media 
-            WHERE 
-                product_id = ?
-        ";
-
-        $product['media'] = $this->queryAll($mediaQuery, [$productId]);
+        $product['media'] = $this->table('product_media')
+            ->where('product_id', '=', $productId)
+            ->get();
 
         // ----------- Attach Reviews ----------- //
-        $reviewsQuery = "
-            SELECT 
-                r.review_id,
-                r.comment,
-                r.rating,
-                r.created_at,
-                u.user_id,
-                u.firstname AS first_name,
-                u.lastname AS last_name,
-                u.avatar
-            FROM reviews r
-            JOIN users u ON r.user_id = u.user_id
-            WHERE 
-                r.product_id = ?
-            ORDER BY r.created_at DESC
-        ";
+        $reviews = $this->table('reviews r')
+            ->select([
+                'r.review_id',
+                'r.comment',
+                'r.rating',
+                'r.created_at',
+                'u.user_id',
+                'u.firstname AS first_name',
+                'u.lastname AS last_name',
+                'u.avatar',
+            ])
+            ->join(
+                'users u',
+                'r.user_id',
+                '=',
+                'u.user_id',
+            )
+            ->when(
+                $productId !== null,
 
-        $reviews = $this->queryAll($reviewsQuery, [$productId]);
+                function ($query) use ($productId) {
+                    $query->where('r.product_id', '=', $productId);
+                }
+            )
+            ->orderBy('r.created_at', 'DESC')
+            ->get();
 
         $totalRating = 0;
         $ratingCount = 0;
@@ -742,36 +726,36 @@ class Product extends Model
         int $page = 1, 
         int $limit = 20, 
         string $view = 'customer'
-    ): ?array {
+    ): array {
 
         // Add Filtering Based On View
-        $condition = in_array($view, ['customer']) ? "AND visibility = 'Visible'" : ""; 
-
         $likeQuery = '%' . $query . '%';
 
-        $productsQuery = "
-            SELECT 
-                * 
-            FROM {$this->table} 
-            WHERE 
-                product_name LIKE ? 
-                OR product_description LIKE ? 
-                {$condition}
-            ORDER BY created_at DESC
-        ";
+        $data = $this->table()
+            ->whereLike('product_name', $likeQuery)
+            ->orWhere('product_description', 'LIKE', $likeQuery)
+            ->when(
+                in_array($view, ['customer']),
 
-        $countQuery = "
-            SELECT 
-                COUNT(*) 
-            FROM {$this->table} 
-            WHERE 
-                product_name LIKE ? 
-                OR product_description LIKE ? 
-                {$condition}
-        ";
+                fn($query) =>
+                    $query->where('visibility', '=', 'Visible')
+            )
+            ->orderBy('created_at', 'DESC')
+            ->paginate($page, $limit)
+            ->get();
 
-        $products = $this->fetchProducts($productsQuery, [$likeQuery, $likeQuery], $page, $limit);
-        $total    = $this->countProducts($countQuery, [$likeQuery, $likeQuery]);
+        $total = $this->table()
+            ->whereLike('product_name', $likeQuery)
+            ->orWhere('product_description', 'LIKE', $likeQuery)
+            ->when(
+                in_array($view, ['customer']),
+
+                fn($query) =>
+                    $query->where('visibility', '=', 'Visible')
+            )
+            ->count();
+
+        $products = $this->buildProducts($data);
 
         return $this->format($products, $total, $page, $limit);
     }
@@ -781,32 +765,31 @@ class Product extends Model
         int $page = 1, 
         int $limit = 20, 
         string $view = 'customer'
-    ): ?array {
+    ): array {
 
-        // Add Filtering Based On View
-        $condition = in_array($view, ['customer']) ? "AND visibility = 'Visible'" : ""; 
+        $data = $this->table()
+            ->where('color', '=', $color)
+            ->when(
+                in_array($view, ['customer']),
 
-        $productsQuery = "
-            SELECT 
-                * 
-            FROM {$this->table} 
-            WHERE 
-                color = ? 
-                {$condition} 
-            ORDER BY created_at DESC
-        ";
+                fn($query) =>
+                    $query->where('visibility', '=', 'Visible')
+            )
+            ->orderBy('created_at', 'DESC')
+            ->paginate($page, $limit)
+            ->get();
 
-        $countQuery = "
-            SELECT 
-                COUNT(*) 
-            FROM {$this->table}
-            WHERE 
-                color = ? 
-                {$condition}
-        ";
+        $total = $this->table()
+            ->where('color', '=', $color)
+            ->when(
+                in_array($view, ['customer']),
 
-        $products = $this->fetchProducts($productsQuery, [$color], $page, $limit);
-        $total    = $this->countProducts($countQuery, [$color]);
+                fn($query) =>
+                    $query->where('visibility', '=', 'Visible')
+            )
+            ->count();
+
+        $products = $this->buildProducts($data);
 
         return $this->format($products, $total, $page, $limit);
     }
@@ -817,34 +800,33 @@ class Product extends Model
         int $page = 1, 
         int $limit = 20, 
         string $view = 'customer'
-    ): ?array {
+    ): array {
 
-        // Add Filtering Based On View
-        $condition = in_array($view, ['customer']) ? "AND visibility = 'Visible'" : ""; 
+        $data = $this->table()
+            ->where('store_id', '=', $storeId)
+            ->where('color', '=', $color)
+            ->when(
+                in_array($view, ['customer']),
 
-        $productsQuery = "
-            SELECT 
-                * 
-            FROM {$this->table} 
-            WHERE 
-                store_id = ? 
-                AND color = ? 
-                {$condition} 
-            ORDER BY created_at DESC
-        ";
+                fn($query) =>
+                    $query->where('visibility', '=', 'Visible')
+            )
+            ->orderBy('created_at', 'DESC')
+            ->paginate($page, $limit)
+            ->get();
 
-        $countQuery = "
-            SELECT 
-                COUNT(*) 
-            FROM {$this->table} 
-            WHERE 
-                store_id = ? 
-                AND color = ? 
-                {$condition}
-        ";
+        $total = $this->table()
+            ->where('store_id', '=', $storeId)
+            ->where('color', '=', $color)
+            ->when(
+                in_array($view, ['customer']),
 
-        $products = $this->fetchProducts($productsQuery, [$storeId, $color], $page, $limit);
-        $total    = $this->countProducts($countQuery, [$storeId, $color]);
+                fn($query) =>
+                    $query->where('visibility', '=', 'Visible')
+            )
+            ->count();
+
+        $products = $this->buildProducts($data);
 
         return $this->format($products, $total, $page, $limit);
     }
@@ -855,93 +837,77 @@ class Product extends Model
         int $page = 1, 
         int $limit = 20, 
         string $view = 'customer'
-    ): ?array {
+    ): array {
 
-        // Add Filtering Based On View
-        $condition = in_array($view, ['customer']) ? "AND visibility = 'Visible'" : ""; 
+        $data = $this->table()
+            ->where('category', '=', $category)
+            ->whereNotIn('product_id', [ $productId ])
+            ->when(
+                in_array($view, ['customer']),
 
-        $productsQuery = "
-            SELECT 
-                * 
-            FROM {$this->table} 
-            WHERE 
-                category = ? 
-                AND product_id != ? 
-                {$condition} 
-            ORDER BY created_at DESC
-        ";
+                fn($query) =>
+                    $query->where('visibility', '=', 'Visible')
+            )
+            ->orderBy('created_at', 'DESC')
+            ->paginate($page, $limit)
+            ->get();
 
-        $countQuery = "
-            SELECT 
-                COUNT(*) 
-            FROM {$this->table} 
-            WHERE 
-                category = ? 
-                AND product_id != ? 
-                {$condition}
-        ";
+        $total = $this->table()
+            ->where('category', '=', $category)
+            ->whereNotIn('product_id', [ $productId ])
+            ->when(
+                in_array($view, ['customer']),
 
-        $products = $this->fetchProducts($productsQuery, [$category, $productId], $page, $limit);
-        $total    = $this->countProducts($countQuery, [$category, $productId]);
+                fn($query) =>
+                    $query->where('visibility', '=', 'Visible')
+            )
+            ->count();
+
+        $products = $this->buildProducts($data);
 
         return $this->format($products, $total, $page, $limit);
     }
 
     public function allColors(): ?array
     {
-        $sql = "
-            SELECT DISTINCT 
-                color 
-            FROM {$this->table} 
-            WHERE 
-                color IS NOT NULL 
-                AND color != '' 
-            ORDER BY color ASC
-        ";
-
-        return $this->queryAll($sql);
+        return $this->table()
+            ->select([
+                'color',
+            ])
+            ->distinct()
+            ->whereNotNull('color')
+            ->orderBy('color', 'ASC')
+            ->get();
     }
 
-    public function groupByColor(
+   public function groupByColor(
         ?int $storeId = null
     ): ?array {
 
-        if ($storeId === null) {
-
-            // Global View: Show All Distinct Product Colors
-            $query = "
-                SELECT 
-                    p.color,
-                    COUNT(p.product_id) AS product_count
-                FROM {$this->table} p
-                WHERE 
-                    p.color IS NOT NULL 
-                    AND p.color != ''
-                GROUP BY p.color
-                ORDER BY p.color ASC
-            ";
-
-            return $this->queryAll($query);
-
-        } else {
-
-            // Store View: Only Colors That Exist In This Store
-            $query = "
-                SELECT 
-                    p.color,
-                    COUNT(p.product_id) AS product_count
-                FROM {$this->table} p
-                WHERE 
-                    p.color IS NOT NULL 
-                    AND p.color != ''
-                    AND p.store_id = ?
-                GROUP BY p.color
-                HAVING product_count > 0
-                ORDER BY p.color ASC
-            ";
-
-            return $this->queryAll($query, [$storeId]);
-        }
+        return $this->table('products p')
+            ->select([
+                'p.color',
+                'COUNT(p.product_id) AS product_count',
+            ])
+            ->whereNotNull('p.color')
+            ->when(
+                $storeId !== null,
+                function ($query) use ($storeId) {
+                    $query->where(
+                        'p.store_id',
+                        '=',
+                        $storeId
+                    );
+                }
+            )
+            ->groupBy([
+                'p.color',
+            ])
+            ->orderBy(
+                'p.color',
+                'ASC'
+            )
+            ->get();
     }
 
     public function decrementStock(
@@ -949,7 +915,7 @@ class Product extends Model
         int $quantity
     ): bool {
 
-        $product = $this->query()
+        $product = $this->table()
             ->select(['stock'])
             ->where('product_id', '=', $productId)
             ->first();
@@ -961,7 +927,7 @@ class Product extends Model
         $currentQty = (int)$product['stock'];
         $newQty     = max(0, $currentQty - $quantity);
 
-        return $this->query()
+        return $this->table()
             ->where('product_id', '=', $productId)
             ->update(['stock' => $newQty]);
     }
@@ -973,55 +939,61 @@ class Product extends Model
         int $rating
     ): bool {
 
-        $reviewQuery = "
-            INSERT INTO reviews (user_id, product_id, comment, rating) 
-            VALUES (?, ?, ?, ?)
-        ";
-
-        return $this->executeQuery(
-            $reviewQuery,
-            [$userId, $productId, $review, $rating]
-        );
+        return $this->table('reviews')
+            ->insert([
+                'user_id'    => $userId,
+                'product_id' => $productId,
+                'comment'    => $comment,
+                'rating'     => $rating
+            ]);
     }
 
     public function countProductsByType(
-        ?int $userId = null, 
-        ?int $storeId = null, 
-        ?string $status = null, 
+        ?int $userId = null,
+        ?int $storeId = null,
+        ?string $status = null,
         string $role = 'vendor'
     ): int {
 
-        $sql = "
-            SELECT 
-                COUNT(*)
-            FROM {$this->table} 
-            WHERE 
-                1
-        ";
-
-        $params = [];
-
-        // Vendor Mode: Restrict By Vendor's User ID
-        if ($role === 'vendor' && !is_null($userId)) {
-            $sql .= " AND store_id IN (SELECT store_id FROM stores WHERE user_id = ?)";
-            $params[] = $userId;
-        }
-
-        // Optional Store Filter
-        if (!is_null($storeId)) {
-            $sql .= " AND store_id = ?";
-            $params[] = $storeId;
-        }
-
-        // Optional Status/Visibility Filter
-        if (!is_null($status)) {
-            $sql .= " AND visibility = ?";
-            $params[] = $status;
-        }
-
-        $total = $this->fetchColumn($sql, $params);
-
-        return (int) ($total !== false ? $total : 0);
+        return $this->table('products AS p')
+            ->when(
+                $role === 'vendor' && $userId !== null,
+                function ($query) use ($userId) {
+                    $query
+                        ->join(
+                            'stores AS s',
+                            's.store_id',
+                            '=',
+                            'p.store_id'
+                        )
+                        ->where(
+                            's.user_id',
+                            '=',
+                            $userId
+                        );
+                }
+            )
+            ->when(
+                $storeId !== null,
+                function ($query) use ($storeId) {
+                    $query->where(
+                        'p.store_id',
+                        '=',
+                        $storeId
+                    );
+                }
+            )
+            ->when(
+                $status !== null,
+                function ($query) use ($status) {
+                    $query->where(
+                        'p.visibility',
+                        '=',
+                        $status
+                    );
+                }
+            )
+            ->count();
     }
 
     public function getVendorProductStats(
@@ -1051,34 +1023,58 @@ class Product extends Model
      * @return int
      */
     public function countReviewsByVendor(
-        ?int $userId = null, 
+        ?int $userId = null,
         ?int $storeId = null
     ): int {
 
-        if (is_null($userId)) {
+        if ($userId === null) {
             return 0;
         }
 
-        $sql = "
-            SELECT 
-                COALESCE(COUNT(r.review_id), 0) AS total_reviews
-            FROM reviews AS r
-            INNER JOIN products AS p ON p.product_id = r.product_id
-            INNER JOIN stores AS s ON s.store_id = p.store_id
-            WHERE 
-                s.user_id = ?
-        ";
+        return $this->table('reviews AS r')
+            ->join(
+                'products AS p',
+                'p.product_id',
+                '=',
+                'r.product_id'
+            )
+            ->join(
+                'stores AS s',
+                's.store_id',
+                '=',
+                'p.store_id'
+            )
+            ->where(
+                's.user_id',
+                '=',
+                $userId
+            )
+            ->when(
+                $storeId !== null,
+                function ($query) use ($storeId) {
+                    $query->where(
+                        's.store_id',
+                        '=',
+                        $storeId
+                    );
+                }
+            )
+            ->count('r.review_id');
+    }
 
-        $params = [$userId];
+    private function format(
+        array $data, 
+        int $total, 
+        int $page, 
+        int $limit
+    ): array {
 
-        // ✅ Filter By Specific Store If Provided
-        if (!is_null($storeId)) {
-            $sql .= " AND s.store_id = ?";
-            $params[] = $storeId;
-        }
-
-        $result = $this->fetchColumn($sql, $params);
-
-        return (int) ($result !== false ? $result : 0);
+        return [
+            'products'    => $data,
+            'total'       => $total,
+            'page'        => $page,
+            'per_page'    =>$limit,
+            'total_pages' => ceil($total /$limit),
+        ];
     }
 }

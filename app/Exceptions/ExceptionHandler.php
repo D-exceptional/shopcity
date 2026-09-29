@@ -370,6 +370,26 @@ class ExceptionHandler
             return 404;
         }
 
+        if ($exception instanceof RouteNameNotFoundException) {
+            return 404;
+        }
+
+        if ($exception instanceof DuplicateRouteException) {
+            return $exception->status;
+        }
+
+        if ($exception instanceof DuplicateRouteNameException) {
+            return $exception->status;
+        }
+
+        if ($exception instanceof InvalidRoutePatternException) {
+            return $exception->status;
+        }
+
+        if ($exception instanceof MethodNotAllowedException) {
+            return $exception->status;
+        }
+
         return 500;
     }
 

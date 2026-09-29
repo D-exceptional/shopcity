@@ -30,7 +30,7 @@ class CheckoutPayment extends Model
 
         $reference = $this->generateReference();
 
-        return $this->query()
+        return $this->table()
             ->insert([
                 'order_id'  => $orderId,
                 'user_id'   => $userId,

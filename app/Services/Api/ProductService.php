@@ -10,6 +10,7 @@ use App\Events\Product\ReviewCreated;
 use App\Events\EventDispatcher;
 use App\Support\TextManager;
 use App\Media\CloudinaryManager;
+use App\Database\Database;
 use App\Models\Product;
 use App\Models\ProductMedia;
 use App\Models\Link;
@@ -24,12 +25,13 @@ class ProductService
         protected EventDispatcher $eventDispatcher,
         protected TextManager $textManager, 
         protected CloudinaryManager $cloudinaryManager,
+        protected Database $dbClient,
         protected Product $productModel, 
         protected ProductMedia $productMedia, 
         protected Link $linkModel, 
         protected User $userModel, 
     ) {
-        $this->baseUrl = $appUrl;
+        $this->baseUrl = config('app.url');
     }
 
     public function create(
@@ -43,12 +45,11 @@ class ProductService
         string $color, 
         array $media, 
         int $storeId
-    ): Result  {
+    ): Result {
 
         $name = $this->textManager->formatTitle($name);
 
-        // Create Product
-        $productId = $this->productModel->create(
+        $productId = $this->dbClient->transaction(function () use (
             $name,
             $description,
             $category,
@@ -59,19 +60,47 @@ class ProductService
             $color,
             $media,
             $storeId
-        );
+        ) {
 
-        if (!$productId) {
-            return $this->result->error('Failed to upload product', 500);
-        }
+           // Create Product
+            $productId = $this->productModel->create(
+                $name,
+                $description,
+                $category,
+                $subcategory,
+                $price,
+                $slash,
+                $stock,
+                $color,
+                $media,
+                $storeId
+            );
 
-        // Attach Product Media
-        foreach ($media ?? [] as $url) {
-            if (!empty($url)) {
-                $type = $this->cloudinaryManager->detect($url);
-                $this->productMedia->create($url, $type, $productId);
+            if (!$productId) {
+                throw new \Exception('Failed to create product');
             }
-        }
+
+            // Upload Product Media
+            if (empty($media)) {
+                throw new \Exception('No product media found');
+            }
+
+            foreach ($media as $url) {
+
+                if (!empty($url)) {
+
+                    $type = $this->cloudinaryManager->detect($url);
+
+                    $mediaUploaded = $this->productMedia->create($url, $type, $productId);
+
+                    if (!$mediaUploaded) {
+                        throw new \Exception("Failed to save product media: {$url}");
+                    }
+                }
+            }
+
+            return $productId;
+        });
 
         $this->eventDispatcher->dispatch(
             new ProductCreated(
@@ -97,20 +126,7 @@ class ProductService
         int $productId
     ): Result {
 
-        $existing = $this->productModel->find($productId);
-        if ($existing === false) {
-            return $this->result->error('Product not found', 404);
-        }
-
-        if ($price < 1000) {
-            return $this->result->error('Invalid amount. Enter a valid amount...starting from 1,000 and above', 400);
-        }
-
-        if ($stock <= 1) {
-            return $this->result->error('Stock count is too low', 400);
-        }
-
-        $updated = $this->productModel->update(
+        $this->dbClient->transaction(function () use (
             $name, 
             $description, 
             $category, 
@@ -123,39 +139,76 @@ class ProductService
             $reselling, 
             $commission, 
             $productId
-        );
+        ) {
 
-        if ($updated === false) {
-            return $this->result->error('Failed to update product', 500);
-        }
+            $product = $this->productModel->find($productId, true);
+            if (!$product) {
+                throw new \Exception("Product #{$productId} not found");
+            }
 
-        // Create Affiliate Links If Enabled
-        if ($reselling === 'enabled') {
+            if ($price < 1000) {
+                throw new \Exception("Invalid amount. Enter a valid amount...starting from 1,000 and above");
+            }
 
-            $affiliates = $this->userModel->allByRole('Affiliate');
-            foreach ($affiliates as $affiliate) {
+            if ($stock <= 1) {
+                throw new \Exception("Stock count is too low");
+            }
 
-                $affiliateId = $affiliate['user_id'];
+            $productUpdated = $this->productModel->update(
+                $name, 
+                $description, 
+                $category, 
+                $subcategory, 
+                $price, 
+                $slash, 
+                $stock, 
+                $color, 
+                $visibility, 
+                $reselling, 
+                $commission, 
+                $productId
+            );
 
-                $link = $this->linkModel->findByUser($productId, $affiliateId);
-                if ($link === false) {
+            if (!$productUpdated) {
+                throw new \Exception("Failed to update product #{$productId}");
+            }
 
-                    // Generate Links
-                    $shortCode = $this->linkModel->generateCode();
-                    $shortLink = "{$this->baseUrl}/p/{$shortCode}";                           // Example: https://mysite.com/p/asX56yXC
-                    $longLink  = "{$this->baseUrl}/product/{$productId}/ref/{$affiliateId}"; // Example: https://mysite.com/product/22/ref/10
+            // Create Affiliate Links If Enabled
+            if ($reselling === 'enabled') {
 
-                    // Create Link
-                    $this->linkModel->create($productId, $affiliateId, $shortLink, $longLink, $shortCode, 'Active');
+                $affiliates = $this->userModel->allByRole('Affiliate');
+
+                if (!empty($affiliates)) {
+
+                    foreach ($affiliates as $affiliate) {
+
+                        $affiliateId = $affiliate['user_id'];
+
+                        $linkExist = $this->linkModel->findByUser($productId, $affiliateId);
+                        if (!$linkExist) {
+
+                            // Generate Links
+                            $shortCode = $this->linkModel->generateCode();
+                            $shortLink = "{$this->baseUrl}/p/{$shortCode}";                           // Example: https://mysite.com/p/asX56yXC
+                            $longLink  = "{$this->baseUrl}/product/{$productId}/ref/{$affiliateId}"; // Example: https://mysite.com/product/22/ref/10
+
+                            // Create Link
+                            $linkCreated = $this->linkModel->create($productId, $affiliateId, $shortLink, $longLink, $shortCode, 'Active');
+                            if (!$linkCreated) {
+                                throw new \Exception("Failed to create product link for user: #{$affiliateId}");
+                            }
+                        }
+                    }
+                }
+
+            } else {
+
+                $linksDeleted = $this->linkModel->deleteAll($productId);
+                if (!$linksDeleted) {
+                    throw new \Exception("Failed to delete stale product links for product: #{$productId}");
                 }
             }
-        } else {
-
-            $deleted = $this->linkModel->deleteAll($productId);
-            if ($deleted === false) {
-                return $this->result->error('Failed to delete stale product links', 500);
-            }
-        }
+        });
 
         return $this->result->success('Product updated successfully');
     }
@@ -166,20 +219,27 @@ class ProductService
         int $productId
     ): Result {
 
-        $existing = $this->productModel->find($productId);
-        if ($existing === false) {
-            return $this->result->error('Product not found', 404);
-        }
-
-        $updated = $this->productModel->metadata( 
+        $this->dbClient->transaction(function () use (
             $visibility, 
             $isFeatured,
             $productId
-        );
+        ) {
 
-        if ($updated === false) {
-            return $this->result->error('Failed to update product metadata', 500);
-        }
+            $product = $this->productModel->find($productId, true);
+            if (!$product) {
+                throw new \Exception("Product #{$productId} not found");
+            }
+
+            $updated = $this->productModel->metadata( 
+                $visibility, 
+                $isFeatured,
+                $productId
+            );
+
+            if (!$updated) {
+                throw new \Exception("Failed to update product metadata for product: #{$productId}");
+            }
+        });
 
         return $this->result->success('Product metadata updated successfully');
     }

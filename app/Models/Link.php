@@ -17,7 +17,7 @@ class Link extends Model
         string $status
     ): bool {
 
-        return $this->query()
+        return $this->table()
             ->insert([
                 'product_id'  => $productId,
                 'user_id'     => $userId,
@@ -32,7 +32,7 @@ class Link extends Model
         int $productId
     ): ?array {
 
-        return $this->query()
+        return $this->table()
             ->where('product_id', '=', $productId)
             ->get();
     }
@@ -41,7 +41,7 @@ class Link extends Model
         int $linkId
     ): ?array {
 
-        return $this->query()
+        return $this->table()
             ->where('link_id', '=', $linkId)
             ->first();
     }
@@ -51,9 +51,10 @@ class Link extends Model
         int $userId
     ): ?array {
 
-        return $this->query()
+        return $this->table()
             ->where('product_id', '=', $productId)
             ->where('user_id', '=', $userId)
+            ->lockForUpdate()
             ->first();
     }
 
@@ -62,7 +63,7 @@ class Link extends Model
         string $status
     ): bool {
 
-        return $this->query()
+        return $this->table()
             ->where('product_id', '=', $productId)
             ->update(['link_status' => $status]);
     }
@@ -72,7 +73,7 @@ class Link extends Model
         string $status
     ): bool {
 
-        return $this->query()
+        return $this->table()
             ->where('link_id', '=', $linkId)
             ->update(['link_status' => $status]);
     }
@@ -81,7 +82,7 @@ class Link extends Model
         int $productId
     ): bool {
 
-        return $this->query()
+        return $this->table()
             ->where('product_id', '=', $productId)
             ->delete();
     }
@@ -90,7 +91,7 @@ class Link extends Model
         int $linkId
     ): bool {
 
-        return $this->query()
+        return $this->table()
             ->where('link_id', '=', $linkId)
             ->delete();
     }
@@ -99,7 +100,7 @@ class Link extends Model
         ?int $productId = null
     ): int {
 
-        return $this->query()
+        return $this->table()
             ->when(
                 $productId
                 && !is_null($productId),

@@ -20,7 +20,7 @@ class Store extends Model
         int $userId
     ): int {
 
-        $storeId = $this->query()
+        $storeId = $this->table()
             ->insertGetId([
                 'store_name'        => $name,
                 'store_avatar'      => $avatar,
@@ -49,7 +49,7 @@ class Store extends Model
         int $storeId
     ): bool {
 
-        return $this->query()
+        return $this->table()
             ->where('store_id', '=', $storeId)
             ->update([
                 'store_name'        => $name,
@@ -82,7 +82,7 @@ class Store extends Model
         int $storeId
     ): ?string {
 
-        $result = $this->query()
+        $result = $this->table()
             ->select(['store_avatar'])
             ->where('store_id', '=', $storeId)
             ->first();
@@ -95,7 +95,7 @@ class Store extends Model
         int $storeId
     ): bool {
 
-        return $this->query()
+        return $this->table()
             ->where('store_id', '=', $storeId)
             ->update(['store_avatar' => $avatar]);
     }
@@ -105,7 +105,7 @@ class Store extends Model
         int $storeId
     ): bool {
 
-        return $this->query()
+        return $this->table()
             ->where('store_id', '=', $storeId)
             ->update(['store_status' => $status]);
     }
@@ -114,7 +114,7 @@ class Store extends Model
         int $storeId
     ): bool {
 
-        return $this->query()
+        return $this->table()
             ->where('store_id', '=', $storeId)
             ->delete();
     }
@@ -123,7 +123,7 @@ class Store extends Model
         int $storeId
     ): ?int {
 
-        $result = $this->query()
+        $result = $this->table()
             ->select(['user_id'])
             ->where('store_id', '=', $storeId)
             ->first();

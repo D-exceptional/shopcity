@@ -4,24 +4,9 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use PDO;
-
 class Wallet extends Model
 {
     protected string $table = 'withdrawals';
-
-    public function generateReference(
-        string $type = 'Topup', 
-        string $identifier = 'SYS'
-    ): string {
-
-        $prefix = 'PAY';
-        $type   = strtoupper(substr($type, 0, 3));
-        $date   = date('ymd');
-        $random = strtoupper(bin2hex(random_bytes(4)));
-
-        return "{$prefix}-{$type}-{$date}-{$random}-{$identifier}";
-    }
 
     public function createDetails(
         int $account, 
@@ -31,15 +16,14 @@ class Wallet extends Model
         int $userId
     ): bool {
 
-        $createQuery = "
-           INSERT INTO bank_details (account_number, bank_name, bank_code, currency_code, user_id) 
-           VALUES (?, ?, ?, ?, ?)
-        ";
-
-        return $this->executeQuery(
-            $createQuery, 
-            [$account, $bank, $code, $currency, $userId]
-        );
+        return $this->table('bank_details')
+            ->insert([
+                'account_number' => $account,
+                'bank_name'      => $bank,
+                'bank_code'      => $code,
+                'currency_code'  => $currency,
+                'user_id'        => $userId
+            ]);
     }
 
     public function updateDetails(
@@ -49,60 +33,51 @@ class Wallet extends Model
         int $userId
     ): bool {
 
-        $updateQuery = "
-            UPDATE bank_details 
-            SET 
-                account_number = ?, bank_name = ?, bank_code = ? 
-            WHERE 
-                user_id = ?
-        ";
-
-        return $this->executeQuery(
-            $updateQuery, 
-            [$account, $bank, $code, $userId]
-        );
+        return $this->table('bank_details')
+            ->where('user_id', '=', $userId)
+            ->update([
+                'account_number' => $account,
+                'bank_name'      => $bank,
+                'bank_code'      => $code,
+            ]);
     }
 
     public function checktWallet(
         string $table, 
         int $userId
-    ): int {
+    ): bool {
 
-        $checkQuery = "
-            SELECT 
-                * 
-            FROM {$table} 
-            WHERE 
-                user_id = ?
-        ";
+        $result = $this->table($table)
+            ->where('user_id', '=', $userId)
+            ->first();
 
-        $result = $this->fetchColumn($checkQuery, [$userId]);
-
-        return $result > 0;
+        return !is_null($result);
     }
 
     public function createWallet(
-        string $type, 
-        float $amount, 
+        string $type,
+        float $amount,
         int $userId
-    ): void {
+    ): bool {
 
-        $tables = ($type === 'Customer') 
-            ? ['wallet_shopping'] 
+        $tables = ($type === 'Customer')
+            ? ['wallet_shopping']
             : ['wallet_payout', 'wallet_payout_backup'];
 
         foreach ($tables as $table) {
 
-            $createQuery = "
-                INSERT INTO {$table} (wallet_amount, user_id) 
-                VALUES (?, ?)
-            ";
+            $walletCreated = $this->table($table)
+                ->insert([
+                    'wallet_amount' => $amount,
+                    'user_id'       => $userId
+                ]);
 
-            $this->executeQuery(
-                $createQuery, 
-                [$amount, $userId]
-            );
+            if (!$walletCreated) {
+                return false;
+            }
         }
+
+        return true;
     }
 
     public function createPayment(
@@ -114,17 +89,30 @@ class Wallet extends Model
         // Generate Reference
         $reference = $this->generateReference('Topup');
 
-        $createQuery = "
-            INSERT INTO topups (user_id, amount, reference, currency) 
-            VALUES (?, ?, ?, ?)
-        ";
+        $paymentCreated = $this->table('topups')
+            ->insert([
+                'user_id'   => $userId,
+                'amount'    => $amount,
+                'reference' => $reference,
+                'currency'  => $currency
+            ]);
 
-        $this->executeQuery(
-            $createQuery, 
-            [$userId, $amount, $reference, $currency]
-        );
+        if (!$paymentCreated) {
+            throw new \Exception('Failed to create payment record');
+        }
 
         return $reference;
+    }
+
+    public function getWalletForUpdate(
+        string $table,
+        int $userId
+    ): ?array {
+
+        return $this->table($table)
+            ->where('user_id', '=', $userId)
+            ->lockForUpdate()
+            ->first();
     }
 
     public function creditWallet(
@@ -133,18 +121,16 @@ class Wallet extends Model
         int $userId
     ): bool {
 
-        $creditQuery = "
-            UPDATE {$table} 
-            SET 
-                wallet_amount = wallet_amount + ? 
-            WHERE 
-                user_id = ?
-        ";
+        $wallet = $this->getWalletForUpdate($table, $userId);
+        $column = $wallet['wallet_amount'];
 
-        return $this->executeQuery(
-            $creditQuery, 
-            [$amount, $userId]
-        );
+        if (!$wallet) {
+            throw new \Exception('Wallet not found.');
+        }
+
+        return $this->table($table)
+            ->where('user_id', '=', $userId)
+            ->increment($column, $amount);
     }
 
     public function debitWallet(
@@ -153,48 +139,44 @@ class Wallet extends Model
         int $userId
     ): bool {
 
-        $debitQuery = "
-            UPDATE {$table} 
-            SET 
-                wallet_amount = CASE 
-                    WHEN wallet_amount >= ? THEN wallet_amount - ? 
-                ELSE wallet_amount 
-            END
-            WHERE 
-                user_id = ?
-        ";
+        $wallet = $this->getWalletForUpdate($table, $userId);
+        $column = $wallet['wallet_amount'];
 
-        return $this->executeQuery(
-            $debitQuery, 
-            [$amount, $amount, $userId]
-        );
+        if (!$wallet) {
+            throw new \Exception('Wallet not found.');
+        }
+
+        if ($wallet[$column] < $amount) {
+            throw new \Exception('Insufficient wallet balance.');
+        }
+
+        return $this->table($table)
+            ->where('user_id', '=', $userId)
+            ->decrement($column, $amount);
     }
 
     public function redeemFunds(
         int $userId
-    ): bool {
+    ): ?float {
 
         // Fetch Current Redeemable Balance
-        $fetchQuery = "
-            SELECT 
-                wallet_amount 
-            FROM wallet_savings 
-            WHERE 
-                user_id = ?
-        ";
+        $table  = 'wallet_savings';
+        $column = 'wallet_amount';
 
-        $amount = $this->fetchColumn($fetchQuery, [$userId]);
+        $wallet = $this->getWalletForUpdate($table, $userId);
+
+        if (!$wallet) {
+            throw new \Exception('Wallet not found.');
+        }
+
+        $amount = $wallet[$column];
 
         // Reset Wallet
-        $resetQuery = "
-            UPDATE wallet_savings 
-            SET 
-                wallet_amount = 0 
-            WHERE 
-                user_id = ?
-        ";
-
-        $this->executeQuery($resetQuery, [$userId]);
+        $this->table($table)
+            ->where('user_id', '=', $userId)
+            ->update([
+                $column => 0,
+            ]);
 
         // Return Amount To Caller
         return $amount;
@@ -211,15 +193,15 @@ class Wallet extends Model
         // Generate Reference
         $reference = $this->generateReference('Withdraw');
 
-        $requestQuery = "
-            INSERT INTO withdrawals (amount, bank, account, reference, narration, user_id) 
-            VALUES (?, ?, ?, ?, ?, ?)
-        ";
-
-        return $this->executeQuery(
-            $requestQuery, 
-            [$amount, $bank, $account, $reference, $narration, $userId]
-        );
+        return $this->table('withdrawals')
+            ->insert([
+                'amount'    => $amount,
+                'bank'      => $bank,
+                'account'   => $account,
+                'reference' => $reference,
+                'narration' => $narration,
+                'user_id'   => $userId,
+            ]);
     }
 
     public function updateStatus(
@@ -229,33 +211,20 @@ class Wallet extends Model
         string $status
     ): bool {
 
-        $updateQuery = "
-            UPDATE {$table} 
-            SET 
-                {$column} = ? 
-            WHERE 
-                reference = ?
-        ";
-
-        return $this->executeQuery(
-            $updateQuery, 
-            [$status, $reference]
-        );
+        return $this->table($table)
+            ->where('reference', '=', $reference)
+            ->update([
+                $column => $status,
+            ]);
     }
 
     public function getBankDetails(
         int $userId
     ): ?array {
 
-        $fetchQuery = "
-            SELECT 
-                * 
-            FROM bank_details 
-            WHERE 
-                user_id = ?
-        ";
-
-        return $this->queryOne($fetchQuery, [$userId]);
+        return $this->table('bank_details')
+            ->where('user_id', '=', $userId)
+            ->first();
     }
 
     public function getByReference(
@@ -263,15 +232,9 @@ class Wallet extends Model
         string $reference
     ): ?array {
 
-        $fetchQuery = "
-            SELECT 
-                * 
-            FROM {$table} 
-            WHERE 
-                reference = ?
-        ";
-
-        return $this->queryOne($fetchQuery, [$reference]);
+        return $this->table($table)
+            ->where('reference', '=', $reference)
+            ->first();
     }
 
     public function getPaymentsByUser(
@@ -281,19 +244,16 @@ class Wallet extends Model
         int $limit = 20
     ): ?array {
 
-        $offset = ($page - 1) * $limit;
-
-        $fetchQuery = "
-            SELECT 
-                * 
-            FROM {$table} 
-            WHERE 
-                user_id = ? 
-            ORDER BY created_at DESC 
-                LIMIT {$limit} OFFSET {$offset}
-        ";
-
-        return $this->queryAll($fetchQuery, [$userId]);
+        return $this->table($table)
+            ->when(
+                $userId !== null,
+                function ($query) use ($userId) {
+                    $query->where('user_id', '=', $userId);
+                }
+            )
+            ->orderBy('created_at', 'DESC')
+            ->paginate($page, $limit)
+            ->get();
     }
 
     public function getPaymentsByType(
@@ -302,17 +262,10 @@ class Wallet extends Model
         int $limit = 20
     ): ?array {
 
-        $offset = ($page - 1) * $limit;
-
-        $fetchQuery = "
-            SELECT 
-                * 
-            FROM {$table} 
-            ORDER BY created_at DESC 
-            LIMIT {$limit} OFFSET {$offset}
-        ";
-
-        return $this->queryAll($fetchQuery);
+        return $this->table($table)
+            ->orderBy('created_at', 'DESC')
+            ->paginate($page, $limit)
+            ->get();
     }
 
     public function getPaymentsByStatus(
@@ -323,35 +276,32 @@ class Wallet extends Model
         int $limit = 20
     ): ?array {
 
-       $offset = ($page - 1) * $limit;
-
-        $fetchQuery = "
-            SELECT 
-                * 
-            FROM {$table} 
-            WHERE 
-                {$column} = ? 
-            ORDER BY created_at DESC 
-            LIMIT {$limit} OFFSET {$offset}
-        ";
-
-        return $this->queryAll($fetchQuery, [$status]);
+        return $this->table($table)
+            ->when(
+                $column !== null
+                && $status !== null,
+                function ($query) use ($column, $status) {
+                    $query->where($column, '=', $status);
+                }
+            )
+            ->orderBy('created_at', 'DESC')
+            ->paginate($page, $limit)
+            ->get();
     }
 
     public function getBalance(
         string $table, 
         int $userId
-    ): int {
+    ): ?float {
 
-        $balanceQuery = "
-            SELECT 
-                wallet_amount 
-            FROM {$table} 
-            WHERE 
-                user_id = ?
-        ";
+        $result = $this->table($table)
+            ->select([
+                'wallet_amount',
+            ])
+            ->where('user_id', '=', $userId)
+            ->first();
 
-        return $this->fetchColumn($balanceQuery, [$userId]);
+        return $result ? (float)$result['wallet_amount'] : null;
     }
 
     public function getWithdrawalByType(
@@ -360,29 +310,24 @@ class Wallet extends Model
         string $role = 'vendor'
     ): float {
 
-        $fetchQuery = "
-            SELECT 
-                COALESCE(SUM(amount), 0) 
-            FROM withdrawals 
-            WHERE 
-                1
-        ";
-
-        $params = [];
-
-        // Vendor Mode: Restrict To Vendor's U  ser ID
-        if ($role === 'vendor' && !is_null($userId)) {
-            $fetchQuery .= " AND user_id = ?";
-            $params[] = $userId;
-        }
-
-        // Optional Status Filter
-        if (!is_null($status)) {
-            $fetchQuery .= " AND withdrawal_status = ?";
-            $params[] = $status;
-        }
-
-        $result = $this->fetchColumn($fetchQuery, $params);
+        $result = $this->table('withdrawals')
+            ->select([
+                'COALESCE(SUM(amount), 0)',
+            ])
+            ->when(
+                $role === 'vendor'
+                && $userId !== null,
+                function ($query) use ($userId) {
+                    $query->where('user_id', '=', $userId);
+                }
+            )
+            ->when(
+                $status !== null,
+                function ($query) use ($status) {
+                    $query->where('withdrawal_status', '=', $status);
+                }
+            )
+            ->first();
 
         return (float) ($result !== false ? $result : 0);
     }
@@ -406,48 +351,83 @@ class Wallet extends Model
         ];
     }
 
-    private function fetchPayments(
-        ?string $sql = null, 
-        array $params = [], 
+    public function getWithdrawalsByStatus(
+        ?string $status, 
         int $page = 1, 
         int $limit = 20
-    ): ?array {
+    ): array {
 
-        $offset = ($page - 1) * $limit;
+        // Fetch Withdrawals With User & Bank Details
+        $payments = $this->table('withdrawals w')
+            ->select([
+                'w.withdrawal_id',
+                'w.amount',
+                'w.bank',
+                'w.account',
+                'w.reference',
+                'w.narration',
+                'w.withdrawal_status',
+                'w.created_at',
+                // User details
+                'u.user_id',
+                'u.firstname',
+                'u.lastname',
+                'u.email',
+                'u.contact',
+                'u.country',
+                'u.user_state',
+                // Bank details
+                'bd.account_number AS account_number',
+                'bd.bank_name AS bank_name',
+                'bd.bank_code AS bank_code',
+                'bd.currency_code AS currency_code',
+            ])
+            ->join(
+                'users u',
+                'w.user_id',
+                '=',
+                'u.user_id',
+            )
+            ->leftJoin(
+                'bank_details bd',
+                'w.user_id',
+                '=',
+                'bd.user_id',
+            )
+            ->when(
+                $status !== null,
+                function ($query) use ($status) {
+                    $query->where('w.withdrawal_status', '=', $status);
+                }
+            )
+            ->orderBy('w.created_at', 'DESC')
+            ->paginate($page, $limit)
+            ->get();
 
-        $sql .= " LIMIT ? OFFSET ?";
-        $stmt = $this->db->prepare($sql);
+        $total = $this->table()
+            ->where('withdrawal_status', '=', $status)
+            ->count();
 
-        $i = 1;
-        foreach ($params as $param) {
-            $type = is_int($param) ? PDO::PARAM_INT : PDO::PARAM_STR;
-            $stmt->bindValue($i++, $param, $type);
-        }
+        $sum = (float) ($total !== false ? $total : 0);
 
-        $stmt->bindValue($i++, (int)$limit, PDO::PARAM_INT);
-        $stmt->bindValue($i, (int)$offset, PDO::PARAM_INT);
-
-        $stmt->execute();
-
-        return $stmt->fetchAll();
+        return $this->formatPayments($payments, $total, $sum, $page, $limit);
     }
 
-    private function countPayments(
-        string $sql, 
-        array $params = []
-    ): int {
+    // =========================================
+    // HELPER METHODS
+    // =========================================
 
-        return $this->fetchColumn($sql, $params);
-    }
+    private function generateReference(
+        string $type = 'Topup', 
+        string $identifier = 'SYS'
+    ): string {
 
-    private function sumPayments(
-        string $sql, 
-        array $params = []
-    ): float {
+        $prefix = 'PAY';
+        $type   = strtoupper(substr($type, 0, 3));
+        $date   = date('ymd');
+        $random = strtoupper(bin2hex(random_bytes(4)));
 
-        $result = $this->fetchColumn($sql, $params);
-
-        return (float) ($result !== false ? $result : 0);
+        return "{$prefix}-{$type}-{$date}-{$random}-{$identifier}";
     }
 
     private function formatPayments(
@@ -466,59 +446,5 @@ class Wallet extends Model
             'per_page'    => $limit,
             'total_pages' => ceil($total / $limit),
         ];
-    }
-
-    public function getWithdrawalsByStatus(
-        ?string $status, 
-        int $page = 1, 
-        int $limit = 20
-    ): ?array {
-
-        // Fetch Withdrawals With User & Bank Details
-        $fetchQuery = "
-            SELECT 
-                w.withdrawal_id,
-                w.amount,
-                w.bank,
-                w.account,
-                w.reference,
-                w.narration,
-                w.withdrawal_status,
-                w.created_at,
-
-                u.user_id,
-                u.firstname,
-                u.lastname,
-                u.email,
-                u.contact,
-                u.country,
-                u.user_state,
-
-                bd.account_number AS account_number,
-                bd.bank_name AS bank_name,
-                bd.bank_code AS bank_code,
-                bd.currency_code AS currency_code
-
-            FROM withdrawals w
-            INNER JOIN users u ON w.user_id = u.user_id
-            LEFT JOIN bank_details bd ON w.user_id = bd.user_id
-            WHERE 
-                w.withdrawal_status = ?
-            ORDER BY w.created_at DESC
-        ";
-
-        $countQuery = "
-            SELECT 
-                COUNT(*) 
-            FROM withdrawals 
-            WHERE 
-                withdrawal_status = ?
-        ";
-
-        $payments = $this->fetchPayments($fetchQuery, [$status], $page, $limit);
-        $total    = $this->countPayments($countQuery, [$status]);
-        $sum      = $this->sumPayments($countQuery, [$status]);
-
-        return $this->formatPayments($payments, $total, $sum, $page, $limit);
     }
 }

@@ -7,6 +7,9 @@
 <!--- CSRF Token --->
 <meta name="csrf-token" content="<?= $csrfToken ?? null ?>">
 
+<!--- Favicon --->
+<link type="image/x-icon" rel="icon" href="<?= asset('img/logo.jpg') ?>">
+
 <!-- Google Web Fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

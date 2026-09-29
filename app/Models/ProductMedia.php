@@ -14,7 +14,7 @@ class ProductMedia extends Model
         int $productId
     ): bool {
 
-        return $this->query()
+        return $this->table()
             ->insert([
                 'media_url'  => $url,
                 'media_type' => $type,
@@ -26,7 +26,7 @@ class ProductMedia extends Model
         int $productId
     ): ?array {
 
-        return $this->query()
+        return $this->table()
             ->where('product_id', '=', $productId)
             ->get();
     }
@@ -35,7 +35,7 @@ class ProductMedia extends Model
         int $mediaId
     ): ?array {
 
-        return $this->query()
+        return $this->table()
             ->where('media_id', '=', $mediaId)
             ->first();
     }
@@ -45,7 +45,7 @@ class ProductMedia extends Model
         string $url
     ): bool {
 
-        return $this->query()
+        return $this->table()
             ->where('media_id', '=', $mediaId)
             ->update(['media_url' => $url]);
     }
@@ -54,7 +54,7 @@ class ProductMedia extends Model
         int $productId
     ): bool {
 
-        return $this->query()
+        return $this->table()
             ->where('product_id', '=', $productId)
             ->delete();
     }
@@ -63,7 +63,7 @@ class ProductMedia extends Model
         int $mediaId
     ): bool {
 
-        return $this->query()
+        return $this->table()
             ->where('media_id', '=', $mediaId)
             ->delete();
     }

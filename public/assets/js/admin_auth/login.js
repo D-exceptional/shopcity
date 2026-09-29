@@ -39,7 +39,7 @@ import PushClient from "../../js/shared/push/PushClient.js";
 
   //Check All Inputs
   $(".form-control").each(function () {
-    $(this).on("input blur", function () {
+    $(this).on("blur", function () {
       validateInput(this);
       if ($(this).val() !== "") {
         $(this).css({ border: "none" });

@@ -19,7 +19,7 @@ class MailManager
         protected Notification $notificationModel
     ) {
         $this->smtpConfig = config('mail');
-        
+
         date_default_timezone_set('Africa/Lagos');
     }
 
@@ -154,7 +154,8 @@ class MailManager
 
             $this->writeLog($error);
 
-            return $error;
+            // Allow QueueWorker to handle retry/failure
+            throw $e;
 
         } catch (\Throwable $e) {
 
@@ -167,7 +168,8 @@ class MailManager
 
             $this->writeLog($error);
 
-            return $error;
+            // Allow QueueWorker to handle retry/failure
+            throw $e;
         }
     }
 
@@ -190,7 +192,7 @@ class MailManager
             // Attachments
             if (
                 $hasAttachment
-                && isset($payload['filePath']) 
+                && isset($payload['filePath'])
                 && file_exists($payload['filePath'])
             ) {
 
@@ -230,7 +232,8 @@ class MailManager
 
             $this->writeLog($error);
 
-            return $error;
+            // Allow QueueWorker to handle retry/failure
+            throw $e;
 
         } catch (\Throwable $e) {
 
@@ -245,7 +248,8 @@ class MailManager
 
             $this->writeLog($error);
 
-            return $error;
+            // Allow QueueWorker to handle retry/failure
+            throw $e;
         }
     }
 
@@ -283,7 +287,9 @@ class MailManager
 
             foreach ($batch as $payload) {
 
-                // Save mail record
+                // -----------------------------------------
+                // SAVE MAIL RECORD
+                // -----------------------------------------
                 $mailCreated = $this->mailModel->createMail(
                     $payload['mail_type'],
                     $payload['mail_subject'],
@@ -305,7 +311,9 @@ class MailManager
                     continue;
                 }
 
-                // Save notification
+                // -----------------------------------------
+                // SAVE NOTIFICATION
+                // -----------------------------------------
                 $notificationCreated =
                     $this->notificationModel->create(
                         'An incoming mail was received',
@@ -324,41 +332,55 @@ class MailManager
                     continue;
                 }
 
-                // Send mail
-                $result = $type === 'Text'
+                // -----------------------------------------
+                // SEND MAIL
+                // -----------------------------------------
+                try {
 
-                    ? $this->sendSimpleMail(
-                        $payload['mail_subject'],
-                        $payload['mail_receiver'],
-                        $payload['mail_message']
-                    )
+                    if ($type === 'Text') {
 
-                    : $this->sendAdvancedMail(
-                        $payload,
-                        $hasAttachment
-                    );
+                        $this->sendSimpleMail(
+                            $payload['mail_subject'],
+                            $payload['mail_receiver'],
+                            $payload['mail_message']
+                        );
 
-                if (!$result['success']) {
+                    } else {
 
+                        $this->sendAdvancedMail(
+                            $payload,
+                            $hasAttachment
+                        );
+                    }
+
+                    $successful++;
+
+                } catch (\Throwable $e) {
+
+                    // MailManager has already logged the
+                    // original error. We record it here so
+                    // bulk processing can continue.
                     $errors[] = [
-                        'type'    => $result['code'],
+                        'type'    => 'MAIL_SEND_ERROR',
                         'email'   => $payload['mail_receiver'],
-                        'message' => $result['message']
+                        'message' => $e->getMessage()
                     ];
 
                     continue;
                 }
-
-                $successful++;
             }
 
-            // Prevent SMTP flooding
+            // -----------------------------------------
+            // PREVENT SMTP FLOODING
+            // -----------------------------------------
             if ($index < count($batches) - 1) {
                 sleep(2);
             }
         }
 
-        // Log bulk mail operation result
+        // ---------------------------------------------
+        // LOG BULK MAIL OPERATION RESULT
+        // ---------------------------------------------
         $response = [
             'success' => empty($errors),
 

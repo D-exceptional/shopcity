@@ -35,7 +35,7 @@ class WalletService
         $this->secretKey       = env('FLW_SECRET_KEY'); 
         $this->currency        = env('BASE_CURRENCY');  
         $this->withdrawalTable = 'wallet_payout';  
-        $this->baseUrl         = $appUrl; 
+        $this->baseUrl         = config('app.url'); 
     }
 
     public function updateDetails(
@@ -103,7 +103,7 @@ class WalletService
 
         // Get Current Balance
         $currentBalance = $this->walletModel->getBalance($this->withdrawalTable, $userId);
-        if ($currentBalance === false) {
+        if ($currentBalance === null) {
            return $this->result->error('Failed to get balance', 500);
         }
 

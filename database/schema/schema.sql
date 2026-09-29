@@ -291,6 +291,13 @@ CREATE TABLE IF NOT EXISTS cart (
   FOREIGN KEY (user_id) REFERENCES users (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+
+--
+-- Table alter for table cart
+--
+ALTER TABLE cart
+ADD UNIQUE KEY unique_user_product (user_id, product_id);
+
 -- --------------------------------------------------------
 
 --

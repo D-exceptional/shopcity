@@ -8,13 +8,10 @@ use Exception;
 
 class RouteNotFoundException extends Exception 
 {
-    public int $status;
-
     public function __construct(
         string $message = 'Route not found',
-        int $status = 404
+        int $code = 404
     ) {
-        parent::__construct($message, $status);
-        $this->status = $status;
+        parent::__construct($message, $code);
     }
 }
