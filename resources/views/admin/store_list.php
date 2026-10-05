@@ -25,13 +25,13 @@
     <!-- / Main Sidebar Container -->
 
     <!-- Content Wrapper. Contains page content -->
-    <div class="content-wrapper">
+    <div class="content-wrapper" data-status="<?= $status ?>">
       <!-- Content Header (Page header) -->
       <section class="content-header">
         <div class="container-fluid">
           <div class="row mb-2">
             <div class="col-sm-6">
-              <h1><b>Stores</b></h1>
+              <h1><b><?= $status ?> Stores (<?= $numberManager->format(count($storeList)) ?>)</b></h1>
             </div>
             <div class="col-sm-6">
               <ol class="breadcrumb float-sm-right">
@@ -48,7 +48,7 @@
         <!-- Default box -->
         <div class="card h-550">
           <div class="card-header">
-            <h3 class="card-title">Stores</h3>
+            <h3 class="card-title"><?= $status ?> Stores</h3>
             <div class="card-tools">
               <!-- Default button -->
               <button type="button" class="btn bg-primary color-white btn-sm btn-all">All</button>

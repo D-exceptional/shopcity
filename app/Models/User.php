@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use PDO;
-
 class User extends Model
 {
     protected string $table = 'users';
@@ -170,7 +168,7 @@ class User extends Model
 
         return $this->table()
             ->where('user_role', '=', $role)
-            ->orderBy('firstname', 'ASC')
+            ->oldest('firstname')
             ->get();
     }
 
@@ -200,7 +198,7 @@ class User extends Model
                 fn($query) =>
                     $query->where('user_role', '=', $role)
             )
-            ->orderBy('user_id', 'ASC')
+            ->oldest('user_id')
             ->paginate($page, $limit)
             ->get();
 
@@ -290,6 +288,9 @@ class User extends Model
             ->delete();
     }
 
+    // =========================================
+    //  PRIVATE HELPER METHODS
+    // =========================================
     private function format(
         array $data, 
         int $total, 

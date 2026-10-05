@@ -39,7 +39,7 @@ import {
       }
     });
 
-  $(".form-text .form-control").on("input blur", function () {
+  $(".form-text .form-control").on("blur", function () {
     validateInput(this);
   });
 

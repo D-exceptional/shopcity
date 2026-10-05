@@ -74,7 +74,7 @@ class Notification extends Model
         return $this->table()
             ->where('notification_receiver', '=', $userId)
             ->where('notification_status', '=', 'Unread')
-            ->orderBy('notification_date', 'DESC')
+            ->latest('notification_date')
             ->paginate($page, $limit)
             ->get();
     }
@@ -87,7 +87,7 @@ class Notification extends Model
 
         return $this->table()
             ->where('notification_receiver', '=', $userId)
-            ->orderBy('notification_date', 'DESC')
+            ->latest('notification_date')
             ->paginate($page, $limit)
             ->get();
     }

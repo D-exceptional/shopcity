@@ -125,7 +125,8 @@ class AdminController extends Controller
     public function storeList(Request $request): Response
     {
         $page   = (int)$request->route('page') ?? 1; 
-        $viewData = $this->service->storeList($page);
+        $status = $request->route('status') ?? 'Pending'; 
+        $viewData = $this->service->storeList($page, $status);
 
         return $this->response->view('admin.store_list', $viewData);
     }

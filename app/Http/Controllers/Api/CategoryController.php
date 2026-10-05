@@ -39,7 +39,7 @@ class CategoryController extends Controller
 
     public function update(Request $request): Response
     {
-        $categoryId = $request->route('id');
+        $categoryId = (int) $request->route('id');
         $name       = $request->input('name');
         $result = $this->service->update($name, $categoryId);
 
@@ -48,7 +48,7 @@ class CategoryController extends Controller
 
     public function delete(Request $request): Response
     { 
-        $categoryId = $request->route('id');
+        $categoryId = (int) $request->route('id');
         $result = $this->service->delete($categoryId);
 
         return $this->response->json($result->toArray(), $result->status());

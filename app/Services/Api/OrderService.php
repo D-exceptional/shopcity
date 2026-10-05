@@ -243,7 +243,7 @@ class OrderService
     public function getSalesSummary(
         string $view, 
         int $userId, 
-        $storeId, 
+        ?int $storeId, 
         string $period, 
         string $startDate, 
         string $endDate

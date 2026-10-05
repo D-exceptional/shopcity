@@ -11,6 +11,10 @@ class QueryBuilder
 {
     protected string $table;
 
+    protected ?string $fromSub = null;
+
+    protected array $fromBindings = [];
+
     protected array $selects = ['*'];
 
     protected array $wheres = [];
@@ -378,6 +382,17 @@ class QueryBuilder
             $second,
             'RIGHT'
         );
+    }
+
+    public function fromSub(
+        self $query,
+        string $alias
+    ): self {
+        $this->fromSub = "({$query->toSql()}) AS {$alias}";
+
+        $this->fromBindings = $query->getBindings();
+
+        return $this;
     }
 
     // =========================================
@@ -806,16 +821,16 @@ class QueryBuilder
     protected function aggregate(
         string $expression
     ): mixed {
-        $sql =
-            "SELECT {$expression} AS aggregate
-             FROM {$this->table}";
+        $sql = "SELECT {$expression} AS aggregate";
+
+        $sql .= $this->compileFrom();
 
         $sql .= $this->compileJoin();
 
         $sql .= $this->compileWhere();
 
         $sql .= $this->compileGroup();
-
+        
         $sql .= $this->compileHaving();
 
         $stmt = $this->execute($sql);
@@ -862,7 +877,12 @@ class QueryBuilder
 
     public function getBindings(): array
     {
-        $bindings = $this->joinBindings;
+        $bindings = $this->fromBindings;
+
+        $bindings = array_merge(
+            $bindings,
+            $this->joinBindings
+        );
 
         foreach ($this->wheres as $where) {
             $bindings = array_merge(
@@ -885,17 +905,54 @@ class QueryBuilder
     // QUERY BUILDING
     // =========================================
 
+    /*
     protected function buildQuery(): string
     {
         $distinct = $this->distinct
             ? 'DISTINCT '
             : '';
 
+        $from = $this->fromSub !== null
+            ? $this->fromSub
+            : $this->table;
+
         $sql =
             "SELECT " .
             $distinct .
             implode(', ', $this->selects) .
-            " FROM {$this->table}";
+            " FROM {$from}";
+
+        $sql .= $this->compileFrom();
+
+        $sql .= $this->compileJoin();
+
+        $sql .= $this->compileWhere();
+
+        $sql .= $this->compileGroup();
+
+        $sql .= $this->compileHaving();
+
+        $sql .= $this->compileOrder();
+
+        $sql .= $this->compileLimit();
+
+        if ($this->lockForUpdate) {
+            $sql .= " FOR UPDATE";
+        }
+
+        return $sql;
+    }
+    */
+
+    protected function buildQuery(): string
+    {
+        $distinct = $this->distinct ? 'DISTINCT ' : '';
+
+        $sql = "SELECT " .
+            $distinct .
+            implode(', ', $this->selects);
+
+        $sql .= $this->compileFrom();
 
         $sql .= $this->compileJoin();
 
@@ -919,6 +976,21 @@ class QueryBuilder
     // =========================================
     // WHERE COMPILER
     // =========================================
+
+    protected function compileFrom(): string
+    {
+        if ($this->fromSub !== null) {
+            return " FROM {$this->fromSub}";
+        }
+
+        if (!isset($this->table)) {
+            throw new Exception(
+                'QueryBuilder requires a table or FROM subquery.'
+            );
+        }
+
+        return " FROM {$this->table}";
+    }
 
     protected function compileWhere(): string
     {
@@ -1065,6 +1137,10 @@ class QueryBuilder
         $this->selects = ['*'];
 
         $this->distinct = false;
+
+        $this->fromSub = null;
+
+        $this->fromBindings = [];
 
         $this->wheres = [];
 

@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace App\Services\Api;
 
 use App\Core\Result;
+use App\Database\Database;
 use App\Models\Wishlist;
 
 class WishlistService
 {
     public function __construct(
         protected Result $result, 
+        protected Database $dbClient,
         protected Wishlist $wishlistModel
     ) {}
 
@@ -18,7 +20,7 @@ class WishlistService
         int $userId
     ): Result { 
 
-        $wishlist = $this->wishlistModel->view($id);
+        $wishlist = $this->wishlistModel->view($userId);
         if (count($wishlist['wishlist']) === 0) {
             return $this->result->error('No wishlist found', 404);
         }
@@ -28,19 +30,29 @@ class WishlistService
 
     public function add(
         int $productId,
-        int $userId, 
+        int $userId
     ): Result {
 
-        $added = $this->wishlistModel->add($userId, $productId);
-        if ($added === false) {
-            return $this->result->error('Failed to add item', 500);
-        }
+        $count = $this->dbClient->transaction(function () use (
+            $productId, 
+            $userId
+        ) {
 
-        if ($added === null) {
-            return $this->result->error('Item already added previously', 400);
-        }
+            $added = $this->wishlistModel->add($userId, $productId);
+            if ($added === false) {
+                throw new \Exception("Failed to add item to wishlist");
+            }
 
-        return $this->result->success('Item added to wishlist');
+            if ($added === null) {
+                throw new \Exception("Item already added previously");
+            }
+
+            $count = $this->wishlistModel->count($userId);
+
+            return $count;
+        });
+
+        return $this->result->success('Item added to wishlist', ['count' => $count]);
     }
 
     public function merge(
@@ -48,48 +60,62 @@ class WishlistService
         int $userId
     ): Result {
 
-        // Split Into Batches Of 5
-        $batches = array_chunk($wishlist, 5);
+        if (empty($wishlist)) {
+            throw new \Exception("Wishlist is empty. Add items to your wishlist and try again");
+        }
 
-        $errors = [
-            'validations' => [],
-            'additions'   => []
-        ];
+        $successCount = $this->dbClient->transaction(function () use (
+            $wishlist, 
+            $userId
+        ) {
 
-        $successCount = 0;
+            $successCount = 0;
+            $errors = [
+                'validations' => [],
+                'additions'   => []
+            ];
 
-        foreach ($batches as $batch) {
-            foreach ($batch as $item) {
+            // Split Into Batches Of 5
+            $batches = array_chunk($wishlist, 5);
 
-                $productId = $item['productId'];
+            foreach ($batches as $batch) {
 
-                // Validate Each Item
-                if (!isset($productId)) {
-                    $errors['validations'][] = "Invalid item structure for product ID: {$productId}";
-                    continue;
+                foreach ($batch as $item) {
+
+                    $productId = $item['productId'];
+
+                    // Validate Each Item
+                    if (!isset($productId)) {
+                        $errors['validations'][] = "Invalid item structure for product ID: {$productId}";
+                        continue;
+                    }
+
+                    // Attempt To Add Each Item
+                    $itemAdded = $this->wishlistModel->add($productId, $userId);
+                    if ($itemAdded === false) {
+                        $errors['additions'][] = "Failed to add product ID: {$productId}";
+                    }
+                    else {
+                        $successCount++;
+                    }
                 }
 
-                // Attempt To Add Each Item
-                if ($this->wishlistModel->add($productId, $userId)) {
-                    $successCount++;
-                } else {
-                    $errors['additions'][] = "Failed to add product ID: {$productId}";
-                }
+                // (Optional) Add a slight pause if needed for performance throttling
+                usleep(100000);
             }
 
-            // (Optional) Add a slight pause if needed for performance throttling
-            usleep(100000);
-        }
+            // Final Result After All Batches Processed
+            if (
+                !empty($errors['validations']) 
+                || !empty($errors['additions'])
+            ) {
+                throw new \Exception("Wishlist merge failed with some issues " . json_encode(['processed' => $successCount, 'errors' => $errors]));
+            }
 
-        // Final Result After All Batches Processed
-        if (
-            count($errors['validations']) > 0 
-            || count($errors['additions']) > 0
-        ) {
-            return $this->result->error('Some items failed to merge', 207, $errors); // 207 = Multi-Status
-        } else {
-            return $this->result->success('Wishlist merged successfully', ['processed' => $successCount]);
-        }
+            return $successCount;
+        });
+
+        return $this->result->success('Wishlist merged successfully', ['processed' => $successCount]);
     }
 
     public function remove(

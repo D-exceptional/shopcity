@@ -14,10 +14,7 @@ import { formatNum } from "./utils/index.js";
 (async function ($) {
   ("use strict");
 
-  const params = new URLSearchParams(window.location.search);
-  const role = params.has("role") ? params.get("role") : null;
-
-  countTotal(`${role}s`);
+  const role = $(".content-wrapper").data("role");
 
   // -------------------------------------------------
   // Initialize Counter
@@ -140,10 +137,10 @@ import { formatNum } from "./utils/index.js";
         {}
       );
 
-      if (result.data && result.data !== null && result.data.users.length > 0) {
+      if (result.data && result.data !== null && result.data.users?.length > 0) {
         displayUsers(result.data.users);
       } else {
-        displayMessage("No more users found", "info");
+        displayMessage(`No more ${role.toLowerCase()}s found`, "info");
         $(".btn-load").hide();
       }
     } catch (err) {

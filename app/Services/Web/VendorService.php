@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Web;
 
+use App\Support\BankManager;
 use App\Models\User;
 use App\Models\Order;
 use App\Models\Product;
@@ -15,6 +16,7 @@ use App\Models\Notification;
 class VendorService
 {
     public function __construct(
+        protected BankManager $bankManager,
         protected User $userModel,
         protected Order $orderModel,
         protected Product $productModel,
@@ -148,7 +150,7 @@ class VendorService
         $userDetails   = $this->userModel->findById($userId);
         $socialDetails = $this->userModel->getSocials($userId);
         $bankDetails   = $this->walletModel->getBankDetails($userId);
-        $bankList      = $bankManager->loadBanks($userDetails['country']);
+        $bankList      = $this->bankManager->loadBanks($userDetails['country']);
 
         $data = [
             'userDetails'   => $userDetails,

@@ -85,7 +85,7 @@
                 </div><!-- /.card-header -->
                 <div class="card-body">
                   <div class="tab-content">
-                    <div class="tab-pane" id="details" style="display: block;">
+                    <div class="tab-pane d-block" id="details">
                       <form class="form-horizontal">
                         <div class="form-group row">
                           <label for="name" class="col-sm-2 col-form-label">Name</label>
@@ -140,7 +140,7 @@
                     </div>
                     <!-- /.tab-pane -->
                     <!-- Security section -->
-                    <div class="tab-pane" id="security">
+                    <div class="tab-pane d-none" id="security">
                       <form class="form-horizontal">
                         <div class="form-group row">
                           <label for="facebook" class="col-sm-2 col-form-label">Current Password</label>
@@ -160,7 +160,7 @@
                         </div>
                         <div class="form-group row">
                           <div class="offset-sm-2 col-sm-10">
-                            <button type="submit" class="btn btn-success btn-password">Update</button>
+                            <button type="button" class="btn btn-success btn-password">Update</button>
                           </div>
                         </div>
                       </form>

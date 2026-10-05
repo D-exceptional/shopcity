@@ -8,77 +8,102 @@ class Wishlist extends Model
 {
     protected string $table = 'wishlist';
 
-    public function view(
-        ?int $userId = null, 
-        int $page = 1, 
+   public function view(
+        int $userId = 0,
+        int $page = 1,
         int $limit = 20
     ): array {
 
-        $offset = ($page - 1) * $limit;
+        // =========================================
+        // FIRST PRODUCT MEDIA
+        // =========================================
 
-        $fetchQuery = "
-            SELECT 
-                w.wishlist_id, 
-                w.user_id, 
-                w.product_id, 
-                p.product_name, 
-                p.category,
-                p.product_price, 
-                pm.media_url AS product_image
+        $firstMedia = $this->table('product_media')
+            ->select([
+                'product_id',
+                'MIN(media_id) AS first_media_id',
+            ])
+            ->groupBy('product_id');
 
-            FROM {$this->table} w
+        // =========================================
+        // WISHLIST QUERY
+        // =========================================
 
-            JOIN products p ON p.product_id = w.product_id
+        $wishlist = $this->table('wishlist AS w')
+            ->select([
+                'w.wishlist_id',
+                'w.user_id',
+                'w.product_id',
+                'p.product_name',
+                'p.category',
+                'p.product_price',
+                'pm.media_url AS product_image',
+            ])
+            ->join(
+                'products AS p',
+                'p.product_id',
+                '=',
+                'w.product_id'
+            )
+            ->leftJoinSub(
+                $firstMedia,
+                'first_media',
+                'first_media.product_id',
+                '=',
+                'p.product_id'
+            )
+            ->leftJoin(
+                'product_media AS pm',
+                'pm.media_id',
+                '=',
+                'first_media.first_media_id'
+            )
+            ->where('w.user_id', '=', $userId)
+            ->latest()
+            ->paginate($page, $limit)
+            ->get();
 
-            LEFT JOIN product_media pm 
 
-                ON pm.product_id = p.product_id
-                AND pm.media_id = (
-                    SELECT MIN(media_id) 
-                    FROM product_media 
-                    WHERE product_id = p.product_id
-                )
+        // =========================================
+        // TOTAL WISHLIST ITEMS
+        // =========================================
 
-            WHERE 
-                w.user_id = ?
-
-            LIMIT {$limit} OFFSET {$offset}
-        ";
-
-        $wishlist = $this->queryAll($fetchQuery, [$userId]);
-        $total    = $this->table()
+        $total = $this->table()
             ->where('user_id', '=', $userId)
             ->count();
 
-        return $this->format($wishlist, $total, $page, $limit);
+        // =========================================
+        // FORMAT RESPONSE
+        // =========================================
+
+        return $this->format(
+            $wishlist,
+            $total,
+            $page,
+            $limit
+        );
     }
 
     public function add(
         int $userId, 
         int $productId
-    ): bool {
+    ): ?bool {
 
-        return $this->transaction(function () use (
-            $userId,
-            $productId
-        ) {
+        $existing = $this->table()
+            ->where('user_id', '=', $userId)
+            ->where('product_id', '=', $productId)
+            ->lockForUpdate()
+            ->first();
 
-            $existing = $this->table()
-                ->where('user_id', '=', $userId)
-                ->where('product_id', '=', $productId)
-                ->lockForUpdate()
-                ->first();
+        if ($existing) {
+            return null;
+        }
 
-            if ($existing) {
-                return false;
-            }
-
-            return $this->table()
-                ->insert([
-                    'product_id' => $productId,
-                    'user_id'    => $userId,
-                ]);
-        });
+        return $this->table()
+            ->insert([
+                'product_id' => $productId,
+                'user_id'    => $userId,
+            ]);
     }
 
     public function remove(
@@ -101,6 +126,18 @@ class Wishlist extends Model
             ->delete();
     }
 
+    public function count(
+        int $userId
+    ): int {
+
+        return $this->table()
+            ->where('user_id', '=', $userId)
+            ->count();
+    }
+
+    // ======================================
+    //  PRIVATE HELPER METHODS
+    // =====================================
     private function format(
         array $data, 
         int $total, 

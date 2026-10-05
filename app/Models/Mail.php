@@ -60,7 +60,7 @@ class Mail extends Model
 
         $mails = $this->table()
             ->where('mail_receiver', '=', $email)
-            ->orderBy('mail_date', 'DESC')
+            ->latest('mail_date')
             ->paginate($page, $limit)
             ->get();
 
@@ -77,7 +77,7 @@ class Mail extends Model
 
         $mails = $this->table()
             ->where('mail_sender', '=', $name)
-            ->orderBy('mail_date', 'DESC')
+            ->latest('mail_date')
             ->paginate($page, $limit)
             ->get();
 
@@ -126,6 +126,9 @@ class Mail extends Model
         ];
     }
 
+    // ======================================
+    //  PRIVATE HELPER METHODS
+    // =====================================
     private function format(
         array $data, 
         int $total, 

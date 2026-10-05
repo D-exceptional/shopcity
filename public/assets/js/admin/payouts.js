@@ -21,18 +21,13 @@ import { formatNum } from "./utils/index.js";
 (async function ($) {
   ("use strict");
 
-  /*const params = new URLSearchParams(window.location.search);
-  const status = params.has("status")
-    ? params.get("status")
-    : "Pending";*/
-  
   const status    = $(".content-wrapper").data("status");
   const payoutDay = "Tuesday";
 
   // -------------------------------------------------
   // Initialize Counter
   // -------------------------------------------------
-  let offset = 1;
+  let page = 1;
   const limit = 20;
 
   // Get total amount generated
@@ -264,16 +259,16 @@ import { formatNum } from "./utils/index.js";
   // -------------------------------------------------
   $(".btn-load").on("click", async function () {
     $(this).text("Processing...");
-    offset++;
+    page++;
     
-    await fetchPayments({ status: status, page: offset, total: limit });
+    await fetchPayments({ status: status, page: page, total: limit });
   });
 
   // ----------------------------------------------------
   // Helper Functions Definitions
   // ----------------------------------------------------
   function updateCurrency() {
-    $.getJSON("../../countries.json", function (data) {
+    $.getJSON("/library/countries.json", function (data) {
       for (const key in data) {
         const content = data[key];
         const country = content.country_name;

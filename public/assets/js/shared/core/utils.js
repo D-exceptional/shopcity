@@ -290,7 +290,7 @@ export async function parseResponse(res) {
     type === "json" && data && typeof data === "object" ? data : null;
 
   return new HttpResponse({
-    ok: body.ok ?? res.ok,
+    ok: res.ok ?? body.ok,
 
     status: body.status ?? res.status,
 

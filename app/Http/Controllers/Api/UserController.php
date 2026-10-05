@@ -122,7 +122,7 @@ class UserController extends Controller
 
     public function status(Request $request): Response
     {
-        $userId = $request->route('id');
+        $userId = (int) $request->route('id');
         $status = $request->route('status');
         $result = $this->service->status($userId, $status);
 
@@ -201,7 +201,7 @@ class UserController extends Controller
     public function fetch(Request $request): Response
     { 
         $role = $request->route('role');
-        $page = $request->route('page');
+        $page = (int) $request->route('page');
         $result = $this->service->fetch($role, $page);
 
         return $this->response->json($result->toArray(), $result->status());
@@ -209,7 +209,7 @@ class UserController extends Controller
 
     public function delete(Request $request): Response
     {
-        $userId = $request->route('id');
+        $userId = (int) $request->route('id');
         $result = $this->service->delete($userId);
 
         return $this->response->json($result->toArray(), $result->status());
@@ -217,7 +217,7 @@ class UserController extends Controller
     
     public function doc(Request $request): Response
     { 
-        $userId = $request->route('id');
+        $userId = (int) $request->route('id');
         $result = $this->service->doc($userId);
 
         return $this->response->json($result->toArray(), $result->status());

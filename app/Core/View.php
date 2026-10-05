@@ -38,9 +38,7 @@ class View
 
         // Check if views are enabled.
         if (!config('app.display.use_views')) {
-            throw new \RuntimeException(
-                'Views are disabled in the configuration.'
-            );
+            throw new \RuntimeException('Views are disabled in the configuration.');
         }
 
         // Resolve view directory.
@@ -61,9 +59,7 @@ class View
             . '.php';
 
         if (!is_file($file)) {
-            throw new \RuntimeException(
-                "View [{$view}] not found."
-            );
+            throw new \RuntimeException("View [{$view}] not found.");
         }
 
         // Merge shared data with view-specific data.

@@ -47,6 +47,7 @@ export default class PushClient {
     if (this.initialized) return;
 
     if (!("serviceWorker" in navigator) || !("Notification" in window)) {
+      console.log("[PushClient] Service Worker or Notification API not supported");
       return;
     }
 
@@ -298,9 +299,12 @@ export default class PushClient {
     UI HELPER
   ===================================================== */
   static toggleButton(buttonEl) {
-    if (!buttonEl) return;
+    if (!buttonEl) {
+      console.log("Button element not found");
+      return;
+    } 
 
-    $(buttonEl).html(`
+    buttonEl.html(`
       <i class="fa fa-bell ${
         this.enabled ? "bell-active" : "bell-inactive"
       }" aria-hidden="true"></i>

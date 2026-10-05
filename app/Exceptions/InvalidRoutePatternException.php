@@ -8,8 +8,8 @@ class InvalidRoutePatternException extends LogicException
 {
     public function __construct(
         string $message = 'Invalid route pattern',
-        int $code = 0
+        public int $status = 500
     ) {
-        parent::__construct($message, $code);
+        parent::__construct($message, $this->status);
     }
 }

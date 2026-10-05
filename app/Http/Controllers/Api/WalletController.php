@@ -37,8 +37,8 @@ class WalletController extends Controller
 
     public function redeemFunds(Request $request): Response
     { 
-        $itemId  = $request->input('itemId');
-        $storeId = $request->input('storeId');
+        $itemId  = (int) $request->input('itemId');
+        $storeId = (int) $request->input('storeId');
         $status  = $request->input('status');
         $result = $this->service->redeemFunds($itemId, $storeId, $status);
 
@@ -100,7 +100,7 @@ class WalletController extends Controller
     {
         $userId = $request->user()['id'];
         $type   = $request->input('type');
-        $page   = $request->input('page');
+        $page   = (int) $request->input('page');
         $result = $this->service->getPaymentsByUser($type, $page, $userId);
 
         return $this->response->json($result->toArray(), $result->status());
@@ -109,7 +109,7 @@ class WalletController extends Controller
     public function getPaymentsByType(Request $request): Response
     {
         $table = $request->input('table');
-        $page  = $request->input('page');
+        $page  = (int) $request->input('page');
         $result = $this->service->getPaymentsByType($table, $page);
 
         return $this->response->json($result->toArray(), $result->status());
@@ -120,7 +120,7 @@ class WalletController extends Controller
         $table  = $request->input('table');
         $column = $request->input('column');
         $status = $request->input('status');
-        $page   = $request->input('page');
+        $page   = (int) $request->input('page');
         $result = $this->service->getPaymentsByStatus($table, $column, $status, $page);
 
         return $this->response->json($result->toArray(), $result->status());
@@ -129,7 +129,7 @@ class WalletController extends Controller
     public function getPayoutsByStatus(Request $request): Response
     {
         $status = $request->input('status');
-        $page   = $request->input('page');
+        $page   = (int) $request->input('page');
         $result = $this->service->getPayoutsByStatus($status, $page);
 
         return $this->response->json($result->toArray(), $result->status());

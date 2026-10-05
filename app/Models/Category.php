@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use PDO;
-
 class Category extends Model
 {
     protected string $table = 'product_categories';
@@ -24,9 +22,9 @@ class Category extends Model
 
     public function group(
         ?int $storeId = null
-    ): array {
+    ): ?array {
 
-        $query = $this->table('product_categories pc')
+        return $this->table('product_categories pc')
             ->select([
                 'pc.category_id',
                 'pc.category_name',
@@ -49,9 +47,8 @@ class Category extends Model
                 'pc.category_id',
                 'pc.category_name',
             ])
-            ->orderBy('pc.category_name', 'ASC');
-
-        return $query->get();
+            ->orderBy('pc.category_name', 'ASC')
+            ->get();
     }
 
     public function create(

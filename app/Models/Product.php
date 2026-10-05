@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use PDO;
 use DateTime;
 
 class Product extends Model
@@ -181,18 +180,18 @@ class Product extends Model
 
         $data = $this->table()
             ->when(
-                in_array($view, ['customer']),
+                $view === 'customer',
 
                 fn($query) =>
                     $query->where('visibility', '=', 'Visible')
             )
-            ->orderBy('created_at', 'DESC')
+            ->latest()
             ->paginate($page, $limit)
             ->get();
 
         $total = $this->table()
             ->when(
-                in_array($view, ['customer']),
+                $view === 'customer',
 
                 fn($query) =>
                     $query->where('visibility', '=', 'Visible')
@@ -214,19 +213,19 @@ class Product extends Model
         $data = $this->table()
             ->where('category', '=', $category)
             ->when(
-                in_array($view, ['customer']),
+                $view === 'customer',
 
                 fn($query) =>
                     $query->where('visibility', '=', 'Visible')
             )
-            ->orderBy('created_at', 'DESC')
+            ->latest()
             ->paginate($page, $limit)
             ->get();
 
         $total = $this->table()
             ->where('category', '=', $category)
             ->when(
-                in_array($view, ['customer']),
+                $view === 'customer',
 
                 fn($query) =>
                     $query->where('visibility', '=', 'Visible')
@@ -239,7 +238,7 @@ class Product extends Model
     }
 
     public function findByStore(
-        ?int $storeId = null, 
+        int $storeId = 0, 
         int $page = 1, 
         int $limit = 20, 
         string $view = 'customer'
@@ -248,19 +247,19 @@ class Product extends Model
         $data = $this->table()
             ->where('store_id', '=', $storeId)
             ->when(
-                in_array($view, ['customer']),
+                $view === 'customer',
 
                 fn($query) =>
                     $query->where('visibility', '=', 'Visible')
             )
-            ->orderBy('created_at', 'DESC')
+            ->latest()
             ->paginate($page, $limit)
             ->get();
 
         $total = $this->table()
             ->where('store_id', '=', $storeId)
             ->when(
-                in_array($view, ['customer']),
+                $view === 'customer',
 
                 fn($query) =>
                     $query->where('visibility', '=', 'Visible')
@@ -284,12 +283,12 @@ class Product extends Model
             ->where('store_id', '=', $storeId)
             ->where('category', '=', $category)
             ->when(
-                in_array($view, ['customer']),
+                $view === 'customer',
 
                 fn($query) =>
                     $query->where('visibility', '=', 'Visible')
             )
-            ->orderBy('created_at', 'DESC')
+            ->latest()
             ->paginate($page, $limit)
             ->get();
 
@@ -297,7 +296,7 @@ class Product extends Model
             ->where('store_id', '=', $storeId)
             ->where('category', '=', $category)
             ->when(
-                in_array($view, ['customer']),
+                $view === 'customer',
 
                 fn($query) =>
                     $query->where('visibility', '=', 'Visible')
@@ -316,21 +315,21 @@ class Product extends Model
     ): array {
 
         $data = $this->table()
-            ->where('created_at', '>=', 'NOW() - INTERVAL 7 DAY')
+            ->whereRaw('created_at >= NOW() - INTERVAL 7 DAY')
             ->when(
-                in_array($view, ['customer']),
+                $view === 'customer',
 
                 fn($query) =>
                     $query->where('visibility', '=', 'Visible')
             )
-            ->orderBy('created_at', 'DESC')
+            ->latest()
             ->paginate($page, $limit)
             ->get();
 
         $total = $this->table()
-            ->where('created_at', '>=', 'NOW() - INTERVAL 7 DAY')
+            ->whereRaw('created_at >= NOW() - INTERVAL 7 DAY')
             ->when(
-                in_array($view, ['customer']),
+                $view === 'customer',
 
                 fn($query) =>
                     $query->where('visibility', '=', 'Visible')
@@ -351,19 +350,19 @@ class Product extends Model
         $data = $this->table()
             ->where('is_featured', '=', 'TRUE')
             ->when(
-                in_array($view, ['customer']),
+                $view === 'customer',
 
                 fn($query) =>
                     $query->where('visibility', '=', 'Visible')
             )
-            ->orderBy('created_at', 'DESC')
+            ->latest()
             ->paginate($page, $limit)
             ->get();
 
         $total = $this->table()
             ->where('is_featured', '=', 'TRUE')
             ->when(
-                in_array($view, ['customer']),
+                $view === 'customer',
 
                 fn($query) =>
                     $query->where('visibility', '=', 'Visible')
@@ -394,12 +393,6 @@ class Product extends Model
                 '=',
                 'p.product_id'
             )
-            /*
-            ->select([
-                'p.*',
-                'SUM(oi.quantity) AS total_quantity_sold',
-            ])
-            */
             ->groupBy('p.product_id')
             ->having(
                 'SUM(oi.quantity)',
@@ -453,19 +446,19 @@ class Product extends Model
         $data = $this->table()
             ->whereBetween('product_price', [$min, $max])
             ->when(
-                in_array($view, ['customer']),
+                $view === 'customer',
 
                 fn($query) =>
                     $query->where('visibility', '=', 'Visible')
             )
-            ->orderBy('created_at', 'DESC')
+            ->latest()
             ->paginate($page, $limit)
             ->get();
 
         $total = $this->table()
             ->whereBetween('product_price', [$min, $max])
             ->when(
-                in_array($view, ['customer']),
+                $view === 'customer',
 
                 fn($query) =>
                     $query->where('visibility', '=', 'Visible')
@@ -487,19 +480,19 @@ class Product extends Model
         $data = $this->table()
             ->where('product_price', '>=', $min)
             ->when(
-                in_array($view, ['customer']),
+                $view === 'customer',
 
                 fn($query) =>
                     $query->where('visibility', '=', 'Visible')
             )
-            ->orderBy('product_price', 'ASC')
+            ->oldest('product_price')
             ->paginate($page, $limit)
             ->get();
 
         $total = $this->table()
             ->where('product_price', '>=', $min)
             ->when(
-                in_array($view, ['customer']),
+                $view === 'customer',
 
                 fn($query) =>
                     $query->where('visibility', '=', 'Visible')
@@ -521,19 +514,19 @@ class Product extends Model
         $data = $this->table()
             ->where('product_price', '<=', $max)
             ->when(
-                in_array($view, ['customer']),
+                $view === 'customer',
 
                 fn($query) =>
                     $query->where('visibility', '=', 'Visible')
             )
-            ->orderBy('product_price', 'ASC')
+            ->oldest('product_price')
             ->paginate($page, $limit)
             ->get();
 
         $total = $this->table()
             ->where('product_price', '<=', $max)
             ->when(
-                in_array($view, ['customer']),
+                $view === 'customer',
 
                 fn($query) =>
                     $query->where('visibility', '=', 'Visible')
@@ -553,23 +546,22 @@ class Product extends Model
 
         $products = $this->table()
             ->when(
-                in_array($view, ['customer']),
+                $view === 'customer',
 
                 fn($query) =>
                     $query->where('visibility', '=', 'Visible')
             )
-            ->orderBy('category', 'ASC')
-            ->orderBy('created_at', 'DESC')
+            ->oldest('category')
             ->limit(1000)
             ->get();
 
         $productIds       = array_column($products, 'product_id');
         $mediaByProduct   = [];
         $ratingsByProduct = [];
+        $grouped          = [];
+        $categoryCounters = [];
 
         if (!empty($productIds)) {
-
-            $placeholders = implode(',', array_fill(0, count($productIds), '?'));
 
             // ------------ FETCH ONE MEDIA PER PRODUCT ----------- //
             $firstMedia = $this->table('product_media')
@@ -612,9 +604,6 @@ class Product extends Model
                 ];
             }
         }
-
-        $grouped          = [];
-        $categoryCounters = [];
 
         foreach ($products as &$product) {
             $productId = $product['product_id'];
@@ -735,12 +724,12 @@ class Product extends Model
             ->whereLike('product_name', $likeQuery)
             ->orWhere('product_description', 'LIKE', $likeQuery)
             ->when(
-                in_array($view, ['customer']),
+                $view === 'customer',
 
                 fn($query) =>
                     $query->where('visibility', '=', 'Visible')
             )
-            ->orderBy('created_at', 'DESC')
+            ->latest()
             ->paginate($page, $limit)
             ->get();
 
@@ -748,7 +737,7 @@ class Product extends Model
             ->whereLike('product_name', $likeQuery)
             ->orWhere('product_description', 'LIKE', $likeQuery)
             ->when(
-                in_array($view, ['customer']),
+                $view === 'customer',
 
                 fn($query) =>
                     $query->where('visibility', '=', 'Visible')
@@ -770,19 +759,19 @@ class Product extends Model
         $data = $this->table()
             ->where('color', '=', $color)
             ->when(
-                in_array($view, ['customer']),
+                $view === 'customer',
 
                 fn($query) =>
                     $query->where('visibility', '=', 'Visible')
             )
-            ->orderBy('created_at', 'DESC')
+            ->latest()
             ->paginate($page, $limit)
             ->get();
 
         $total = $this->table()
             ->where('color', '=', $color)
             ->when(
-                in_array($view, ['customer']),
+                $view === 'customer',
 
                 fn($query) =>
                     $query->where('visibility', '=', 'Visible')
@@ -806,12 +795,12 @@ class Product extends Model
             ->where('store_id', '=', $storeId)
             ->where('color', '=', $color)
             ->when(
-                in_array($view, ['customer']),
+                $view === 'customer',
 
                 fn($query) =>
                     $query->where('visibility', '=', 'Visible')
             )
-            ->orderBy('created_at', 'DESC')
+            ->latest()
             ->paginate($page, $limit)
             ->get();
 
@@ -819,7 +808,7 @@ class Product extends Model
             ->where('store_id', '=', $storeId)
             ->where('color', '=', $color)
             ->when(
-                in_array($view, ['customer']),
+                $view === 'customer',
 
                 fn($query) =>
                     $query->where('visibility', '=', 'Visible')
@@ -843,12 +832,12 @@ class Product extends Model
             ->where('category', '=', $category)
             ->whereNotIn('product_id', [ $productId ])
             ->when(
-                in_array($view, ['customer']),
+                $view === 'customer',
 
                 fn($query) =>
                     $query->where('visibility', '=', 'Visible')
             )
-            ->orderBy('created_at', 'DESC')
+            ->latest()
             ->paginate($page, $limit)
             ->get();
 
@@ -856,7 +845,7 @@ class Product extends Model
             ->where('category', '=', $category)
             ->whereNotIn('product_id', [ $productId ])
             ->when(
-                in_array($view, ['customer']),
+                $view === 'customer',
 
                 fn($query) =>
                     $query->where('visibility', '=', 'Visible')
@@ -876,7 +865,7 @@ class Product extends Model
             ])
             ->distinct()
             ->whereNotNull('color')
-            ->orderBy('color', 'ASC')
+            ->oldest('color')
             ->get();
     }
 
@@ -903,9 +892,8 @@ class Product extends Model
             ->groupBy([
                 'p.color',
             ])
-            ->orderBy(
+            ->oldest(
                 'p.color',
-                'ASC'
             )
             ->get();
     }
@@ -1016,7 +1004,7 @@ class Product extends Model
     }
 
     /**
-     * ✅ Count All Reviews (for all stores or a specific store)
+     * Count All Reviews (for all stores or a specific store)
      *
      * @param int $userId   - Vendor (store owner) ID
      * @param int|null $storeId - Optional specific store ID
@@ -1062,6 +1050,9 @@ class Product extends Model
             ->count('r.review_id');
     }
 
+    //=========================================
+    // PRIVATE HELPER METHODS   
+    //=========================================
     private function format(
         array $data, 
         int $total, 

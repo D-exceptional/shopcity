@@ -35,16 +35,6 @@ class GuestMiddleware
         string $action = 'login'
     ): string {
 
-        $adminLoginLink  = '/auth/admin/login';
-        $publicLoginLink = '/auth/user/login';
-
-        $pathConfig = [
-            'admin'     => $action === 'login' ? '/admin/dashboard' : $adminLoginLink,
-            'vendor'    => $action === 'login' ? '/vendor/dashboard' : $publicLoginLink,
-            'customer'  => $action === 'login' ? '/' : $publicLoginLink,
-            'affiliate' => $action === 'login' ? '/affiliate/dashboard' : $publicLoginLink,
-        ];
-
-        return $pathConfig[$role];
+        return config("auth.{$role}.{$action}");
     }
 }

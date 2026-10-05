@@ -103,25 +103,31 @@ import {
   //Toggle tab view
   $(".nav-item a").each(function () {
     $(this).on("click", function () {
-      const linkText = $(this).text();
+      const linkText = $(this).text().trim();
+
       switch (linkText) {
+
         case "Details":
-          $("#details").css({ display: "block" });
-          $("#bank, #socials, #security").css({ display: "none" });
+          $("#details").addClass('d-block');
+          $("#bank, #socials, #security").removeClass('d-block');
           break;
+        
         case "Bank":
-          $("#bank").css({ display: "block" });
-          $("#details, #socials, #security").css({ display: "none" });
+          $("#bank").addClass('d-block');
+          $("#details, #socials, #security").removeClass('d-block');
           break;
+        
         case "Socials":
-          $("#socials").css({ display: "block" });
-          $("#details, #bank, #security").css({ display: "none" });
+          $("#socials").addClass('d-block');
+          $("#details, #bank, #security").removeClass('d-block');
           break;
+        
         case "Security":
-          $("#security").css({ display: "block" });
-          $("#details, #bank, #socials").css({ display: "none" });
+          $("#security").addClass('d-block');
+          $("#details, #bank, #socials").removeClass('d-block');
           break;
       }
+
     });
   });
 })(jQuery);

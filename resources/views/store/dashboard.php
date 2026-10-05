@@ -16,11 +16,11 @@
 <body class="hold-transition sidebar-mini layout-fixed">
   <div class="wrapper">
     <!-- Navbar -->
-    <?php include_once ROOT_DIR_PATH . 'includes/store/header.php'; ?>
+    <?php include_once ROOT_DIR_PATH . '/includes/store/header.php'; ?>
     <!-- /.navbar -->
 
     <!-- Main Sidebar Container -->
-    <?php include_once ROOT_DIR_PATH . 'includes/store/sidebar.php'; ?>
+    <?php include_once ROOT_DIR_PATH . '/includes/store/sidebar.php'; ?>
     <!-- / Main Sidebar Container -->
 
     <!-- Content Wrapper. Contains page content -->

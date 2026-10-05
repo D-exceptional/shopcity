@@ -85,7 +85,7 @@
                 </div><!-- /.card-header -->
                 <div class="card-body">
                   <div class="tab-content">
-                    <div class="tab-pane" id="details" style="display: block;">
+                    <div class="tab-pane d-block" id="details">
                       <form class="form-horizontal">
                         <div class="form-group row">
                           <label for="name" class="col-sm-2 col-form-label">Name</label>
@@ -138,7 +138,7 @@
                     </div>
                     <!-- /.tab-pane -->
                     <!-- Socials section -->
-                    <div class="tab-pane" id="socials">
+                    <div class="tab-pane d-none" id="socials">
                       <form class="form-horizontal">
                         <div class="form-group row">
                           <label for="facebook" class="col-sm-2 col-form-label">Facebook</label>

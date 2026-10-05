@@ -97,6 +97,7 @@ class StoreService
             'storeCouponStats'  => $storeCouponStats,
             'storeAvatar'       => $storeData['avatar'],
             'storeName'         => $storeData['name'],
+            'storeId'           => $storeId
         ];
 
         return $data;

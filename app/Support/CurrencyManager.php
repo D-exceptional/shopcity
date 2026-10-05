@@ -28,10 +28,10 @@ class CurrencyManager
         );
 
         if ($this->position === 'before') {
-            return "{$this->symbol}{$formatted}";
+            return "{$this->symbol} {$formatted}";
         }
 
-        return "{$formatted}{$this->symbol}";
+        return "{$formatted} {$this->symbol}";
     }
 
     // =========================================

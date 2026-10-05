@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use PDO;
-
 class Order extends Model
 {
     protected string $table = 'orders';
@@ -151,91 +149,115 @@ class Order extends Model
         return $order;
     }
 
-    public function getOrderItems(
+   public function getOrderItems(
         int $orderId
     ): ?array {
 
-        $fetchQuery = "
-            SELECT 
-                oi.*,
-                p.product_name,
-                pm.media_url AS product_image
-            FROM order_items oi
-            JOIN products p ON p.product_id = oi.product_id
-            LEFT JOIN (
-                SELECT 
-                    product_id, 
-                    MIN(media_id) AS first_media_id
-                FROM product_media
-                GROUP BY product_id
-            ) pm_first ON pm_first.product_id = oi.product_id
-            LEFT JOIN product_media pm ON pm.media_id = pm_first.first_media_id
-            WHERE 
-                oi.order_id = ?
-        ";
+        // ----------------------------------------
+        // Find the first image for each product
+        // ----------------------------------------
+        $firstMedia = $this->table('product_media')
+            ->select([
+                'product_id',
+                'MIN(media_id) AS first_media_id',
+            ])
+            ->groupBy('product_id');
 
-        return $this->queryAll($fetchQuery, [$orderId]);
+        // ----------------------------------------
+        // Fetch order items
+        // ----------------------------------------
+        return $this->table('order_items AS oi')
+            ->select([
+                'oi.*',
+                'p.product_name',
+                'pm.media_url AS product_image',
+            ])
+            ->join(
+                'products AS p',
+                'p.product_id',
+                '=',
+                'oi.product_id'
+            )
+            ->leftJoinSub(
+                $firstMedia,
+                'pm_first',
+                'pm_first.product_id',
+                '=',
+                'oi.product_id'
+            )
+            ->leftJoin(
+                'product_media AS pm',
+                'pm.media_id',
+                '=',
+                'pm_first.first_media_id'
+            )
+            ->where(
+                'oi.order_id',
+                '=',
+                $orderId
+            )
+            ->get();
     }
 
+    /**
+     * Fetch order items with product info and first image
+     * Supports pagination and optional custom SQL
+     *
+     * @param string|null $sql - Optional custom SQL for order_items
+     * @param array $params - Bindings for the custom SQL
+     * @param int $page - Page number for pagination
+     * @param int $limit - Number of items per page
+     * @return array|null
+    */
+
     private function processOrders(
-        ?string $sql = null, 
-        array $params = [], 
-        int $page = 1, 
+        int $page = 1,
         int $limit = 20
     ): ?array {
 
-        $offset    = ($page - 1) * $limit;
-        $baseQuery = $sql ?: "SELECT * FROM order_items";
+        // ----------------------------------------
+        // First product image
+        // ----------------------------------------
+        $firstMedia = $this->table('product_media')
+            ->select([
+                'product_id',
+                'MIN(media_id) AS first_media_id',
+            ])
+            ->groupBy('product_id');
 
-        // Attach Product Info And First Image
-        $fetchQuery = "
-            SELECT 
-                oi.*, 
-                p.product_name,
-                p.stock,
-                (
-                    SELECT pm.media_url
-                    FROM product_media pm 
-                    WHERE pm.product_id = p.product_id 
-                    ORDER BY pm.media_id ASC 
-                    LIMIT 1
-                ) AS product_image
-            FROM ($baseQuery) AS oi
-            LEFT JOIN products p ON oi.product_id = p.product_id
-            ORDER BY oi.item_id DESC
-            LIMIT ? OFFSET ?
-        ";
-
-        $stmt = $this->db->prepare($fetchQuery);
-
-        $i = 1;
-        foreach ($params as $param) {
-            $type = is_int($param) ? PDO::PARAM_INT : PDO::PARAM_STR;
-            $stmt->bindValue($i++, $param, $type);
-        }
-
-        $stmt->bindValue($i++, (int)$limit, PDO::PARAM_INT);
-        $stmt->bindValue($i, (int)$offset, PDO::PARAM_INT);
-
-        $stmt->execute();
-
-        return $stmt->fetchAll();
-    }
-
-    private function format(
-        array $data, 
-        int $total, 
-        int $page, 
-        int $limit
-    ): array {
-
-        return [
-            'orders'      => $data,
-            'total'       => $total,
-            'page'        => $page,
-            'per_page'    => $limit,
-            'total_pages' => ceil($total / $limit),
-        ];
+        // ----------------------------------------
+        // Fetch orders with product information
+        // ----------------------------------------
+        return $this->table('order_items AS oi')
+            ->select([
+                'oi.*',
+                'p.product_name',
+                'p.stock',
+                'pm.media_url AS product_image',
+            ])
+            ->join(
+                'products AS p',
+                'p.product_id',
+                '=',
+                'oi.product_id',
+                'LEFT'
+            )
+            ->leftJoinSub(
+                $firstMedia,
+                'first_media',
+                'first_media.product_id',
+                '=',
+                'p.product_id'
+            )
+            ->leftJoin(
+                'product_media AS pm',
+                'pm.media_id',
+                '=',
+                'first_media.first_media_id'
+            )
+            ->latest('oi.item_id')
+            ->paginate($page, $limit)
+            ->get();
     }
 
     public function getAllOrders(
@@ -244,7 +266,7 @@ class Order extends Model
     ): array {
 
         $orders = $this->table()
-            ->orderBy('created_at', 'DESC')
+            ->latest()
             ->paginate($page, $limit)
             ->get();
 
@@ -262,7 +284,7 @@ class Order extends Model
 
         $orders = $this->table()
             ->where('order_status', '=', $status)
-            ->orderBy('order_id', 'DESC')
+            ->latest('order_id')
             ->paginate($page, $limit)
             ->get();
 
@@ -282,7 +304,7 @@ class Order extends Model
         $orders = $this->table()
             ->where('user_id', '=', $userId)
             ->where('order_status', '!=', 'Cancelled')
-            ->orderBy('created_at', 'DESC')
+            ->latest()
             ->paginate($page, $limit)
             ->get();
 
@@ -301,7 +323,7 @@ class Order extends Model
 
         $orders = $this->table('order_items')
             ->where('store_id', '=', $storeId)
-            ->orderBy('item_id', 'DESC')
+            ->latest('item_id')
             ->paginate($page, $limit)
             ->get();
 
@@ -322,7 +344,7 @@ class Order extends Model
         $orders = $this->table('order_items')
             ->where('store_id', '=', $storeId)
             ->where('item_status', '=', $status)
-            ->orderBy('item_id', 'DESC')
+            ->latest('item_id')
             ->paginate($page, $limit)
             ->get();
 
@@ -474,7 +496,7 @@ class Order extends Model
             ])
             ->distinct()
             ->where('order_id', '=', $orderId)
-            ->orderBy('store_id', 'ASC')
+            ->oldest('store_id')
             ->get();
     }
 
@@ -500,7 +522,7 @@ class Order extends Model
     }
 
     /**
-     * ✅ Total Revenue (Sum of all delivered items)
+     * Total Revenue (Sum of all delivered items)
      *
      * @param int $userId  - Owner of the store(s)
      * @param int|null $storeId - Optional specific store ID
@@ -511,39 +533,6 @@ class Order extends Model
         ?int $userId = null, 
         ?int $storeId = null
     ): float {
-
-        /*
-        $sql = "
-            SELECT 
-                COALESCE(SUM(oi.price * oi.quantity), 0) AS total_revenue
-            FROM order_items AS oi
-            INNER JOIN stores AS s ON s.store_id = oi.store_id
-            WHERE 
-                oi.item_status = 'Delivered'
-        ";
-
-        $params = [];
-
-        // ✅ Vendor mode: filter by vendor’s user ID
-        if (!is_null($userId)) {
-            $sql .= " AND s.user_id = ?";
-            $params[] = $userId;
-        }
-
-        // ✅ Store-specific mode (for both admin + vendor)
-        if (!is_null($storeId)) {
-            $sql .= " AND oi.store_id = ?";
-            $params[] = $storeId;
-        }
-
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute($params);
-
-        $result = $stmt->fetchColumn();
-
-
-        return (float) ($result !== false ? $result : 0);
-        */
 
         $total = $this->table('order_items AS oi')
             ->select([
@@ -575,7 +564,7 @@ class Order extends Model
     }
 
     /**
-     * ✅ Total Orders by Status
+     * Total Orders by Status
      *
      * @param int $userId  - Owner of the store(s)
      * @param string $status - Order item status (e.g., 'Pending', 'Delivered', etc.)
@@ -588,53 +577,6 @@ class Order extends Model
         ?string $status = null, 
         ?int $storeId = null
     ): int {
-
-        /*
-        $sql = "
-            SELECT 
-                COALESCE(COUNT(oi.item_id), 0) AS total_orders
-            FROM order_items AS oi
-            INNER JOIN stores AS s ON s.store_id = oi.store_id
-            WHERE 
-                1
-        ";
-
-        $params = [];
-
-        // ------------------------------------------
-        // Vendor mode: filter by vendor's user_id
-        // Admin mode: skip this (admin sees all)
-        // ------------------------------------------
-        if (!is_null($userId)) {
-            $sql .= " AND s.user_id = ?";
-            $params[] = $userId;
-        }
-
-        // ------------------------------------------
-        // Status filter (Delivered, Pending, etc.)
-        // Optional
-        // ------------------------------------------
-        if (!is_null($status)) {
-            $sql .= " AND oi.item_status = ?";
-            $params[] = $status;
-        }
-
-        // ------------------------------------------
-        // Store filter (for admin + vendor)
-        // Optional
-        // ------------------------------------------
-        if (!is_null($storeId)) {
-            $sql .= " AND oi.store_id = ?";
-            $params[] = $storeId;
-        }
-
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute($params);
-
-        $result = $stmt->fetchColumn();
-
-        return (int) ($result !== false ? $result : 0);
-        */
 
         $total = $this->table('order_items AS oi')
             ->select([
@@ -678,11 +620,11 @@ class Order extends Model
             )
             ->count();
 
-            return (float) $total ?? 0;
+            return (int) $total ?? 0;
     }
 
     /**
-     * ✅ Total Unique Customers (for all stores or a specific store)
+     * Total Unique Customers (for all stores or a specific store)
      *
      * @param int $userId   - Vendor (store owner) ID
      * @param int|null $storeId - Optional specific store ID
@@ -693,39 +635,6 @@ class Order extends Model
         ?int $storeId = null, 
         string $role = 'vendor'
     ): int {
-
-        /*
-        $sql = "
-            SELECT 
-                COALESCE(COUNT(DISTINCT o.user_id), 0) AS unique_customers
-            FROM order_items AS oi
-            INNER JOIN stores AS s ON s.store_id = oi.store_id
-            INNER JOIN orders AS o ON o.order_id = oi.order_id
-            WHERE 
-                1
-        ";
-
-        $params = [];
-
-        // 🔥 Vendor mode → restrict by vendor's user_id
-        if ($role === 'vendor' && !is_null($userId)) {
-            $sql .= " AND s.user_id = ?";
-            $params[] = $userId;
-        }
-
-        // 🔥 Optional store filter
-        if (!is_null($storeId)) {
-            $sql .= " AND oi.store_id = ?";
-            $params[] = $storeId;
-        }
-
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute($params);
-
-        $result = $stmt->fetchColumn();
-
-        return (int) ($result !== false ? $result : 0);
-        */
 
         $total = $this->table('order_items AS oi')
             ->select([
@@ -884,22 +793,8 @@ class Order extends Model
         $params = [$start, $end];
 
         if ($view === 'admin') {
-            // Admin: Global Totals
-            /*
-            $query = "
-                SELECT 
-                    COUNT(*) AS total_sales,
-                    SUM(oi.price) AS total_revenue
-                FROM order_items oi
-                WHERE 
-                    oi.created_at BETWEEN ? AND ?
-            ";
 
-            $stmt = $this->db->prepare($query);
-            $stmt->execute($params);
-            $result = $stmt->fetch();
-            */
-
+            // --- Admin: Global Totals --- //
             $result = $this->table('order_items oi')
                 ->select([
                     'COUNT(*) AS total_sales',
@@ -922,24 +817,7 @@ class Order extends Model
                 throw new Exception("Vendor view requires user ID.");
             }
 
-            // --- 1️⃣ Vendor Totals (All Stores Combined)
-            /*
-            $summaryQuery = "
-                SELECT 
-                    COUNT(*) AS total_sales,
-                    SUM(oi.price) AS total_revenue
-                FROM order_items oi
-                INNER JOIN stores s ON s.store_id = oi.store_id
-                WHERE 
-                    s.user_id = ? 
-                    AND oi.created_at BETWEEN ? AND ?
-            ";
-
-            $summaryStmt = $this->db->prepare($summaryQuery);
-            $summaryStmt->execute([$userId, $start, $end]);
-            $summary = $summaryStmt->fetch();
-            */
-
+            // --- Vendor Totals (All Stores Combined) --- //
             $summary = $this->table('order_items AS oi')
                 ->select([
                     'COUNT(*) AS total_sales',
@@ -961,28 +839,7 @@ class Order extends Model
                 ->whereBetween('oi.created_at', [$start, $end])
                 ->first();
 
-            // --- 2️⃣ Store Breakdown
-            /*
-            $storeQuery = "
-                SELECT 
-                    s.store_id AS store_id,
-                    s.store_name,
-                    COUNT(*) AS total_sales,
-                    SUM(oi.price) AS total_revenue
-                FROM order_items oi
-                INNER JOIN stores s ON s.store_id = oi.store_id
-                WHERE 
-                    s.user_id = ? 
-                    AND oi.created_at BETWEEN ? AND ?
-                GROUP BY s.store_id
-                ORDER BY total_revenue DESC
-            ";
-
-            $storeStmt = $this->db->prepare($storeQuery);
-            $storeStmt->execute([$userId, $start, $end]);
-            $stores = $storeStmt->fetchAll(PDO::FETCH_ASSOC);
-            */
-
+            // --- Store Breakdown --- //
             $stores = $this->table('order_items AS oi')
                 ->select([
                     's.store_id AS store_id',
@@ -1008,7 +865,7 @@ class Order extends Model
                     's.store_id',
                     's.store_name',
                 ])
-                ->orderBy('total_revenue', 'DESC')
+                ->latest('total_revenue')
                 ->get();
 
             return [
@@ -1032,46 +889,6 @@ class Order extends Model
         }
     }
 
-    /*
-    // FUNCTION USAGE 
-
-    // Admin - Defaults to today
-    $adminStats = getSalesAndRevenue();
-    // Vendor - Defaults to today
-    $vendorStats = getSalesAndRevenue('vendor', 7);
-    // Vendor - Last month
-    $vendorStatsLastMonth = getSalesAndRevenue('vendor', 7, 'last_month');
-    // Admin - Custom range
-    $customStats = getSalesAndRevenue('admin', null, 'custom', '2025-10-01', '2025-10-15');
-
-    DEMO FUNCTION RESULT FOR A VENDOR
-    Result for a demo vendor:
-    {
-        "view": "vendor",
-        "total_sales": 54,
-        "total_revenue": 2150.75,
-        "timeframe": "today",
-        "range": {
-            "start": "2025-11-06 00:00:00",
-            "end": "2025-11-06 23:59:59"
-        },
-        "stores": [
-            {
-                "store_id": 3,
-                "store_name": "TechWorld",
-                "total_sales": 32,
-                "total_revenue": 1650.00
-            },
-            {
-                "store_id": 9,
-                "store_name": "StyleHub",
-                "total_sales": 22,
-                "total_revenue": 500.75
-            }
-        ]
-    }
-    */
-
     /**
      * Fetch sales and revenue for both vendors and admins
      * For each vendor, it also genertes store-wide sales and revenue summary
@@ -1090,7 +907,7 @@ class Order extends Model
         $conditions    = [];
         $params        = [];
 
-        // 1️⃣ Role-based Filtering
+        // --- Role-based Filtering --- //
         if ($view === 'admin') {
             $conditions[] = '1'; // no restriction
         } elseif (
@@ -1101,13 +918,13 @@ class Order extends Model
             $params[]     = $userId;
         }
 
-        // 2️⃣ Optional Store Filter
+        // --- Optional Store Filter --- //
         if ($storeId !== null) {
             $conditions[] = 'store_id = ?';
             $params[]     = $storeId;
         }
 
-        // 3️⃣ Date filtering
+        // --- Date filtering --- //
         switch ($period) {
             case 'today':
                 $conditions[] = 'DATE(created_at) = CURDATE()';
@@ -1136,10 +953,10 @@ class Order extends Model
                 break;
         }
 
-        // 4️⃣ Merge Conditions
+        // --- Merge Conditions --- //
         $allConditions = array_merge([$baseCondition], $conditions);
 
-        // 5️⃣ Build Query
+        // --- Build Query --- //
         $sql = "
             SELECT 
                 COUNT(DISTINCT order_id) AS total_orders,
@@ -1149,10 +966,10 @@ class Order extends Model
             WHERE 
         " . implode(' AND ', $allConditions);
 
-        // 6️⃣ Execute
-        $result = $this->queryOne($sql, [$params]);
+        // --- Execute --- //
+        $result = $this->queryOne($sql, $params);
 
-        // 7️⃣ Return clean values
+        // --- Return clean values --- //
         return [
             'total_orders'     => (int)($result['total_orders'] ?? 0),
             'total_items_sold' => (int)($result['total_items_sold'] ?? 0),
@@ -1160,27 +977,22 @@ class Order extends Model
         ];
     }
 
-    /*
-    // FUNCTION USAGE 
+    //=========================================
+    // PRIVATE HELPER METHODS   
+    //=========================================
+    private function format(
+        array $data, 
+        int $total, 
+        int $page, 
+        int $limit
+    ): array {
 
-    // Admin - All stores
-    $stats = $analytics->getSalesAndRevenueByPeriod('admin', null, null, 'last_month');
-
-    // Vendor - All their stores
-    $stats = $analytics->getSalesAndRevenueByPeriod('vendor', $vendorId, null, 'last_week');
-
-    // Vendor - One specific store
-    $stats = $analytics->getSalesAndRevenueByPeriod('vendor', $vendorId, $storeId, 'today');
-
-    // Vendor - Custom range
-    $stats = $analytics->getSalesAndRevenueByPeriod('vendor', $vendorId, $storeId, 'custom', '2025-10-01', '2025-10-31');
-
-    DEMO FUNCTION RESULT FOR A VENDOR
-    Result for a demo vendor:
-    [
-        'total_orders'     => 10,
-        'total_items_sold' => 50,
-        'total_revenue'    => 500
-    ];
-    */
+        return [
+            'orders'      => $data,
+            'total'       => $total,
+            'page'        => $page,
+            'per_page'    => $limit,
+            'total_pages' => ceil($total / $limit),
+        ];
+    }
 }

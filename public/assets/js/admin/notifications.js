@@ -17,16 +17,16 @@ import { formatTimeAgo } from "./utils/index.js";
   // -------------------------------------------------
   // Initialize Counter
     // -------------------------------------------------
-    let offset = 1;
+    let page = 1;
     const limit = 20;
 
   // -------------------------------------------------
   // Load More Notifications
   // -------------------------------------------------
   $(".load-more").on("click", async function () {
-      offset++;
+      page++;
       // Fetch notifications
-      await fetchNotifications({ offset: offset, limit: limit });
+      await fetchNotifications({ page: page, limit: limit });
   });
 
   // ----------------------------------------------------
@@ -40,7 +40,7 @@ import { formatTimeAgo } from "./utils/index.js";
         payload
       );
 
-      if (result.data && result.data !== null && result.data.length > 0) {
+      if (result.data && result.data !== null && result.data?.length > 0) {
         // Display notifications
         displayNotifications(result.data);
       } else {

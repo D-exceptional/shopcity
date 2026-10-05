@@ -26,8 +26,8 @@ class CartController extends Controller
     public function add(Request $request): Response
     {
         $userId    = $request->user()['id'];
-        $productId = $request->route('id');
-        $quantity  = $request->route('quantity');
+        $productId = (int) $request->route('id');
+        $quantity  = (int) $request->route('quantity');
         $result = $this->service->add($productId, $quantity, $userId);
 
         return $this->response->json($result->toArray(), $result->status());
@@ -36,8 +36,8 @@ class CartController extends Controller
     public function update(Request $request): Response
     { 
         $userId    = $request->user()['id'];
-        $productId = $request->route('id');
-        $quantity  = $request->route('quantity');
+        $productId = (int) $request->route('id');
+        $quantity  = (int) $request->route('quantity');
         $result = $this->service->update($productId, $quantity, $userId);
 
         return $this->response->json($result->toArray(), $result->status());
@@ -46,7 +46,7 @@ class CartController extends Controller
     public function remove(Request $request): Response
     { 
         $userId    = $request->user()['id'];
-        $productId = $request->route('id');
+        $productId = (int) $request->route('id');
         $result = $this->service->remove($productId, $userId);
 
         return $this->response->json($result->toArray(), $result->status());

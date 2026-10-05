@@ -100,7 +100,7 @@
             </a>
             <ul class="nav nav-treeview">
               <li class="nav-item">
-                <a href="/store/<?= $storeId ?>/customers/type/unique/page/1" class="nav-link">
+                <a href="/store/<?= $storeId ?>/customers/type/random/page/1" class="nav-link">
                   <i class="far fa-circle nav-icon"></i>
                   <p>All</p>
                 </a>

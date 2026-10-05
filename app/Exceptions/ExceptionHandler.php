@@ -168,7 +168,6 @@ class ExceptionHandler
          * Middleware may explicitly request
          * a redirect response.
          */
-        /*
         if (
             $exception instanceof MiddlewareException
             && $exception->action === 'redirect'
@@ -179,7 +178,7 @@ class ExceptionHandler
                 $exception->status
             );
         }
-        */
+        
 
         /*
          * JSON / API response.
@@ -359,11 +358,11 @@ class ExceptionHandler
     ): int {
 
         if ($exception instanceof ValidationException) {
-            return $exception->status;
+            return $exception->status ?? 422;
         }
 
         if ($exception instanceof MiddlewareException) {
-            return $exception->status;
+            return $exception->status ?? 500;
         }
 
         if ($exception instanceof RouteNotFoundException) {
@@ -375,19 +374,19 @@ class ExceptionHandler
         }
 
         if ($exception instanceof DuplicateRouteException) {
-            return $exception->status;
+            return $exception->status ?? 500;
         }
 
         if ($exception instanceof DuplicateRouteNameException) {
-            return $exception->status;
+            return $exception->status ?? 500;
         }
 
         if ($exception instanceof InvalidRoutePatternException) {
-            return $exception->status;
+            return $exception->status ?? 500;
         }
 
         if ($exception instanceof MethodNotAllowedException) {
-            return $exception->status;
+            return $exception->status ?? 405;
         }
 
         return 500;

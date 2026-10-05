@@ -20,17 +20,6 @@ import { formatNum } from "../../js/shared//utils/index.js";
 (async function ($) {
   ("use strict");
 
-  /*
-  const params = new URLSearchParams(window.location.search);
-  const storeId =
-    params.has("id") && !isNaN(params.get("id"))
-      ? parseInt(params.get("id"))
-            : null;
-    const status =
-    params.has("status")
-        ? params.get("status")
-      : null;
-  */
   const storeId = $(".content-wrapper").data("storeid");
   const status  = $(".content-wrapper").data("status");
 

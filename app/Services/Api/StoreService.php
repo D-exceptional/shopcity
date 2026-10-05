@@ -10,6 +10,7 @@ use App\Events\Store\StoreStatusUpdated;
 use App\Events\Store\StoreAvatarUpdated;
 use App\Events\EventDispatcher;
 use App\Support\TextManager;
+use App\Database\Database;
 use App\Models\Store;
 
 class StoreService
@@ -20,6 +21,7 @@ class StoreService
         protected Result $result, 
         protected EventDispatcher $eventDispatcher,
         protected TextManager $textManager,  
+        protected Database $dbClient,
         protected Store $storeModel, 
     ) {
         $this->baseUrl = config('app.url'); 
@@ -36,20 +38,28 @@ class StoreService
 
         $name = $this->textManager->formatTitle($name);
 
-        // Create Store
-        $storeId = $this->storeModel->createStore(
-            $name, 
-            $avatar, 
-            $description, 
-            $type, 
-            'Pending',
+        $storeId = $this->dbClient->transaction(function () use (
+            $name,
+            $avatar,
+            $description,
+            $type,
             $delivery,
             $userId
-        );
+        )  {
 
-        if ($storeId === null) {
-            return $this->result->error('Failed to create store', 500);
-        }
+            // Create Store
+            $storeId = $this->storeModel->createStore(
+                $name, 
+                $avatar, 
+                $description, 
+                $type, 
+                'Pending',
+                $delivery,
+                $userId
+            );
+
+            return $storeId;
+        });
 
         $this->eventDispatcher->dispatch(
             new StoreCreated(
@@ -58,7 +68,7 @@ class StoreService
             )
         );
 
-        return $this->result->success('Store created successfully', [], 201);
+        return $this->result->success('Store created successfully', ['storeId' => $storeId], 201);
     }
 
     public function updateStoreDetails( 

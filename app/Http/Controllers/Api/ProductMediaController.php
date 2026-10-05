@@ -17,7 +17,7 @@ class ProductMediaController extends Controller
 
     public function findAll(Request $request): Response
     {
-        $productId = $request->route('id');
+        $productId = (int) $request->route('id');
         $result = $this->service->findAll($productId);
 
         return $this->response->json($result->toArray(), $result->status());
@@ -25,7 +25,7 @@ class ProductMediaController extends Controller
 
     public function findOne(Request $request): Response
     {
-        $mediaId = $request->route('id');
+        $mediaId = (int) $request->route('id');
         $result = $this->service->findOne($mediaId);
 
         return $this->response->json($result->toArray(), $result->status());
@@ -33,7 +33,7 @@ class ProductMediaController extends Controller
 
     public function update(Request $request): Response
     {
-        $mediaId = $request->route('id');
+        $mediaId = (int) $request->route('id');
         $newUrl  = $request->input('url');
         $result = $this->service->update($mediaId, $newUrl);
 
@@ -42,7 +42,7 @@ class ProductMediaController extends Controller
 
     public function deleteAll(Request $request): Response
     {
-        $productId = $request->route('id');
+        $productId = (int) $request->route('id');
         $result = $this->service->deleteAll($productId);
 
         return $this->response->json($result->toArray(), $result->status());
@@ -50,7 +50,7 @@ class ProductMediaController extends Controller
 
     public function deleteOne(Request $request): Response
     {
-        $mediaId = $request->route('id');
+        $mediaId = (int) $request->route('id');
         $result = $this->service->deleteOne($mediaId);
 
         return $this->response->json($result->toArray(), $result->status());

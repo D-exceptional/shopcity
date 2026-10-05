@@ -77,17 +77,21 @@ import {
   //Toggle tab view
   $(".nav-item a").each(function () {
     $(this).on("click", function () {
-      const linkText = $(this).text();
+      const linkText = $(this).text().trim();
+
       switch (linkText) {
+
         case "Details":
-          $("#details").css({ display: "block" });
-          $("#security").css({ display: "none" });
+          $("#details").addClass('d-block');
+          $("#security").removeClass("d-block");
           break;
+        
         case "Security":
-          $("#security").css({ display: "block" });
-          $("#details").css({ display: "none" });
+          $("#security").addClass('d-block');
+          $("#details").removeClass("d-block");
           break;
       }
+
     });
   });
 })(jQuery);

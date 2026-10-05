@@ -8,8 +8,8 @@ class DuplicateRouteNameException extends LogicException
 {
     public function __construct(
         string $message = 'Duplicate route name detected',
-        int $code = 0
+        public int $status = 500
     ) {
-        parent::__construct($message, $code);
+        parent::__construct($message, $this->status);
     }
 }

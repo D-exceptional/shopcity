@@ -8,19 +8,6 @@ class CheckoutPayment extends Model
 {
     protected string $table = 'payments';
 
-    public function generateReference(
-        string $type = 'Purchase', 
-        string $identifier = 'SYS'
-    ): string {
-
-        $prefix = 'TXN';
-        $type   = strtoupper(substr($type, 0, 3));
-        $date   = date('ymd');
-        $random = strtoupper(bin2hex(random_bytes(4)));
-
-        return "{$prefix}-{$type}-{$date}-{$random}-{$identifier}";
-    }
-
     public function createPayment(
         int $orderId, 
         float $amount, 
@@ -38,5 +25,21 @@ class CheckoutPayment extends Model
                 'reference' => $reference,
                 'currency'  => $currency
             ]);
+    }
+
+    // =========================================
+    // GENERATE REFERENCE
+    // =========================================
+    public function generateReference(
+        string $type = 'Purchase', 
+        string $identifier = 'SYS'
+    ): string {
+
+        $prefix = 'TXN';
+        $type   = strtoupper(substr($type, 0, 3));
+        $date   = date('ymd');
+        $random = strtoupper(bin2hex(random_bytes(4)));
+
+        return "{$prefix}-{$type}-{$date}-{$random}-{$identifier}";
     }
 }

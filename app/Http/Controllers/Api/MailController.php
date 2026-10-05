@@ -27,7 +27,7 @@ class MailController extends Controller
     public function getInbox(Request $request): Response
     {
         $email = $request->user()['email'];
-        $page  = $request->route('page');
+        $page  = (int) $request->route('page');
         $result = $this->service->getInbox($email, $page);
 
         return $this->response->json($result->toArray(), $result->status());
@@ -36,7 +36,7 @@ class MailController extends Controller
     public function getOutbox(Request $request): Response
     {
         $name  = $request->user()['name'];
-        $page  = $request->route('page');
+        $page  = (int) $request->route('page');
         $result = $this->service->getOutbox($name, $page);
 
         return $this->response->json($result->toArray(), $result->status());
@@ -45,7 +45,7 @@ class MailController extends Controller
 
     public function getMail(Request $request): Response
     {
-        $mailId = $request->route('id');
+        $mailId = (int) $request->route('id');
         $result = $this->service->getMail($mailId);
 
         return $this->response->json($result->toArray(), $result->status());
@@ -54,7 +54,7 @@ class MailController extends Controller
 
     public function deleteMail(Request $request): Response
     {
-        $mailId = $request->route('id');
+        $mailId = (int) $request->route('id');
         $result = $this->service->deleteMail($mailId);
 
         return $this->response->json($result->toArray(), $result->status());

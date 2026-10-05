@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace App\Services\Api;
 
 use App\Core\Result;
+use App\Database\Database;
 use App\Models\Cart;
 
 class CartService
 {
     public function __construct(
         protected Result $result, 
+        protected Database $dbClient,
         protected Cart $cartModel
     ) {}
 
@@ -29,16 +31,25 @@ class CartService
         int $userId
     ): Result {
 
-        if ($quantity <= 0) {
-            return $this->result->error('Quantity must be greater than zero', 422);
-        }
+        $count = $this->dbClient->transaction(function () use (
+            $productId, 
+            $quantity,
+            $userId
+        ) {
 
-        $added = $this->cartModel->add($productId, $quantity, $userId);
-        if ($added === false) {
-            return $this->result->error('Failed to add item', 500);
-        }
+            if ($quantity <= 0) {
+                throw new \Exception("Quantity must be greater than zero");
+            }
 
-        $count = $this->cartModel->countCart($userId);
+            $added = $this->cartModel->add($productId, $quantity, $userId);
+            if (!$added) {
+                throw new \Exception("Failed to add item to cart");
+            }
+
+            $count = $this->cartModel->countCart($userId);
+
+            return $count;
+        });
 
         return $this->result->success('Item added to cart', ['count' => $count]);
     }
@@ -93,30 +104,63 @@ class CartService
         int $userId
     ): Result {
 
-        $errors = [];
-        $successCount = 0;
-
-        foreach ($cart as $item) {
-            if (!isset($item['productId'], $item['quantity'])) {
-                $errors[] = 'Invalid item structure';
-                continue;
-            }
-
-            if ($item['quantity'] <= 0) {
-                $errors[] = "Invalid quantity for product {$item['productId']}";
-                continue;
-            }
-
-            if ($this->cartModel->add($item['productId'], $item['quantity'], $userId)) {
-                $successCount++;
-            } else {
-                $errors[] = "Failed to add product {$item['productId']}";
-            }
+        if (empty($cart)) {
+            throw new \Exception("Cart is empty. Add items to your cart and try again");
         }
 
-        if (!empty($errors)) {
-            return $this->result->success('Cart merged with some issues', ['processed' => $successCount, 'errors' => $errors], 207);
-        }
+        $successCount = $this->dbClient->transaction(function () use (
+            $cart, 
+            $userId
+        ) {
+
+            $successCount = 0;
+            $errors = [
+                'validations' => [],
+                'additions'   => []
+            ];
+
+            // Split Into batches Of 5
+            $batches = array_chunk($cart, 5);
+
+            foreach ($batches as $batch) {
+
+                foreach ($batch as $item) {
+
+                    $productId = $item['productId'];
+                    $quantity  = $item['quantity'];
+
+                    if (!isset($productId, $quantity)) {
+                        $errors['validations'][] = 'Invalid item structure';
+                        continue;
+                    }
+
+                    if ($quantity <= 0) {
+                        $errors['validations'][] = "Invalid quantity for product {$productId}";
+                        continue;
+                    }
+
+                    $itemAdded = $this->cartModel->add($productId, $quantity, $userId);
+                    if (!$itemAdded) {
+                        $errors['additions'][] = "Failed to add product {$productId} to cart";
+                    }
+                    else {
+                        $successCount++;
+                    }
+                }
+
+                // (Optional) Add a slight pause if needed for performance throttling
+                usleep(100000);
+            }
+
+            if (
+                !empty($errors['validations']) 
+                || !empty($errors['additions'])
+            ) {
+                throw new \Exception("Cart merge failed with some issues " . json_encode(['processed' => $successCount, 'errors' => $errors]));
+            }
+
+            return $successCount;
+        });
 
         return $this->result->success('Cart merged successfully', ['processed' => $successCount]);
     }

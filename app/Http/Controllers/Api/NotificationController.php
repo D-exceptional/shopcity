@@ -19,7 +19,7 @@ class NotificationController extends Controller
     {
         $details  = $request->input('details');
         $type     = $request->input('type');
-        $receiver = $request->input('receiver');
+        $receiver = (int) $request->input('receiver');
         $result = $this->service->create($details, $type, $receiver);
 
         return $this->response->json($result->toArray(), $result->status());
@@ -51,8 +51,8 @@ class NotificationController extends Controller
     public function getUnread(Request $request): Response
     {
         $userId = $request->user()['id'];
-        $page   = $request->input('page')  ?? 0;
-        $limit  = $request->input('limit') ?? 20;
+        $page   = (int) $request->input('page')  ?? 0;
+        $limit  = (int) $request->input('limit') ?? 20;
         $result = $this->service->getUnreadById($userId, $page, $limit);
 
         return $this->response->json($result->toArray(), $result->status());
@@ -61,8 +61,8 @@ class NotificationController extends Controller
     public function fetchById(Request $request): Response
     {
         $userId = $request->user()['id'];
-        $page   = $request->input('page')  ?? 0;
-        $limit  = $request->input('limit') ?? 20;
+        $page   = (int) $request->input('page')  ?? 1;
+        $limit  = (int) $request->input('limit') ?? 20;
         $result = $this->service->fetchById($userId, $page, $limit);
 
         return $this->response->json($result->toArray(), $result->status());

@@ -109,17 +109,19 @@ class Push extends Model
         ?string $deviceId = null
     ): bool {
 
-        $query = $this->table()
-            ->where('token', '=', $token);
-
-        if ($deviceId !== null) {
-            $query->where('device_id', '=', $deviceId);
-        }
-
-        return $query->update([
-            'is_active' => 0,
-            'last_seen' => date('Y-m-d H:i:s'),
-        ]);
+        return $this->table()
+            ->where('token', '=', $token)
+            ->when(
+                $deviceId !== null, 
+                
+                function ($query) use ($deviceId) {
+                    $query->where('device_id', '=', $deviceId);
+                }
+            )
+            ->update([
+                'is_active' => 0,
+                'last_seen' => date('Y-m-d H:i:s'),
+            ]);
     }
 
     // =========================================

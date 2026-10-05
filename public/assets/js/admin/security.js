@@ -16,7 +16,7 @@ import {
 (async function ($) {
     "use strict";
 
-  $(".form-security").on("input blur", function () {
+  $(".form-security").on("blur", function () {
     validateInput(this);
   });
 

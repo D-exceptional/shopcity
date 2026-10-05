@@ -17,8 +17,8 @@ class LinkController extends Controller
 
     public function create(Request $request): Response
     {
-        $productId = $request->input('productId'); 
-        $userId    = $request->input('userId'); 
+        $productId = (int) $request->input('productId'); 
+        $userId    = (int) $request->input('userId'); 
         $short     = $request->input('short'); 
         $long      = $request->input('long'); 
         $code      = $request->input('code'); 
@@ -30,7 +30,7 @@ class LinkController extends Controller
 
     public function findAll(Request $request): Response
     {
-        $productId = $request->route('id'); 
+        $productId = (int) $request->route('id'); 
         $result = $this->service->findAll($productId);
 
         return $this->response->json($result->toArray(), $result->status());
@@ -38,7 +38,7 @@ class LinkController extends Controller
 
     public function findOne(Request $request): Response
     {
-        $linkId = $request->route('id'); 
+        $linkId = (int) $request->route('id'); 
         $result = $this->service->findOne($linkId);
 
         return $this->response->json($result->toArray(), $result->status());
@@ -46,7 +46,7 @@ class LinkController extends Controller
 
     public function updateAll(Request $request): Response
     {
-        $productId = $request->route('id'); 
+        $productId = (int) $request->route('id'); 
         $status    = $request->input('status'); 
         $result = $this->service->updateAll($productId, $status);
 
@@ -55,7 +55,7 @@ class LinkController extends Controller
 
     public function updateOne(Request $request): Response
     {
-        $linkId = $request->route('id'); 
+        $linkId = (int) $request->route('id'); 
         $status = $request->input('status'); 
         $result = $this->service->updateOne($linkId, $status);
 
@@ -64,7 +64,7 @@ class LinkController extends Controller
 
     public function deleteAll(Request $request): Response
     {
-        $productId = $request->route('id'); 
+        $productId = (int) $request->route('id'); 
         $result = $this->service->deleteAll($productId);
 
         return $this->response->json($result->toArray(), $result->status());
@@ -73,7 +73,7 @@ class LinkController extends Controller
 
     public function deleteOne(Request $request): Response
     {
-        $linkId = $request->route('id'); 
+        $linkId = (int) $request->route('id'); 
         $result = $this->service->deleteOne($linkId);
 
         return $this->response->json($result->toArray(), $result->status());

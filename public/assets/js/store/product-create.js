@@ -28,6 +28,8 @@ import { redirect } from "../../js/shared/modules/index.js";
     params.has("id") && !isNaN(params.get("id"))
       ? parseInt(params.get("id"))
       : null;
+  
+  
   const UPLOAD_PRESET = "preset_products";
   let productMedia = [];
 
@@ -197,7 +199,7 @@ import { redirect } from "../../js/shared/modules/index.js";
         {}
       );
 
-      if (result.status === 200 && result.data.subcategories.length > 0) {
+      if (result.status === 200 && result.data.subcategories?.length > 0) {
         displaySubcatgeories(result.data.subcategories);
       } else {
         displayMessage(result.message, "info");

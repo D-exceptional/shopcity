@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use PDO;
-
 class Store extends Model
 {
     protected string $table = 'stores';
@@ -25,19 +23,28 @@ class Store extends Model
                 'store_name'        => $name,
                 'store_avatar'      => $avatar,
                 'store_description' => $description,
-                'store_type'        => $type,
                 'store_status'      => $status,
                 'store_delivery'    => $delivery,
                 'user_id'           => $userId,
             ]);
 
-        // Save Social Handles
-        $socialQuery = "
-            INSERT INTO store_socials (facebook, instagram, tiktok, twitter, store_id) 
-            VALUES (?, ?, ?, ?, ?)
-        ";
+        if (!$storeId) {
+            throw new \Exception('Failed to create store');
+        }
 
-        $this->executeQuery($socialQuery, ['N/A', 'N/A', 'N/A', 'N/A', $storeId]);
+        // Save Social Handles
+        $socialSaved = $this->table('store_socials')
+            ->insert([
+                'facebook'  => 'N/A',
+                'instagram' => 'N/A',
+                'tiktok'    => 'N/A',
+                'twitter'   => 'N/A',
+                'store_id'   => $storeId,
+            ]);
+
+        if (!$socialSaved) {
+            throw new \Exception('Failed to create store socials');
+        }
 
         return $storeId;
     }
@@ -66,16 +73,14 @@ class Store extends Model
         int $storeId
     ): bool {
 
-        // Update Social Handles
-        $updateQuery = "
-            UPDATE store_socials 
-            SET 
-                facebook = ?, instagram = ?, tiktok = ?, twitter = ? 
-            WHERE 
-                store_id = ?
-        ";
-
-        $this->executeQuery($updateQuery, [$facebook, $instagram, $tiktok, $twitter, $storeId]);
+        return $this->table('store_socials')
+            ->update([
+                'facebook'  => $facebook,
+                'instagram' => $instagram,
+                'tiktok'    => $tiktok,
+                'twitter'   => $twitter,
+                'store_id'  => $storeId,
+            ]);
     }
 
     public function findStoreAvatar(
@@ -135,58 +140,48 @@ class Store extends Model
         int $storeId
     ): ?array {
 
-        $storeQuery = "
-            SELECT 
-                s.*, 
-                ss.facebook, ss.instagram, ss.tiktok, ss.twitter
-            FROM stores s
-            LEFT JOIN store_socials ss ON s.store_id = ss.store_id
-            WHERE 
-                s.store_id = ?
-            LIMIT 1
-        ";
-
-        return $this->queryOne($storeQuery, [$storeId]);
+        return $this->table('stores s')
+            ->select([
+                's.*',
+                'ss.facebook, ss.instagram, ss.tiktok, ss.twitter',
+            ])
+            ->leftJoin(
+                'store_socials ss',
+                's.store_id',
+                '=',
+                'ss.store_id',
+            )
+            ->where('s.store_id', '=', $storeId)
+            ->first();
     }
 
     public function findStoresByStatus(
-        ?string $status = null, 
+        string $status = 'Pending', 
         int $page = 1, 
         int $limit = 20
     ): ?array {
 
-        $offset = ($page - 1) * $limit;
+        return $this->table('stores s')
+            ->select([
+                's.*',
+                'ss.facebook, ss.instagram, ss.tiktok, ss.twitter',
+            ])
+            ->leftJoin(
+                'store_socials ss',
+                's.store_id',
+                '=',
+                'ss.store_id',
+            )
+            ->when(
+                $status
+                && in_array($status, ['Pending','Active','Deactivated']),
 
-        $storeQuery = "
-            SELECT 
-                s.*, 
-                ss.facebook, ss.instagram, ss.tiktok, ss.twitter
-            FROM stores s
-            LEFT JOIN store_socials ss ON s.store_id = ss.store_id
-        ";
-
-        $params = [];
-
-        if ($status && in_array($status, ['Pending','Active','Deactivated'])) {
-            $storeQuery .= " WHERE s.store_status = ?";
-            $params[] = $status;
-        }
-
-        $storeQuery .= " LIMIT ? OFFSET ?";
-        $params[] = (int)$limit;
-        $params[] = (int)$offset;
-
-        $stmt = $this->db->prepare($storeQuery);
-
-        // Bind All By Order
-        foreach ($params as $index => $value) {
-            $type = is_int($value) ? PDO::PARAM_INT : PDO::PARAM_STR;
-            $stmt->bindValue($index + 1, $value, $type);
-        }
-
-        $stmt->execute();
-
-        return $stmt->fetchAll();
+                function ($query) use ($status) {
+                    $query->where('s.store_status', '=', $status);
+                }
+            )
+            ->paginate($page, $limit)
+            ->get();
     }
 
     public function findStoresByUser(
@@ -195,29 +190,26 @@ class Store extends Model
         int $limit = 20
     ): ?array {
 
-        $offset = ($page - 1) * $limit;
+        return $this->table('stores s')
+            ->select([
+                's.*',
+                'ss.facebook, ss.instagram, ss.tiktok, ss.twitter',
+            ])
+            ->leftJoin(
+                'store_socials ss',
+                's.store_id',
+                '=',
+                'ss.store_id',
+            )
+            ->when(
+                $userId !== null,
 
-        $storeQuery = "
-            SELECT 
-                s.*, 
-                ss.facebook, ss.instagram, ss.tiktok, ss.twitter
-            FROM stores s
-            LEFT JOIN store_socials ss ON s.store_id = ss.store_id
-            WHERE 
-                s.user_id = ? 
-            LIMIT ? OFFSET ?
-        ";
-
-        $stmt = $this->db->prepare($storeQuery);
-
-        // Bind Params In Order: user_id → limit → offset
-        $stmt->bindValue(1, $userId, PDO::PARAM_INT);
-        $stmt->bindValue(2, (int)$limit, PDO::PARAM_INT);
-        $stmt->bindValue(3, (int)$offset, PDO::PARAM_INT);
-
-        $stmt->execute();
-
-        return $stmt->fetchAll();
+                function ($query) use ($userId) {
+                    $query->where('s.user_id', '=', $userId);
+                }
+            )
+            ->paginate($page, $limit)
+            ->get();
     }
 
     public function createCoupon(
@@ -226,12 +218,12 @@ class Store extends Model
         int $storeId
     ): bool {
 
-        $createQuery = "
-            INSERT INTO store_coupons (coupon_code, coupon_discount, store_id) 
-            VALUES (?, ?, ?)
-        ";
-
-        return $this->executeQuery($createQuery, [$code, $discount, $storeId]);
+        return $this->table('store_coupons')
+            ->insert([
+                'coupon_code'     => $code,
+                'coupon_discount' => $discount,
+                'store_id'        => $storeId,
+            ]);
     }
 
     public function findCoupon(
@@ -239,16 +231,10 @@ class Store extends Model
         int $storeId
     ): bool {
 
-        $fetchQuery = "
-            SELECT 
-                * 
-            FROM store_coupons 
-            WHERE 
-                coupon_code = ? 
-                AND store_id = ?
-        ";
-
-        return $this->executeQuery($fetchQuery, [$code, $storeId]);
+        return $this->table('store_coupons')
+            ->where('coupon_code', '=', $code)
+            ->where('store_id', '=', $storeId)
+            ->exists();
     }
 
     public function updateCoupon(
@@ -258,41 +244,31 @@ class Store extends Model
         int $couponId
     ): bool {
 
-        $updateQuery = "
-            UPDATE store_coupons 
-            SET 
-                coupon_code = ?, coupon_discount = ?, coupon_status = ? 
-            WHERE 
-                coupon_id = ?
-        ";
-
-        return $this->executeQuery($updateQuery, [$code, $discount, $status, $couponId]);
+        return $this->table('store_coupons')
+            ->update([
+                'coupon_code'     => $code,
+                'coupon_discount' => $discount,
+                'coupon_status'   => $status,
+                'coupon_id'       => $couponId,
+            ]);
     }
 
     public function deleteSingleCoupon(
         int $couponId
     ): bool {
 
-        $deleteQuery = "
-           DELETE FROM store_coupons 
-           WHERE 
-                coupon_id = ?
-        ";
-
-        return $this->executeQuery($deleteQuery, [$couponId]);
+        return $this->table('store_coupons')
+            ->where('coupon_id', '=', $couponId)
+            ->delete();
     }
 
     public function deleteCouponByStore(
         int $storeId
     ): bool {
 
-        $deleteQuery = "
-           DELETE FROM store_coupons 
-           WHERE 
-                store_id = ?
-        ";
-
-        return $this->executeQuery($deleteQuery, [$storeId]);
+        return $this->table('store_coupons')
+            ->where('store_id', '=', $storeId)
+            ->delete();
     }
 
     public function deleteCouponByStoreAndStatus(
@@ -300,90 +276,27 @@ class Store extends Model
         int $storeId
     ): bool {
 
-        $deleteQuery = "
-           DELETE FROM store_coupons 
-           WHERE 
-                coupon_status = ?
-                AND store_id = ?
-        ";
-
-        return $this->executeQuery($deleteQuery, [$status, $storeId]);
-    }
-
-    private function fetchCoupons(
-        ?string $sql = null, 
-        array $params = [], 
-        int $page = 1, 
-        int $limit = 20
-    ): ?array {
-
-        $offset = ($page - 1) * $limit;
-
-        $sql .= " LIMIT ? OFFSET ?";
-        $stmt = $this->db->prepare($sql);
-
-        $i = 1;
-        foreach ($params as $param) {
-            $type = is_int($param) ? PDO::PARAM_INT : PDO::PARAM_STR;
-            $stmt->bindValue($i++, $param, $type);
-        }
-
-        $stmt->bindValue($i++, (int)$limit, PDO::PARAM_INT);
-        $stmt->bindValue($i, (int)$offset, PDO::PARAM_INT);
-
-        $stmt->execute();
-
-        return $stmt->fetchAll();
-    }
-
-    private function countResults(
-        ?string $sql = null, 
-        array $params = []
-    ): int {
-
-        return $this->fetchColumn($sql, $params);
-    }
-
-    private function formatCoupons(
-        array $data, 
-        int $total, 
-        int $page, 
-        int $limit
-    ): array {
-
-        return [
-            'coupons'     => $data,
-            'total'       => $total,
-            'page'        => $page,
-            'per_page'    => $limit,
-            'total_pages' => ceil($total / $limit),
-        ];
+        return $this->table('store_coupons')
+            ->where('coupon_status', '=', $status)
+            ->where('store_id', '=', $storeId)
+            ->delete();
     }
 
     public function findCouponsByStore(
         ?int $storeId = null, 
         int $page = 1, 
         int $limit = 20
-    ): ?array {
+    ): array {
 
-        $fetchQuery = "
-            SELECT 
-                c.* 
-            FROM store_coupons c 
-            WHERE 
-                c.store_id = ?
-        ";
+        $coupons = $this->table('store_coupons')
+            ->where('store_id', '=', $storeId)
+            ->latest()
+            ->paginate($page, $limit)
+            ->get();
 
-        $countQuery = "
-            SELECT 
-                COUNT(*) 
-            FROM store_coupons c 
-            WHERE 
-                c.store_id = ?
-        ";
-
-        $coupons = $this->fetchCoupons($fetchQuery, [$storeId], $page, $limit);
-        $total   = $this->countResults($countQuery, [$storeId]);
+        $total = $this->table('store_coupons')
+            ->where('store_id', '=', $storeId)
+            ->count();
 
         return $this->formatCoupons($coupons, $total, $page, $limit);
     }
@@ -393,42 +306,32 @@ class Store extends Model
         ?string $status = null, 
         int $page = 1, 
         int $limit = 20
-    ): ?array {
+    ): array {
 
-        $fetchQuery = "
-            SELECT 
-                c.* 
-            FROM store_coupons c 
-            WHERE 
-                c.store_id = ? 
-                AND c.coupon_status = ?
-        ";
+        $coupons = $this->table('store_coupons')
+            ->where('store_id', '=', $storeId)
+            ->where('coupon_status', '=', $status)
+            ->latest()
+            ->paginate($page, $limit)
+            ->get();
 
-        $countQuery = "
-            SELECT 
-                COUNT(*) 
-            FROM store_coupons c 
-            WHERE 
-                c.store_id = ? 
-                AND c.coupon_status = ?
-        ";
-
-        $coupons = $this->fetchCoupons($fetchQuery, [$storeId, $status], $page, $limit);
-        $total   = $this->countResults($countQuery, [$storeId, $status]);
+        $total = $this->table('store_coupons')
+            ->where('store_id', '=', $storeId)
+            ->where('coupon_status', '=', $status)
+            ->count();
 
         return $this->formatCoupons($coupons, $total, $page, $limit);
     }
 
     public function countStoresByStatus(): array
     {
-        $countQuery = "
-            SELECT 
-                store_status, COUNT(*) AS total
-            FROM {$this->table}
-            GROUP BY store_status
-        ";
-
-        $results = $this->queryAll($countQuery);
+        $results = $this->table()
+            ->select([
+                'store_status',
+                'COUNT(*) AS total',
+            ])
+            ->groupBy(['store_status'])
+            ->get();
 
         // Initialize Counts With 0 To Avoid Missing Keys
         $countKeys = [
@@ -444,25 +347,330 @@ class Store extends Model
         return $countKeys;
     }
 
+    // Get brands in alphabetical order
     public function getBrands(
-        int $page = 1, 
+        int $page = 1,
         int $limit = 20
     ): ?array {
 
-        $offset = ($page - 1) * $limit;
+        return $this->table('stores AS s')
+            ->select([
+                's.*',
+                'COUNT(p.product_id) AS product_count',
+            ])
+            ->join(
+                'products AS p',
+                'p.store_id',
+                '=',
+                's.store_id'
+            )
+            ->groupBy('s.store_id')
+            ->oldest('s.store_name')
+            ->paginate($page, $limit)
+            ->get();
+    }
 
-        $brandsQuery = "
-            SELECT 
-                s.*, COUNT(p.product_id) AS product_count
-            FROM {$this->table} s
-            INNER JOIN products p ON p.store_id = s.store_id
-            GROUP BY s.store_id
-            HAVING COUNT(p.product_id) > 0
-            ORDER BY s.store_name ASC
-            LIMIT {$limit} OFFSET {$offset}
-        ";
+    // Get brands by most products
+    public function getTopProductBrands(
+        int $page = 1,
+        int $limit = 20
+    ): ?array {
 
-        return $this->queryAll($brandsQuery);
+        $brands = $this->table('stores AS s')
+            ->select([
+                's.*',
+                'COUNT(p.product_id) AS product_count',
+            ])
+            ->join(
+                'products AS p',
+                'p.store_id',
+                '=',
+                's.store_id'
+            )
+            ->groupBy('s.store_id')
+            ->latest('product_count')
+            ->paginate($page, $limit)
+            ->get();
+
+        $total = $this->table('stores AS s')
+            ->join(
+                'products AS p',
+                'p.store_id',
+                '=',
+                's.store_id'
+            )
+            ->countDistinct('s.store_id');
+
+        return $this->formatBrands(
+            $brands,
+            $total,
+            $page,
+            $limit
+        );
+    }
+
+    public function getTopSellingBrands(
+        int $page = 1,
+        int $limit = 20
+    ): ?array {
+        
+        $brands = $this->table('stores AS s')
+            ->select([
+                's.*',
+                'SUM(oi.quantity) AS total_quantity_sold',
+            ])
+            ->join(
+                'products AS p',
+                'p.store_id',
+                '=',
+                's.store_id'
+            )
+            ->join(
+                'order_items AS oi',
+                'oi.product_id',
+                '=',
+                'p.product_id'
+            )
+            ->groupBy('s.store_id')
+            ->having(
+                'SUM(oi.quantity)',
+                '>=',
+                200
+            )
+            ->latest(
+                'total_quantity_sold'
+            )
+            ->paginate($page, $limit)
+            ->get();
+
+        /*
+        * Count the number of stores that have sold
+        * at least 200 products.
+        */
+        $qualifiedBrands = $this->table('stores AS s')
+            ->select([
+                's.store_id',
+            ])
+            ->join(
+                'products AS p',
+                'p.store_id',
+                '=',
+                's.store_id'
+            )
+            ->join(
+                'order_items AS oi',
+                'oi.product_id',
+                '=',
+                'p.product_id'
+            )
+            ->groupBy('s.store_id')
+            ->having(
+                'SUM(oi.quantity)',
+                '>=',
+                200
+            );
+
+        $total = $this->newQuery()
+            ->fromSub(
+                $qualifiedBrands,
+                'qualified_brands'
+            )
+            ->count();
+
+        return $this->formatBrands(
+            $brands,
+            $total,
+            $page,
+            $limit
+        );
+    }
+
+    public function countVendorStores(
+        int $userId, 
+        string $status
+    ): int {
+
+        return $this->table()
+            ->where('user_id', '=', $userId)
+            ->where('store_status', '=', $status)
+            ->count();
+    }
+
+    public function getVendorStoreStats(
+        int $userId
+    ): array {
+
+        return [
+            'active'      => $this->countVendorStores($userId, 'Active'),
+            'pending'     => $this->countVendorStores($userId, 'Pending'),
+            'deactivated' => $this->countVendorStores($userId, 'Deactivated'),
+        ];
+    }
+
+    /**
+     * Count All Coupons for a Store
+     *
+     * @param int $storeId - The store ID
+     * @return int
+     */
+    public function countAllCouponsByStore(
+        int $storeId
+    ): int {
+
+        if (is_null($storeId)) {
+            return 0;
+        }
+
+        return $this->table('store_coupons')
+            ->select([
+                'COALESCE(COUNT(coupon_id), 0) AS total_coupons',
+            ])
+            ->where('store_id', '=', $storeId)
+            ->count();
+    }
+
+    /**
+     * Count Coupons by Status for a Store
+     *
+     * @param int $storeId - The store ID
+     * @param string $status - Coupon status ('Active' or 'Deactivated')
+     * @return int
+     */
+    public function countResultsByStatus(
+        int $storeId, 
+        string $status
+    ): int {
+
+        if (is_null($storeId)) {
+            return 0;
+        }
+
+        return $this->table('store_coupons')
+            ->select([
+                'COALESCE(COUNT(coupon_id), 0) AS total_by_status',
+            ])
+            ->where('store_id', '=', $storeId)
+            ->where('coupon_status', '=', $status)
+            ->count();
+    }
+
+    public function getStoreCouponStats(
+        int $storeId
+    ): array {
+
+        return [
+            'total'     => $this->countAllCouponsByStore($storeId),
+            'active'    => $this->countResultsByStatus($storeId, 'Active'),
+            'inactive'  => $this->countResultsByStatus($storeId, 'Deactivated'),
+        ];
+    }
+
+    public function getStoreCustomersByType(
+        ?int $storeId = null,
+        string $type = 'random',
+        int $page = 1,
+        int $limit = 20
+    ): array {
+
+        $type = strtolower($type);
+
+        if (!in_array($type, ['random', 'loyal'], true)) {
+            throw new \InvalidArgumentException(
+                "Type must be 'random' or 'loyal'."
+            );
+        }
+
+        // ----------------------------------------
+        // Build customer query
+        // ----------------------------------------
+        $customersQuery = $this->table('order_items AS oi')
+            ->select([
+                'u.user_id',
+                'u.firstname',
+                'u.lastname',
+                'u.email',
+                'u.contact',
+                'u.country',
+                'COUNT(DISTINCT o.order_id) AS total_orders',
+            ])
+            ->join(
+                'orders AS o',
+                'o.order_id',
+                '=',
+                'oi.order_id'
+            )
+            ->join(
+                'users AS u',
+                'u.user_id',
+                '=',
+                'o.user_id'
+            )
+            ->where(
+                'oi.store_id',
+                '=',
+                $storeId
+            )
+            ->groupBy([
+                'u.user_id',
+                'u.firstname',
+                'u.lastname',
+                'u.email',
+                'u.contact',
+                'u.country',
+            ]);
+
+        // ----------------------------------------
+        // Customer type
+        // ----------------------------------------
+        $customersQuery->having(
+            'COUNT(DISTINCT o.order_id)',
+            '>=',
+            $type === 'loyal' ? 20 : 1
+        );
+
+        // ----------------------------------------
+        // Count qualified customers
+        // ----------------------------------------
+        $total = $this->newQuery()
+            ->fromSub(
+                $customersQuery,
+                'customers'
+            )
+            ->count();
+
+        // ----------------------------------------
+        // Get paginated customers
+        // ----------------------------------------
+        $customers = $customersQuery
+            ->orderBy('total_orders', 'DESC')
+            ->paginate($page, $limit)
+            ->get();
+
+        return $this->formatCustomers(
+            $customers,
+            $total,
+            $page,
+            $limit
+        );
+    }
+
+    // ======================================
+    //  PRIVATE HELPER METHODS
+    // ======================================
+    private function formatCoupons(
+        array $data, 
+        int $total, 
+        int $page, 
+        int $limit
+    ): array {
+
+        return [
+            'coupons'     => $data,
+            'total'       => $total,
+            'page'        => $page,
+            'per_page'    => $limit,
+            'total_pages' => ceil($total / $limit),
+        ];
     }
 
     private function formatBrands(
@@ -481,120 +689,6 @@ class Store extends Model
         ];
     }
 
-    public function getTopBrands(
-        int $page = 1, 
-        int $limit = 20
-    ): ?array {
-
-        $countQuery = "
-            SELECT COUNT(*) FROM (
-                SELECT 
-                    s.store_id
-                FROM {$this->table} s
-                INNER JOIN products p ON p.store_id = s.store_id
-                GROUP BY s.store_id
-                HAVING COUNT(p.product_id) > 0
-            ) AS brand_count
-        ";
-
-        $brands = $this->getBrands($page, $limit);
-        $total  = $this->countResults($countQuery);
-
-        return $this->formatBrands($brands, $total, $page, $limit);
-    }
-
-    public function countVendorStores(
-        int $userId, 
-        string $status
-    ): int {
-
-        $countQuery = "
-            SELECT 
-                COUNT(*) 
-            FROM {$this->table}
-            WHERE 
-                user_id = ? 
-                AND store_status = ?
-        ";
-
-        return $this->fetchColumn($countQuery, [$userId, $status]);
-    }
-
-    public function getVendorStoreStats(
-        int $userId
-    ): array {
-
-        return [
-            'active'      => $this->countVendorStores($userId, 'Active'),
-            'pending'     => $this->countVendorStores($userId, 'Pending'),
-            'deactivated' => $this->countVendorStores($userId, 'Deactivated'),
-        ];
-    }
-
-    /**
-     * ✅ Count All Coupons for a Store
-     *
-     * @param int $storeId - The store ID
-     * @return int
-     */
-    public function countAllCouponsByStore(
-        int $storeId
-    ): int {
-
-        if (is_null($storeId)) {
-            return 0;
-        }
-
-        $countQuery = "
-            SELECT 
-                COALESCE(COUNT(coupon_id), 0) AS total_coupons
-            FROM store_coupons
-            WHERE 
-                store_id = ?
-        ";
-
-        return $this->fetchColumn($countQuery, [$storeId]);
-    }
-
-    /**
-     * ✅ Count Coupons by Status for a Store
-     *
-     * @param int $storeId - The store ID
-     * @param string $status - Coupon status ('Active' or 'Deactivated')
-     * @return int
-     */
-    public function countResultsByStatus(
-        int $storeId, 
-        string $status
-    ): int {
-
-        if (is_null($storeId)) {
-            return 0;
-        }
-
-        $countQuery = "
-            SELECT 
-                COALESCE(COUNT(coupon_id), 0) AS total_by_status
-            FROM store_coupons
-            WHERE 
-                store_id = ?
-                AND coupon_status = ?
-        ";
-
-        return $this->fetchColumn($countQuery, [$storeId, $status]);
-    }
-
-    public function getStoreCouponStats(
-        int $storeId
-    ): array {
-
-        return [
-            'total'     => $this->countAllCouponsByStore($storeId),
-            'active'    => $this->countResultsByStatus($storeId, 'Active'),
-            'inactive'  => $this->countResultsByStatus($storeId, 'Deactivated'),
-        ];
-    }
-
     private function formatCustomers(
         array $data, 
         int $total, 
@@ -609,75 +703,5 @@ class Store extends Model
             'per_page'    => $limit,
             'total_pages' => ceil($total / $limit),
         ];
-    }
-
-    public function getStoreCustomersByType(
-        ?int $storeId = null, 
-        string $type = 'unique', 
-        int $page = 1, 
-        int $limit = 20
-    ): ?array {
-
-        $offset = ($page - 1) * $limit;
-        $type   = strtolower($type);
-
-        if (!in_array($type, ['unique', 'loyal'])) {
-            throw new InvalidArgumentException("Type must be 'unique' or 'loyal'.");
-        }
-
-        // -------------------------------
-        // Base SQL (shared by both queries)
-        // -------------------------------
-        $baseQuery = "
-            FROM order_items oi
-            JOIN orders o ON o.order_id = oi.order_id
-            JOIN users u ON u.user_id = o.user_id
-            WHERE 
-                oi.store_id = ?
-            GROUP BY u.user_id, u.firstname, u.lastname, u.email, u.contact, u.country
-        ";
-
-        // -------------------------------
-        // Add loyalty condition
-        // -------------------------------
-        $havingCondition = ($type === 'loyal')
-            ? " HAVING COUNT(DISTINCT o.order_id) >= 20" // Adjust as necessary
-            : " HAVING COUNT(DISTINCT o.order_id) >= 1";
-
-        // -------------------------------
-        // 1️⃣ Get total count
-        // -------------------------------
-        $countQuery = "
-            SELECT COUNT(*) AS total FROM (
-                SELECT u.user_id {$baseQuery} {$havingCondition}
-            ) AS subquery
-        ";
-
-        $total = $this->fetchColumn($countQuery, [$storeId]);
-
-        // -------------------------------
-        // 2️⃣ Get paginated results
-        // -------------------------------
-        $customerQuery = "
-            SELECT 
-                u.user_id,
-                u.firstname,
-                u.lastname,
-                u.email,
-                u.contact, 
-                u.country,
-                COUNT(DISTINCT o.order_id) AS total_orders
-            {$baseQuery}
-            {$havingCondition}
-            ORDER BY total_orders DESC
-        LIMIT {$limit} OFFSET {$offset}
-        ";
-
-        $customers = $this->queryAll($customerQuery, [$storeId]);
-
-        // -------------------------------
-        // 3️⃣ Return in pagination format
-        // -------------------------------
-        return $this->formatCustomers($customers, $total, $page, $limit);
     }
 }

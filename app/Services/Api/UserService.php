@@ -257,7 +257,7 @@ class UserService
        $jwtData = $this->sessionManager->jwtLogin($sessionData);
 
         // Get Dashboard Path
-        $dashboardPath = $this->getPath($sessionData['role'], 'login');
+        $dashboardPath = $this->getPath($sessionData['role'], 'dashboard');
 
         return $this->result->success(
             'Login successful', [
@@ -482,7 +482,7 @@ class UserService
         string $role
     ): Result {
 
-        $loginPath = $this->getPath($role, 'logout');
+        $loginPath = $this->getPath($role, 'login');
 
         // Destroy Session
         $this->sessionManager->terminate('user');
@@ -493,7 +493,7 @@ class UserService
     public function contact(
         string $name, 
         string $email, 
-        int $contact, 
+        string $contact, 
         string $country, 
         string $subject, 
         string $message, 
@@ -551,8 +551,13 @@ class UserService
     ): Result { 
 
         $users = $this->userModel->getByRole($role, $page);
-        if (count($users['users']) === 0) {
+
+        if (!$users) {
             return $this->result->error('Failed to fetch users', 500);
+        }
+
+        if (count($users['users']) === 0) {
+            return $this->result->success('No results found');
         }
         
         return $this->result->success('Users fetched successfully', $users);
@@ -587,19 +592,8 @@ class UserService
         string $action
     ): string {
 
-        $userRole = strtolower($role);
+        $role = strtolower($role);
 
-        $adminLoginLink  = '/auth/admin/login';
-        $publicLoginLink = '/auth/user/login';
-
-        $pathConfig = [
-            'admin'     => $action === 'login' ? '/admin/dashboard' : $adminLoginLink,
-            'vendor'    => $action === 'login' ? '/vendor/dashboard' : $publicLoginLink,
-            'customer'  => $action === 'login' ? '/' : $publicLoginLink,
-            'affiliate' => $action === 'login' ? '/affiliate/dashboard' : $publicLoginLink,
-        ];
-
-        // return $baseUrl . $pathConfig[$userRole];
-        return $pathConfig[$userRole];
+        return config("auth.{$role}.{$action}");
     }
 }

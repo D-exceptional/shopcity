@@ -16,7 +16,7 @@ import { formatNum } from "./utils/index.js";
 (async function ($) {
   ("use strict");
 
-  countTotal("Stores");
+  const status = $(".content-wrapper").data("status");
 
   // -------------------------------------------------
   // Initialize Counter
@@ -70,7 +70,7 @@ import { formatNum } from "./utils/index.js";
     $(this).text("Processing...");
     offset++;
    
-    await fetchStores({ status: null, page: offset, total: limit });
+    await fetchStores({ status: status, page: offset, total: limit });
   });
 
   // -------------------------------------------------
@@ -97,7 +97,7 @@ import { formatNum } from "./utils/index.js";
       if (
         result.data &&
         result.data !== null &&
-        result.data.stores.length > 0
+        result.data.stores?.length > 0
       ) {
         // Display stores
         displayStores(result.data.stores);
@@ -168,7 +168,7 @@ import { formatNum } from "./utils/index.js";
 
   function countTotal(type = "Stores") {
     const total = $("tbody tr.content-row").length;
-    $(".content-header h1 b").text(`${type} (${formatNum(total)})`);
+    $(".content-header h1 b").text(`${status} ${type} (${formatNum(total)})`);
   }
 
   async function manageStore(payload, el) {

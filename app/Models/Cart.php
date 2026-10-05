@@ -14,45 +14,62 @@ class Cart extends Model
 
     public function view(
         int $userId
-    ): array {
-        /*
-         * The product_media subquery is still raw SQL for now.
-         *
-         * Your current QueryBuilder does not yet support
-         * subqueries in joins, so there is no reason to force
-         * this query into the builder prematurely.
-         */
+    ): ?array {
 
-        $sql = "
-            SELECT
-                c.cart_id,
-                c.user_id,
-                c.product_id,
-                c.quantity,
-                p.product_name,
-                p.category,
-                p.product_price,
-                p.store_id,
-                (p.product_price * c.quantity) AS total_price,
-                pm.media_url AS product_image
+        // =========================================
+        // FIRST PRODUCT MEDIA
+        // =========================================
 
-            FROM {$this->table} c
+        $firstMedia = $this->table('product_media')
+            ->select([
+                'product_id',
+                'MIN(media_id) AS first_media_id',
+            ])
+            ->groupBy('product_id');
 
-            JOIN products p
-                ON p.product_id = c.product_id
 
-            LEFT JOIN product_media pm
-                ON pm.product_id = p.product_id
-                AND pm.media_id = (
-                    SELECT MIN(media_id)
-                    FROM product_media
-                    WHERE product_id = p.product_id
-                )
+        // =========================================
+        // CART QUERY
+        // =========================================
 
-            WHERE c.user_id = ?
-        ";
-
-        return $this->queryAll($sql, [$userId]);
+        return $this->table('cart AS c')
+            ->select([
+                'c.cart_id',
+                'c.user_id',
+                'c.product_id',
+                'c.quantity',
+                'p.product_name',
+                'p.category',
+                'p.product_price',
+                'p.store_id',
+                '(p.product_price * c.quantity) AS total_price',
+                'pm.media_url AS product_image',
+            ])
+            ->join(
+                'products AS p',
+                'p.product_id',
+                '=',
+                'c.product_id'
+            )
+            ->leftJoinSub(
+                $firstMedia,
+                'first_media',
+                'first_media.product_id',
+                '=',
+                'p.product_id'
+            )
+            ->leftJoin(
+                'product_media AS pm',
+                'pm.media_id',
+                '=',
+                'first_media.first_media_id'
+            )
+            ->where(
+                'c.user_id',
+                '=',
+                $userId
+            )
+            ->get();
     }
 
 
@@ -66,32 +83,25 @@ class Cart extends Model
         int $userId
     ): bool {
 
-        return $this->transaction(function () use (
-            $productId,
-            $quantity,
-            $userId
-        ) {
+        $existing = $this->table()
+            ->where('user_id', '=', $userId)
+            ->where('product_id', '=', $productId)
+            ->lockForUpdate()
+            ->first();
 
-            $existing = $this->table()
-                ->where('user_id', '=', $userId)
-                ->where('product_id', '=', $productId)
-                ->lockForUpdate()
-                ->first();
-
-            if ($existing) {
-
-                return $this->table()
-                    ->where('cart_id', '=', $existing['cart_id'])
-                    ->increment('quantity', $quantity);
-            }
+        if ($existing) {
 
             return $this->table()
-                ->insert([
-                    'product_id' => $productId,
-                    'quantity'   => $quantity,
-                    'user_id'    => $userId,
-                ]);
-        });
+                ->where('cart_id', '=', $existing['cart_id'])
+                ->increment('quantity', $quantity);
+        }
+
+        return $this->table()
+            ->insert([
+                'product_id' => $productId,
+                'quantity'   => $quantity,
+                'user_id'    => $userId,
+            ]);
     }
 
 
@@ -191,7 +201,7 @@ class Cart extends Model
 
     public function getCartUsers(): array
     {
-        $users = $this->table()
+        $users = $this->table('cart c')
             ->select([
                 'u.user_id',
                 'u.firstname',
@@ -201,7 +211,7 @@ class Cart extends Model
             ])
             ->join(
                 'users u',
-                'cart.user_id',
+                'c.user_id',
                 '=',
                 'u.user_id',
                 'INNER'

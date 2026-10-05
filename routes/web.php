@@ -58,12 +58,12 @@ $router->group('/admin', function ($router) {
     $router->get('/products/page/{page}', [AdminController::class, 'productList'], [], 'web.admin.product.list');
     $router->get('/product/{id}', [AdminController::class, 'productView'], [], 'web.admin.product.view');
     $router->get('/profile', [AdminController::class, 'profile'], [], 'web.admin.profile');
-    $router->get('/stores/page/{page}', [AdminController::class, 'storeList'], [], 'web.admin.store.list');
+    $router->get('/stores/status/{status}/page/{page}', [AdminController::class, 'storeList'], [], 'web.admin.store.list');
     $router->get('/users/role/{role}/page/{page}', [AdminController::class, 'users'], [], 'web.admin.users');
 }, [
     [SessionMiddleware::class, 'handle'],
-    [AuthMiddleware::class, 'handle'],
-    [RoleMiddleware::class, 'handle', ['role' => ['admin']]],
+    [AuthMiddleware::class, 'handle', ['role' => 'admin']],
+    [RoleMiddleware::class, 'handle', ['role' => 'admin']],
     [
         RateLimitMiddleware::class, 'handle', 
         [
@@ -91,8 +91,8 @@ $router->group('/vendor', function ($router) {
     $router->get('/payouts', [VendorController::class, 'withdrawal'], [], 'web.vendor.withdrawal');
 }, [
     [SessionMiddleware::class, 'handle'],
-    [AuthMiddleware::class, 'handle'],
-    [RoleMiddleware::class, 'handle', ['role' => ['vendor']]],
+    [AuthMiddleware::class, 'handle', ['role' => 'vendor']],
+    [RoleMiddleware::class, 'handle', ['role' => 'vendor']],
     [
         RateLimitMiddleware::class, 'handle', 
         [
@@ -118,8 +118,8 @@ $router->group('/store', function ($router) {
     $router->get('/{id}/coupons/page/{page}', [StoreController::class, 'couponList'], [], 'web.store.coupon.list');
 }, [
     [SessionMiddleware::class, 'handle'],
-    [AuthMiddleware::class, 'handle'],
-    [RoleMiddleware::class, 'handle', ['role' => ['vendor']]],
+    [AuthMiddleware::class, 'handle', ['role' => 'vendor']],
+    [RoleMiddleware::class, 'handle', ['role' => 'vendor']],
     [
         RateLimitMiddleware::class, 'handle', 
         [

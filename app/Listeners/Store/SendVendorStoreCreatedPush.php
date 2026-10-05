@@ -44,7 +44,7 @@ class SendVendorStoreCreatedPush extends Listener
             PushNotificationJob::class,
             [
                 "Single Vendor",
-                $vendorId,
+                $event->vendorId,
                 'Store Creation Successful',
                 $vendorPushMessage,
                 [

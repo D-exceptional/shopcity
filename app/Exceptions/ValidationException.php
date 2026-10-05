@@ -10,10 +10,15 @@ class ValidationException extends Exception
 {
     public function __construct( 
         string $message = 'Validation failed', 
-        int $code = 422,
+        public int $status = 422,
         public array $errors = []
     ) {
-        parent::__construct($message, $code);
+        parent::__construct($message, $this->status);
         $this->errors = $errors;
+    }
+
+    public function errors(): array
+    {
+        return $this->errors;
     }
 }

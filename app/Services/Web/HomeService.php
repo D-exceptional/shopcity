@@ -30,7 +30,7 @@ class HomeService
         int $page
     ): array {
 
-        $topBrands = $this->storeModel->getTopBrands($page);
+        $topBrands = $this->storeModel->getTopSellingBrands($page);
 
         $data = [
             'topBrands' => $topBrands,

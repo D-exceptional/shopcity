@@ -21,14 +21,14 @@ class StoreController extends Controller
         $name        = $request->input('name');
         $avatar      = $request->input('avatar');
         $description = $request->input('description');
-        $narration   = $request->input('narration');
+        $type        = $request->input('type');
         $delivery    = $request->input('delivery');
 
         $result = $this->service->createStore(
             $name, 
             $avatar, 
             $description, 
-            $narration, 
+            $type,
             $delivery,
             $userId
         );
@@ -38,7 +38,7 @@ class StoreController extends Controller
 
     public function updateStoreDetails(Request $request): Response
     {
-        $storeId     = $request->route('id');
+        $storeId     = (int) $request->route('id');
         $name        = $request->input('name');
         $description = $request->input('description');
         $delivery    = $request->input('delivery');
@@ -55,7 +55,7 @@ class StoreController extends Controller
 
     public function updateStoreSocials(Request $request): Response
     {
-        $storeId   = $request->route('id');
+        $storeId   = (int) $request->route('id');
         $facebook  = $request->input('facebook');
         $instagram = $request->input('instagram');
         $tiktok    = $request->input('tiktok');
@@ -74,7 +74,7 @@ class StoreController extends Controller
 
     public function updateStoreAvatar(Request $request): Response
     {
-        $storeId   = $request->route('id');
+        $storeId   = (int) $request->route('id');
         $newAvatar = $request->input('url');
         $result = $this->service->updateStoreAvatar($newAvatar, $storeId);
 
@@ -83,7 +83,7 @@ class StoreController extends Controller
 
     public function updateStoreStatus(Request $request): Response
     {
-        $storeId = $request->route('id');
+        $storeId = (int) $request->route('id');
         $status  = $request->route('status');
         $result = $this->service->updateStoreStatus($status, $storeId);
 
@@ -92,7 +92,7 @@ class StoreController extends Controller
 
     public function deleteStore(Request $request): Response
     {
-        $storeId = $request->route('id');
+        $storeId = (int) $request->route('id');
         $result = $this->service->deleteStore($storeId);
 
         return $this->response->json($result->toArray(), $result->status());
@@ -100,7 +100,7 @@ class StoreController extends Controller
 
     public function findOne(Request $request): Response
     { 
-        $storeId = $request->route('id');
+        $storeId = (int) $request->route('id');
         $result = $this->service->findOne($storeId);
 
         return $this->response->json($result->toArray(), $result->status());
@@ -109,7 +109,7 @@ class StoreController extends Controller
     public function findByStatus(Request $request): Response
     { 
         $status = $request->route('status');
-        $page   = $request->route('page');
+        $page   = (int) $request->route('page');
         $result = $this->service->findByStatus($status, $page);
 
         return $this->response->json($result->toArray(), $result->status());
@@ -117,8 +117,8 @@ class StoreController extends Controller
 
     public function findByUser(Request $request): Response
     { 
-        $userId = $request->route('id');
-        $page   = $request->route('page');
+        $userId = (int) $request->route('id');
+        $page   = (int) $request->route('page');
         $result = $this->service->findByUser($userId, $page);
 
         return $this->response->json($result->toArray(), $result->status());
@@ -126,7 +126,7 @@ class StoreController extends Controller
 
     public function createCoupon(Request $request): Response
     {
-        $storeId  = $request->route('id');
+        $storeId  = (int) $request->route('id');
         $discount = $request->input('discount');
         $code     = $request->input('code');
         $result = $this->service->createCoupon($code, $discount, $storeId);
@@ -136,7 +136,7 @@ class StoreController extends Controller
 
     public function findCoupon(Request $request): Response
     {
-        $storeId = $request->route('id');
+        $storeId = (int) $request->route('id');
         $coupon  = $request->route('code');
         $result = $this->service->findCoupon($coupon, $storeId);
 
@@ -145,7 +145,7 @@ class StoreController extends Controller
 
     public function updateCoupon(Request $request): Response
     {
-        $couponId = $request->route('id');
+        $couponId = (int) $request->route('id');
         $discount = $request->input('discount');
         $status   = $request->input('status');
         $code     = $request->input('code');
@@ -156,7 +156,7 @@ class StoreController extends Controller
 
     public function deleteSingleCoupon(Request $request): Response
     { 
-        $couponId = $request->route('id');
+        $couponId = (int) $request->route('id');
         $result = $this->service->deleteSingleCoupon($couponId);
 
         return $this->response->json($result->toArray(), $result->status());
@@ -164,7 +164,7 @@ class StoreController extends Controller
 
     public function deleteCouponByStore(Request $request): Response
     {
-        $storeId = $request->route('id');
+        $storeId = (int) $request->route('id');
         $result = $this->service->deleteCouponByStore($storeId);
 
         return $this->response->json($result->toArray(), $result->status());
@@ -172,8 +172,8 @@ class StoreController extends Controller
 
     public function findCouponsByStore(Request $request): Response
     {
-        $storeId = $request->route('id');
-        $page    = $request->route('page');
+        $storeId = (int) $request->route('id');
+        $page    = (int) $request->route('page');
         $result = $this->service->findCouponsByStore($storeId, $page);
 
         return $this->response->json($result->toArray(), $result->status());
@@ -181,9 +181,9 @@ class StoreController extends Controller
 
     public function findCouponsByStoreAndStatus(Request $request): Response
     { 
-        $storeId = $request->route('id');
+        $storeId = (int) $request->route('id');
         $status  = $request->route('status');
-        $page    = $request->route('page');
+        $page    = (int) $request->route('page');
         $result = $this->service->findCouponsByStoreAndStatus($storeId, $status, $page);
 
         return $this->response->json($result->toArray(), $result->status());
@@ -198,9 +198,9 @@ class StoreController extends Controller
 
     public function findStoreCustomers(Request $request): Response
     {
-        $storeId = $request->route('id');
+        $storeId = (int) $request->route('id');
         $type    = $request->input('type');
-        $page    = $request->input('page');
+        $page    = (int) $request->input('page');
         $result = $this->service->findStoreCustomers($storeId, $type, $page);
 
         return $this->response->json($result->toArray(), $result->status());

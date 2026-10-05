@@ -234,13 +234,15 @@ class AdminService
     }
 
     public function storeList(
-        int $page
+        int $page,
+        string $status
     ): array {
 
-        $storeList = $this->storeModel->findStoresByStatus(null, $page);
+        $storeList = $this->storeModel->findStoresByStatus($status, $page);
 
         $data = [
             'storeList' => $storeList,
+            'status'    => $status,
         ];
 
         return $data;

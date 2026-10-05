@@ -28,6 +28,9 @@ class CreateContactMailRecord extends Listener
             <br> {$event->message}
         ";
 
+        $mailDate = date('Y-m-d');
+        $mailTime = date('H:i:s');
+
         $admins = $this->userModel->allByRole('Admin');
 
         foreach ($admins as $admin) {
@@ -37,6 +40,8 @@ class CreateContactMailRecord extends Listener
                 $event->subject,
                 $event->name,
                 $admin['email'],
+                $mailDate,
+                $mailTime,
                 $adminEmailMessage,
                 'None', 
                 'None'

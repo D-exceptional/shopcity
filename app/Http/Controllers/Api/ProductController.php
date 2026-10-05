@@ -18,7 +18,7 @@ class ProductController extends Controller
     // ---------------- PRODUCT CRUD ----------------
     public function create(Request $request): Response
     {
-        $storeId     = $request->route('id');  
+        $storeId     = (int) $request->route('id');  
         $name        = $request->input('name');  
         $description = $request->input('description');  
         $category    = $request->input('category');  
@@ -47,7 +47,7 @@ class ProductController extends Controller
 
     public function update(Request $request): Response
     {
-        $productId   = $request->route('id');  
+        $productId   = (int) $request->route('id');  
         $name        = $request->input('name');  
         $description = $request->input('description');  
         $category    = $request->input('category');  
@@ -80,7 +80,7 @@ class ProductController extends Controller
 
     public function metadata(Request $request): Response
     {
-        $productId   = $request->route('id');     
+        $productId   = (int) $request->route('id');     
         $visibility  = $request->input('visibility');  
         $isFeatured  = $request->input('featured'); 
 
@@ -95,7 +95,7 @@ class ProductController extends Controller
 
     public function delete(Request $request): Response
     { 
-        $productId = $request->route('id');
+        $productId = (int) $request->route('id');
         $result = $this->service->delete($productId);
 
         return $this->response->json($result->toArray(), $result->status());
@@ -104,8 +104,8 @@ class ProductController extends Controller
     // ---------------- FETCH METHODS ----------------
     public function findByAll(Request $request): Response
     {
-        $page  = $request->input('page');
-        $total = $request->input('total');
+        $page  = (int) $request->input('page');
+        $total = (int) $request->input('total');
         $view  = $request->input('view');
         $result = $this->service->findByAll($page, $total, $view);
 
@@ -115,8 +115,8 @@ class ProductController extends Controller
     public function findByCategory(Request $request): Response
     {
         $category = $request->route('category');
-        $page     = $request->input('page');
-        $total    = $request->input('total');
+        $page     = (int) $request->input('page');
+        $total    = (int) $request->input('total');
         $view     = $request->input('view');
         $result = $this->service->findByCategory($category, $page, $total, $view);
 
@@ -125,9 +125,9 @@ class ProductController extends Controller
 
     public function findByStore(Request $request): Response
     {
-        $storeId = $request->route('id');
-        $page    = $request->input('page');
-        $total   = $request->input('total');
+        $storeId = (int) $request->route('id');
+        $page    = (int) $request->input('page');
+        $total   = (int) $request->input('total');
         $view    = $request->input('view');
         $result = $this->service->findByStore($storeId, $page, $total, $view);
 
@@ -136,10 +136,10 @@ class ProductController extends Controller
 
     public function findByStoreCategory(Request $request): Response
     {
-        $storeId  = $request->route('id');
+        $storeId  = (int) $request->route('id');
         $category = $request->route('category');
-        $page     = $request->input('page');
-        $total    = $request->input('total');
+        $page     = (int) $request->input('page');
+        $total    = (int) $request->input('total');
         $view     = $request->input('view');
         $result = $this->service->findByStoreCategory($storeId, $category, $page, $total, $view);
 
@@ -148,8 +148,8 @@ class ProductController extends Controller
 
     public function findNewArrivals(Request $request): Response
     {
-        $page  = $request->input('page');
-        $total = $request->input('total');
+        $page  = (int) $request->input('page');
+        $total = (int) $request->input('total');
         $view  = $request->input('view');
         $result = $this->service->findNewArrivals($page, $total, $view);
 
@@ -158,8 +158,8 @@ class ProductController extends Controller
 
     public function findFeatured(Request $request): Response
     {
-        $page  = $request->input('page');
-        $total = $request->input('total');
+        $page  = (int) $request->input('page');
+        $total = (int) $request->input('total');
         $view  = $request->input('view');
         $result = $this->service->findFeatured($page, $total, $view);
 
@@ -168,8 +168,8 @@ class ProductController extends Controller
 
     public function findTopSelling(Request $request): Response
     {
-        $page  = $request->input('page');
-        $total = $request->input('total');
+        $page  = (int) $request->input('page');
+        $total = (int) $request->input('total');
         $result = $this->service->findTopSelling($page, $total);
 
         return $this->response->json($result->toArray(), $result->status());
@@ -177,10 +177,10 @@ class ProductController extends Controller
 
     public function findByPriceRange(Request $request): Response
     {
-        $min   = $request->input('min');
-        $max   = $request->input('max');
-        $page  = $request->input('page');
-        $total = $request->input('total');
+        $min   = (float) $request->input('min');
+        $max   = (float) $request->input('max');
+        $page  = (int) $request->input('page');
+        $total = (int) $request->input('total');
         $view  = $request->input('view');
         $result = $this->service->findByPriceRange($min, $max, $page, $total, $view);
 
@@ -189,9 +189,9 @@ class ProductController extends Controller
 
     public function findByMinPrice(Request $request): Response
     {
-        $min   = $request->input('min');
-        $page  = $request->input('page');
-        $total = $request->input('total');
+        $min   = (float) $request->input('min');
+        $page  = (int) $request->input('page');
+        $total = (int) $request->input('total');
         $view  = $request->input('view');
         $result = $this->service->findByMinPrice($min, $page, $total, $view);
 
@@ -200,9 +200,9 @@ class ProductController extends Controller
 
     public function findByMaxPrice(Request $request): Response
     {
-        $max   = $request->input('max');
-        $page  = $request->input('page');
-        $total = $request->input('total');
+        $max   = (float) $request->input('max');
+        $page  = (int) $request->input('page');
+        $total = (int) $request->input('total');
         $view  = $request->input('view');
         $result = $this->service->findByMaxPrice($max, $page, $total, $view);
 
@@ -211,8 +211,8 @@ class ProductController extends Controller
 
     public function findByGroupedCategory(Request $request): Response
     {
-        $page  = $request->input('page');
-        $total = $request->input('total');
+        $page  = (int) $request->input('page');
+        $total = (int) $request->input('total');
         $result = $this->service->findByGroupedCategory($page, $total);
 
         return $this->response->json($result->toArray(), $result->status());
@@ -220,7 +220,7 @@ class ProductController extends Controller
 
     public function findOne(Request $request): Response
     {
-        $productId = $request->route('id');
+        $productId = (int) $request->route('id');
         $result = $this->service->findOne($productId);
 
         return $this->response->json($result->toArray(), $result->status());
@@ -229,8 +229,8 @@ class ProductController extends Controller
     public function findBySearch(Request $request): Response
     {
         $query = $request->route('query');
-        $page  = $request->input('page');
-        $total = $request->input('total');
+        $page  = (int) $request->input('page');
+        $total = (int) $request->input('total');
         $view  = $request->input('view');
         $result = $this->service->findBySearch($query, $page, $total, $view);
 
@@ -240,8 +240,8 @@ class ProductController extends Controller
     public function findByColor(Request $request): Response
     {
         $color = $request->route('color');
-        $page  = $request->input('page');
-        $total = $request->input('total');
+        $page  = (int) $request->input('page');
+        $total = (int) $request->input('total');
         $view  = $request->input('view');
         $result = $this->service->findByColor($color, $page, $total, $view);
 
@@ -251,9 +251,9 @@ class ProductController extends Controller
     public function addReview(Request $request): Response
     {
         $userId    = $request->user()['id'];
-        $productId = $request->route('id');
+        $productId = (int) $request->route('id');
         $review    = $request->input('review');
-        $rating    = $request->input('rating');
+        $rating    = (float) $request->input('rating');
         $result = $this->service->addReview($userId, $productId, $review, $rating);
 
         return $this->response->json($result->toArray(), $result->status());

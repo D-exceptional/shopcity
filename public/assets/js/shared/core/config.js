@@ -141,7 +141,7 @@ export const MAX_TRIALS = 5;
 // -------------------------------
 // Cloudinry Name
 // -------------------------------
-export const CLOUDINARY_NAME = "";
+export const CLOUDINARY_NAME = "dxlwyzwa0";
 
 // ---------------------------------
 // Upload Size Limit For Images

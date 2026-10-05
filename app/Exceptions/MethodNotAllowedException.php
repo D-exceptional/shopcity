@@ -10,8 +10,8 @@ class MethodNotAllowedException extends Exception
 {
     public function __construct(
         string $message = 'Method not allowed',
-        int $code = 405
+        public int $status = 405
     ) {
-        parent::__construct($message, $code);
+        parent::__construct($message, $this->status);
     }
 }

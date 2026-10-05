@@ -178,7 +178,7 @@ class Wallet extends Model
                 $column => 0,
             ]);
 
-        // Return Amount To Caller
+        // Return Redeemed Amount
         return $amount;
     }
 
@@ -251,7 +251,7 @@ class Wallet extends Model
                     $query->where('user_id', '=', $userId);
                 }
             )
-            ->orderBy('created_at', 'DESC')
+            ->latest()
             ->paginate($page, $limit)
             ->get();
     }
@@ -263,7 +263,7 @@ class Wallet extends Model
     ): ?array {
 
         return $this->table($table)
-            ->orderBy('created_at', 'DESC')
+            ->latest()
             ->paginate($page, $limit)
             ->get();
     }
@@ -284,7 +284,7 @@ class Wallet extends Model
                     $query->where($column, '=', $status);
                 }
             )
-            ->orderBy('created_at', 'DESC')
+            ->latest()
             ->paginate($page, $limit)
             ->get();
     }
@@ -337,7 +337,7 @@ class Wallet extends Model
         return [
             'current_balance' => $this->getBalance('wallet_payout', $userId),
             'total_balance'   => $this->getBalance('wallet_payout_backup', $userId),
-            'savings_balance' => $this->getBalance('wallet_savings', $userId),
+            // 'savings_balance' => $this->getBalance('wallet_savings', $userId),
             'total_payout'    => $this->getWithdrawalByType($userId, 'Completed', 'vendor'),
             'pending_payout'  => $this->getWithdrawalByType($userId, 'Pending', 'vendor'),
         ];
@@ -400,7 +400,7 @@ class Wallet extends Model
                     $query->where('w.withdrawal_status', '=', $status);
                 }
             )
-            ->orderBy('w.created_at', 'DESC')
+            ->latest('w.created_at')
             ->paginate($page, $limit)
             ->get();
 

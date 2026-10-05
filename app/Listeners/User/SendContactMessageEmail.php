@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Listeners;
+namespace App\Listeners\User;
 
 use App\Events\User\ContactMessageReceived;
 use App\Models\User;

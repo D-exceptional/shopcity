@@ -84,12 +84,33 @@
             </a>
           </li>
           <li class="nav-item">
-            <a href="/admin/stores/page/1" class="nav-link">
+            <a href="#" class="nav-link">
               <i class="nav-icon fas fa-university"></i>
               <p>
                 Stores
+                <i class="fas fa-angle-left right"></i>
               </p>
             </a>
+            <ul class="nav nav-treeview">
+              <li class="nav-item">
+                <a href="/admin/stores/status/Pending/page/1" class="nav-link">
+                  <i class="far fa-circle nav-icon"></i>
+                  <p>Pending</p>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a href="/admin/stores/status/Active/page/1" class="nav-link">
+                  <i class="far fa-circle nav-icon"></i>
+                  <p>Active</p>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a href="/admin/stores/status/Deactivated/page/1" class="nav-link">
+                  <i class="far fa-circle nav-icon"></i>
+                  <p>Deactivated</p>
+                </a>
+              </li>
+            </ul>
           </li>
           <li class="nav-item">
             <a href="#" class="nav-link">

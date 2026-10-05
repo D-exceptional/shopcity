@@ -75,11 +75,16 @@ import { formatCurrency, formatNum } from "./utils/index.js";
         payload
       );
 
-      if (result.status === 200 && result.message === "Stats fetched") {
+      if (
+        result.message === "Stats fetched"
+        && result.data
+        && result.data !== null
+      ) {
+
         displayMessage(result.message, "success");
 
-        const totalRevenue = formatAmount(result.data.total_revenue);
-        const totalSales = formatNum(result.data.total_orders);
+        const totalRevenue = formatAmount(result.data?.total_revenue);
+        const totalSales = formatNum(result.data?.total_orders);
 
         $(".modal").css({ display: "flex" });
         $(".modal.info, .range-section").css({ display: "none" });
@@ -91,6 +96,7 @@ import { formatCurrency, formatNum } from "./utils/index.js";
       }
     } catch (err) {
       displayMessage(`Network error occurred: ${err}`, "error");
+      console.log(err);
     }
   }
 

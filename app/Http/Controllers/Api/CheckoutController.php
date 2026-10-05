@@ -18,11 +18,11 @@ class CheckoutController extends Controller
     public function processCheckout(Request $request): Response
     { 
         $user     = $request->user();
-        $subtotal = $request->input('subtotal');
-        $tax      = $request->input('tax');
-        $discount = $request->input('discount');
-        $shipping = $request->input('shipping');
-        $total    = $request->input('total');
+        $subtotal = (float) $request->input('subtotal');
+        $tax      = (float) $request->input('tax');
+        $discount = (float) $request->input('discount');
+        $shipping = (float) $request->input('shipping');
+        $total    = (float) $request->input('total');
         $address  = $request->input('address');
         $items    = $request->input('items');
 

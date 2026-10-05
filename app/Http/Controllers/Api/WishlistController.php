@@ -26,7 +26,7 @@ class WishlistController extends Controller
     public function add(Request $request): Response
     {
         $userId    = $request->user()['id'];
-        $productId = $request->route('id');
+        $productId = (int) $request->route('id');
         $result = $this->service->add($productId, $userId);
 
         return $this->response->flash($result);
@@ -44,7 +44,7 @@ class WishlistController extends Controller
     public function remove(Request $request): Response
     { 
         $userId    = $request->user()['id'];
-        $productId = $request->route('id');
+        $productId = (int) $request->route('id');
         $result = $this->service->remove($productId, $userId);
 
         return $this->response->flash($result);
