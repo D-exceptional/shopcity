@@ -35,33 +35,25 @@ export function clearGuestWishlist() {
 }
 
 // ----------------------------------------------------
-// Manage Push Storage
+// Manage Token
 // ----------------------------------------------------
 
-export function getPush(tag) {
-  return localStorage.getItem(tag);
+export function getApiToken() {
+  return localStorage.getItem("api_token");
 }
 
-export function savePush(tag, value) {
-  localStorage.setItem(tag, value);
+export function saveApiToken(token) {
+  
+  if (typeof token !== "string" || !token.trim()) {
+    console.error("Invalid API token:", token);
+    return false;
+  }
+
+  localStorage.setItem("api_token", token);
+
+  return true;
 }
 
-export function clearPush(tag) {
-  localStorage.removeItem(tag);
-}
-
-// ----------------------------------------------------
-// Manage Log
-// ----------------------------------------------------
-
-export function getID(tag) {
-  return localStorage.getItem(tag);
-}
-
-export function saveID(tag, value) {
-  localStorage.setItem(tag, value);
-}
-
-export function clearID(tag) {
-  localStorage.removeItem(tag);
+export function clearApiToken() {
+  localStorage.removeItem("api_token");
 }

@@ -16,11 +16,7 @@ import {
 (async function ($) {
   ("use strict");
 
-  const params = new URLSearchParams(window.location.search);
-  const storeId =
-    params.has("id") && !isNaN(params.get("id"))
-      ? parseInt(params.get("id"))
-      : null;
+  const storeId = $(".content-wrapper").data("storeid");
 
   const initialName = $(".form-name").val().trim();
   const initialDescription = $(".form-description").val().trim();

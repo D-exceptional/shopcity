@@ -253,12 +253,12 @@
                                 <small>Product SKU: N/A</small>
                                 <small>Available: 
                                     <strong class="text-primary">
-                                        <?= htmlspecialchars($productDetails['stock']) ?> items in stock
+                                        <?= $productDetails['stock'] ?> items in stock
                                     </strong>
                                 </small>
                                 <small>Store Front: 
                                     <strong class="text-primary">
-                                        <a href="/store/<?= htmlspecialchars($productDetails['store_id']) ?>">Visit Store</a>
+                                        <a href="/store/<?= $productDetails['store_id'] ?>">Visit Store</a>
                                     </strong>
                                 </small>
                             </div>
@@ -396,7 +396,7 @@
                                                 <i class="fa fa-star"></i>
                                             </div>
                                         </div>
-                                        <a href="#" class="btn btn-primary border border-primary text-primary rounded-pill px-4 py-3 btn-review">
+                                        <a href="<?= $isLoggedIn ? '#' : '/auth/user/login' ?>" class="btn btn-primary border border-primary text-primary rounded-pill px-4 py-3 btn-review">
                                             <?= $isLoggedIn ? 'Post Review' : 'Login' ?>
                                         </a>
                                     </div>

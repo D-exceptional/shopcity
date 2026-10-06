@@ -87,10 +87,6 @@ import { redirect } from "../../js/shared/modules/index.js";
   }
 
   async function register() {
-    if (!supportedCountries.includes($(".form-country").val())) {
-      displayMessage("Country not supported", "info");
-      return;
-    }
 
     const inputs = {
       avatar: "None",
@@ -100,8 +96,18 @@ import { redirect } from "../../js/shared/modules/index.js";
       contact: $(".form-phone").val(),
       country: $(".form-country").val(),
       password: $(".form-password").val(),
-      state: $(".form-state").val() ?? 'Not Specified',
+      state: $(".form-state").val() ?? "Not Specified",
     };
+
+    if(!inputs.country || inputs.country.trim() === "") {
+      displayMessage("Please select a country", "info");
+      return;
+    }
+
+    if (!supportedCountries.includes(inputs.country)) {
+      displayMessage("Country not supported", "info");
+      return;
+    }
 
     if (Object.values(inputs).some((val) => val === "")) {
       displayMessage("Some fields are empty", "info");

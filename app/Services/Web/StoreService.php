@@ -162,7 +162,7 @@ class StoreService
     ): array {
 
         $productDetails = $this->productModel->findOne($productId);
-        $storeList      = $this->storeModel->findStoresByUser($userId);
+        $storeData       = $this->getStoreData($storeId);
 
         $data = [
             'productDetails' => $productDetails,

@@ -24,12 +24,6 @@ import { formatNum } from "../../js/shared/utils/index.js";
 (async function ($) {
   ("use strict");
 
-  /*const params = new URLSearchParams(window.location.search);
-  const storeId =
-    params.has("id") && !isNaN(params.get("id"))
-      ? parseInt(params.get("id"))
-      : null;
-  */
   const storeId = $(".content-wrapper").data("storeid");
 
   // -------------------------------------------------
@@ -199,14 +193,5 @@ import { formatNum } from "../../js/shared/utils/index.js";
     const total = $("tbody tr.content-row").length;
     $(".header-count h1 b").text(`All ${type} (${formatNum(total)})`);
   }
-
-  // View products
-  /*
-  $(document).on("click", "tr.content-row", function () {
-    const productId = parseInt($(this).data("id"));
-    // Open product
-    redirect(`./product-view?productId=${productId}&id=${storeId}`);
-  });
-  */
 
 })(jQuery);

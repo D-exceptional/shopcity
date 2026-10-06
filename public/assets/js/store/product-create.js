@@ -23,14 +23,9 @@ import { redirect } from "../../js/shared/modules/index.js";
 (async function ($) {
   ("use strict");
 
-  const params = new URLSearchParams(window.location.search);
-  const storeId =
-    params.has("id") && !isNaN(params.get("id"))
-      ? parseInt(params.get("id"))
-      : null;
+  const storeId = $(".content-wrapper").data("storeid");
   
-  
-  const UPLOAD_PRESET = "preset_products";
+  const UPLOAD_PRESET = "preset_ecommerce_products";
   let productMedia = [];
 
   $(".form-data").on("input blur", function () {
@@ -39,7 +34,7 @@ import { redirect } from "../../js/shared/modules/index.js";
 
   $(".form-category, .form-sub-category").on("change", async function () {
     const isCategory = $(this).hasClass("form-category");
-    const value = $(this).val().trim();
+    const value = $(this).val();
     if (!value) {
       displayMessage(
         `Select a valid ${isCategory ? "category" : "sub category"}`,
@@ -89,7 +84,18 @@ import { redirect } from "../../js/shared/modules/index.js";
         fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_NAME}/upload`, {
           method: "POST",
           body: formData,
-        }).then((res) => res.json())
+        }).then(async (res) => {
+          const data = await res.json();
+
+          if (!res.ok) {
+            console.error("Cloudinary upload failed:", {
+              status: res.status,
+              data,
+            });
+          }
+
+          return data;
+        }),
       );
     }
 
@@ -147,7 +153,7 @@ import { redirect } from "../../js/shared/modules/index.js";
       const result = await makeRequest(`/product/store/${storeId}`, "POST", payload);
 
       if (
-        result.status === 200 &&
+        result.status === 201 &&
         result.message === "Product created successfully"
       ) {
         displayMessage(result.message, "success");
@@ -189,14 +195,15 @@ import { redirect } from "../../js/shared/modules/index.js";
   }
 
   async function fetchSubcategories(category) {
+
     $(".form-sub-category").empty().html(`<option value="">Loading subcategories...</option>`);
     
     try {
 
       const result = await makeRequest(
-        `/category/subcategories/${category}`,
+        `/category/subcategories/${encodeURIComponent(category)}`,
         "GET",
-        {}
+        {},
       );
 
       if (result.status === 200 && result.data.subcategories?.length > 0) {

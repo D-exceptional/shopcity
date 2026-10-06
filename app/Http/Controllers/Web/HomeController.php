@@ -23,7 +23,7 @@ class HomeController extends Controller
     // The url for accessing this is: /brands
     public function brands(Request $request): Response
     {
-        $page = $request->input('page') ?? 1; 
+        $page     = 1; 
         $viewData = $this->service->brands($page);
 
         return $this->response->view('public.brands', $viewData);
@@ -72,7 +72,7 @@ class HomeController extends Controller
     // The url for accessing this is: /
     public function home(Request $request): Response
     {
-        $page = $request->input('page') ?? 1; 
+        $page     = 1; 
         $viewData = $this->service->home($page);
 
         return $this->response->view('public.home', $viewData);
@@ -99,7 +99,7 @@ class HomeController extends Controller
     public function orders(Request $request): Response
     {
         $userId = $request->user()['id'] ?? null; 
-        $page   = $request->input('page') ?? 1; 
+        $page   = 1; 
         $viewData = $this->service->orders($userId, $page);
 
         return $this->response->view('public.orders', $viewData);
@@ -143,7 +143,7 @@ class HomeController extends Controller
     public function productSearch(Request $request): Response
     {
         $search = $request->route('search') ?? null; 
-        $page    = $request->input('page') ?? 1; 
+        $page    = 1; 
         $viewData = $this->service->productSearch($search, $page);
 
         return $this->response->view('public.product_search', $viewData);
@@ -188,8 +188,8 @@ class HomeController extends Controller
     public function store(Request $request): Response
     {
         $storeId = (int)$request->route('id') ?? null; 
-        $page    = (int)$request->input('page') ?? 1; 
-        $viewData = $this->service->store($storeId, $page);
+        $page    = 1; 
+        $viewData = $this->service->store($storeId, 1);
 
         return $this->response->view('public.store', $viewData);
     }
@@ -241,7 +241,7 @@ class HomeController extends Controller
     public function wishlist(Request $request): Response
     {
         $userId = $request->user()['id'] ?? null; 
-        $page   = $request->input('page') ?? 1; 
+        $page   = 1; 
         $viewData = $this->service->wishlist($userId, $page);
 
         return $this->response->view('public.wishlist', $viewData);

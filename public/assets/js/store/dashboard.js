@@ -18,11 +18,7 @@ import { formatCurrency, formatNum } from "../../js/shared//utils/index.js";
 (async function ($) {
   ("use strict");
 
-  const params = new URLSearchParams(window.location.search);
-  const storeId =
-    params.has("id") && !isNaN(params.get("id"))
-      ? parseInt(params.get("id"))
-      : 1;
+  const storeId = $(".content-wrapper").data("storeid");
 
   $(".totals").css({ display: "flex" });
   $(".modal.info, .range-section").css({ display: "none" });

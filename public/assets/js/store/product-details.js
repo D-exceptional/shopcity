@@ -16,13 +16,8 @@ import { uploadToCloudinary, formatAmount, extractAmount } from "../../js/shared
 (async function ($) {
     ("use strict");
 
-    /*const params = new URLSearchParams(window.location.search);
-    const productId =
-      params.has("productId") && !isNaN(params.get("productId"))
-        ? parseInt(params.get("productId"))
-      : null;
-  */
-   const productId = $(".content-wrapper").data("productid");
+  const storeId   = $(".content-wrapper").data("storeid");
+  const productId = $(".content-wrapper").data("productid");
   
   // Load Commissions
   loadCommissions();

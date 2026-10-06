@@ -173,7 +173,7 @@ export async function syncWishlist() {
   }
 
   try {
-    const result = await makeRequest(`/wishlist/merge`, "PUT", {
+    const result = await makeRequest(`/wishlist`, "PUT", {
       wishlist: wishlist,
     });
 

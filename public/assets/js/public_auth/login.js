@@ -1,7 +1,7 @@
 // ----------------------------------------------------
 // Import Configs
 // ----------------------------------------------------
-import { MAX_TRIALS, makeRequest } from "../../js/shared/core/index.js";
+import { MAX_TRIALS, makeRequest, saveApiToken } from "../../js/shared/core/index.js";
 // ----------------------------------------------------
 // Import UI Alerts
 // ----------------------------------------------------
@@ -77,21 +77,22 @@ import PushClient from "../../js/shared/push/PushClient.js";
           payload
         );
 
-        if (result.status === 200
+        if (
+          result.status === 200
           && result.message === "Login successful"
         ) {
           // Sync cart and wishlist to server
           if (
-            ["customer", "Customer", "CUSTOMER"].includes(
-              result.data.connection,
-            )
+            result.data.connection === 'customer'
           ) {
             await syncCart();
             await syncWishlist();
           }
 
           // Save the token to local storage
-          localStorage.setItem("api_token", result.data.token);
+          const apiToken = result.data.token;
+          
+          saveApiToken(apiToken);
 
           // Sync push notification subscription
           await PushClient.sync(true);
@@ -101,7 +102,7 @@ import PushClient from "../../js/shared/push/PushClient.js";
           //Redirect to dashboard
           setTimeout(() => {
             redirect(result.data.dashboard);
-          }, 2000);
+          }, 1500);
 
         } else {
 

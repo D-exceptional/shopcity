@@ -348,7 +348,7 @@ class Product extends Model
     ): array {
 
         $data = $this->table()
-            ->where('is_featured', '=', 'TRUE')
+            ->where('is_featured', '=', 1)
             ->when(
                 $view === 'customer',
 
@@ -360,7 +360,7 @@ class Product extends Model
             ->get();
 
         $total = $this->table()
-            ->where('is_featured', '=', 'TRUE')
+            ->where('is_featured', '=', 1)
             ->when(
                 $view === 'customer',
 

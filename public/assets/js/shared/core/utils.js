@@ -2,6 +2,7 @@
 // Import Config
 // ----------------------------------------------------
 import HttpResponse from "../core/response.js";
+import { getApiToken } from "../core/storage.js";
 
 /**
  * Get CSRF token from meta tag
@@ -9,13 +10,6 @@ import HttpResponse from "../core/response.js";
 export function getCsrfToken() {
   const meta = $('meta[name="csrf-token"]');
   return meta.length ? meta.attr("content") : null;
-}
-
-/**
- * Get API token from local storage
- */
-export function getApiToken() {
-  return localStorage.getItem("api_token");
 }
 
 /**
@@ -290,17 +284,17 @@ export async function parseResponse(res) {
     type === "json" && data && typeof data === "object" ? data : null;
 
   return new HttpResponse({
-    ok: res.ok ?? body.ok,
+    ok: body?.ok ?? res.ok,
 
-    status: body.status ?? res.status,
+    status: body?.status ?? res.status,
 
     statusText: res.statusText,
 
-    message: body.message ?? null,
+    message: body?.message ?? null,
 
-    error: body.error ?? null,
+    error: body?.error ?? null,
 
-    data: body.data ?? data,
+    data: body?.data ?? data,
 
     headers,
 

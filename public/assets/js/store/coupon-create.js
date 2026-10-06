@@ -21,13 +21,6 @@ import { redirect } from "../../js/shared/modules/index.js";
 
 (async function ($) {
   "use strict";
-
-  /*const params = new URLSearchParams(window.location.search);
-  const storeId =
-    params.has("id") && !isNaN(params.get("id"))
-      ? parseInt(params.get("id"))
-      : null;
-  */
   
   const storeId = $(".content-wrapper").data("storeid");
 

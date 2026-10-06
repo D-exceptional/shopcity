@@ -57,7 +57,7 @@ class CloudinaryManager
     // =========================================
     // DETECT FILE TYPE
     // =========================================
-    private function detect(
+    public function detect(
         string $url
     ): string {
 

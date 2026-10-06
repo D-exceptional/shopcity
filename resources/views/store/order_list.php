@@ -33,7 +33,7 @@
     <!-- / Main Sidebar Container -->
 
     <!-- Content Wrapper. Contains page content -->
-    <div class="content-wrapper" data-status="<?= $status ?>" data-storeid="<?= $storeId ?>">
+    <div class="content-wrapper" data-storeid="<?= $storeId ?>" data-status="<?= $status ?>">
       <!-- Content Header (Page header) -->
       <section class="content-header">
         <div class="container-fluid">

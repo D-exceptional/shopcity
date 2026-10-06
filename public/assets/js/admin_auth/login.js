@@ -4,6 +4,7 @@
 import {
   makeRequest,
   MAX_TRIALS,
+  saveApiToken,
 } from "../../js/shared/core/index.js";
 // ----------------------------------------------------
 // Import UI Alerts
@@ -83,8 +84,10 @@ import PushClient from "../../js/shared/push/PushClient.js";
         ) {
 
           // Save the token to local storage
-          localStorage.setItem('api_token', result.data.token);
+          const apiToken = result.data.token;
           
+          saveApiToken(apiToken);
+
           $(".btn-login").text("Redirecting...");
 
           // Sync push notification subscription

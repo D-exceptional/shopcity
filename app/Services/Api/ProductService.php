@@ -72,7 +72,7 @@ class ProductService
                 $slash,
                 $stock,
                 $color,
-                $media,
+                // $media,
                 $storeId
             );
 

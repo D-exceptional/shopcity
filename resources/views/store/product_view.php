@@ -14,7 +14,7 @@
     <?php include_once ROOT_DIR_PATH . '/includes/shared/head.php'; ?>
 </head>
 <body class="hold-transition sidebar-mini">
-    <div class="wrapper" data-productid="<?= $productId ?>">
+    <div class="wrapper">
         <!-- Navbar -->
         <?php include_once ROOT_DIR_PATH . '/includes/store/header.php'; ?>
         <!-- /.navbar -->
@@ -24,7 +24,7 @@
         <!-- / Main Sidebar Container -->
 
         <!-- Content Wrapper. Contains page content -->
-        <div class="content-wrapper">
+        <div class="content-wrapper" data-storeid="<?= $storeId ?>" data-productid="<?= $productId ?>">
             <!-- Content Header (Page header) -->
             <section class="content-header">
                 <div class="container-fluid">

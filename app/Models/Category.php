@@ -99,7 +99,7 @@ class Category extends Model
             ->where('category_name', '=', $category)
             ->first();
 
-        return (int) $result['category_id'];
+        return (int) ($result['category_id'] ?? 0);
     }
     
     public function sub(
