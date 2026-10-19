@@ -34,9 +34,9 @@ function normalizePayload(payload = {}) {
   return {
     title: notification.title || data.title || "Notification",
     body: notification.body || data.body || "",
-    icon: data.icon || "/public/assets/img/logo-192.png",
-    badge: data.badge || "/public/assets/img/badge.png",
-    click_action: data.click_action || "/login",
+    icon: data.icon || "/assets/img/logo-192.png",
+    badge: data.badge || "/assets/img/badge.png",
+    click_action: data.click_action || "/auth/user/login",
     data,
   };
 }
@@ -86,7 +86,7 @@ self.addEventListener("push", (event) => {
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
 
-  const clickAction = event.notification?.data?.click_action || "/login";
+  const clickAction = event.notification?.data?.click_action || "/auth/user/login";
 
   event.waitUntil(
     clients
