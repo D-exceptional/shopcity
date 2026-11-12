@@ -195,7 +195,7 @@ import { validateInput, extractAmount } from "../../js/shared/utils/index.js";
           let currentSubtotal = extractAmount($(".subtotal").text());
           // Apply discount
           let discountAmount =
-            currentSubtotal - (checkoutDiscount / 100) * currentSubtotal;
+            currentSubtotal - ((checkoutDiscount / 100) * currentSubtotal);
 
           // Update subtotal and total in DOM
           $(".subtotal").text(
