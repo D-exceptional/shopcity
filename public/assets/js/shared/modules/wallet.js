@@ -112,7 +112,7 @@ export function makePayment(options, amount, reference, user) {
     },
     customizations: {
       title: "Checkout Payment",
-      description: "Payment for products on Mrsamase e-commerce",
+      description: "Payment for products on ShopCity e-commerce",
       logo: "https://www.logolynx.com/images/logolynx/22/2239ca38f5505fbfce7e55bbc0604386.jpeg",
     },
     configurations: {
