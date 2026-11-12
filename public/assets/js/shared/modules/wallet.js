@@ -111,8 +111,8 @@ export function makePayment(options, amount, reference, user) {
       name: user.name,
     },
     customizations: {
-      title: "Checkout Payment",
-      description: "Payment for products on ShopCity e-commerce",
+      title: "Topup Payment",
+      description: "Payment for wallet topup on ShopCity e-commerce",
       logo: "https://www.logolynx.com/images/logolynx/22/2239ca38f5505fbfce7e55bbc0604386.jpeg",
     },
     configurations: {
