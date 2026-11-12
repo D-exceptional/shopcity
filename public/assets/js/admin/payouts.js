@@ -22,7 +22,7 @@ import { formatNum } from "./utils/index.js";
   ("use strict");
 
   const status    = $(".content-wrapper").data("status");
-  const payoutDay = "Tuesday";
+  const payoutDay = "Monday"; // Set the payout day to Monday
 
   // -------------------------------------------------
   // Initialize Counter
@@ -68,7 +68,7 @@ import { formatNum } from "./utils/index.js";
     day: "numeric",
     year: "numeric",
   });
-  const narration = `Mrsamase Payout`;
+  const narration = `ShopCity Payout`;
   const title = `Payout for ${currentDay}, ${week}`;
 
   /*
